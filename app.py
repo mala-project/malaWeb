@@ -8,6 +8,7 @@ from dash.dependencies import Input, Output, State
 from dash import dcc, html, dash_table
 
 import pandas as pd
+# TODO: clean up imports
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
@@ -50,6 +51,7 @@ def update_output_div(filename, contents):
         if filename.endswith('.npy'):
             # TODO: parse file with ASE
             # ase.io.read(contents)
+            # contents
             print("ASE READ")
 
             return 'Upload successfull. Filename: {filename}'.format(filename=filename)
