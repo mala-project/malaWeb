@@ -1,13 +1,10 @@
 import ase.io
 import dash
-import matplotlib.pyplot as plt
-from dash.dependencies import Input, Output, State
+from dash.dependencies import Input, Output
 from dash import dcc, html
 import pandas as pd
-from plotly.subplots import make_subplots
 
 # visualization
-import plotly.graph_objects as go
 import numpy as np
 import plotly.express as px
 
@@ -26,8 +23,6 @@ fig = px.scatter_3d(df, x='x', y='y', z='z', color='val', opacity=0.07, range_co
 
 # LAYOUT
 app = dash.Dash(__name__)
-print("------------------------------------------------")
-print("------------------------------------------------")
 app.layout = html.Div([
     html.Div(
         dcc.Graph(figure=fig),
