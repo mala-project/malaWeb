@@ -114,6 +114,7 @@ sidebar = html.Div(
         'background-color': '#f8f9fa',
         'border-radius': '10px',
         'height': 'min-content',
+        'box-shadow': 'rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px'
 
     }
 )
@@ -146,7 +147,7 @@ content = html.Div(
                             dcc.Graph(figure=fig, style=plot_layout),
                             className='dos-plot',
                         ))],
-                            style={'position': 'float', 'background-color': 'rgba(248, 249, 250, 1)', 'width': 'min-content', 'margin-bottom': '1rem', 'margin-top': '1rem'}),
+                            style={'position': 'float', 'background-color': 'rgba(248, 249, 250, 1)', 'width': 'min-content', 'margin-bottom': '1rem', 'margin-top': '1rem', 'box-shadow': 'rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px'}),
 
                 # histogram Section?
                 dbc.Card(
@@ -165,7 +166,7 @@ content = html.Div(
     style={'margin-left': '20rem', 'margin-right': '2rem', 'padding': '2rem 1rem'}
 )
 
-app.layout = html.Div([sidebar, content], className="wrapper")
+app.layout = html.Div([sidebar, content], className="wrapper")          # style={'background': 'white'} für light-mode
 # _____________________________________________________________________________________________________________________
 
 
