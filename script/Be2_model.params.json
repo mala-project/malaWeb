@@ -1,0 +1,178 @@
+{
+    "comment": "",
+    "manual_seed": null,
+    "use_gpu": false,
+    "use_horovod": false,
+    "use_mpi": false,
+    "verbosity": 2,
+    "data": {
+        "data_splitting_type": "by_snapshot",
+        "descriptors_contain_xyz": true,
+        "input_rescaling_type": "feature-wise-standard",
+        "lazy_loading_max_number_of_points": null,
+        "number_of_clusters": 40,
+        "output_rescaling_type": "normal",
+        "sample_ratio": 0.5,
+        "snapshot_directories_list": [
+            {
+                "object": "Snapshot",
+                "data": {
+                    "calculation_output": "",
+                    "grid_dimensions": [
+                        18,
+                        18,
+                        27
+                    ],
+                    "grid_size": 8748,
+                    "input_dimension": 91,
+                    "input_npy_directory": "/home/fiedlerl/data/mala_data_repo/Be2/training_data",
+                    "input_npy_file": "Be_snapshot1.in.npy",
+                    "input_units": "None",
+                    "output_dimension": 11,
+                    "output_npy_directory": "/home/fiedlerl/data/mala_data_repo/Be2/training_data",
+                    "output_npy_file": "Be_snapshot1.out.npy",
+                    "output_units": "1/eV",
+                    "snapshot_function": "tr"
+                }
+            },
+            {
+                "object": "Snapshot",
+                "data": {
+                    "calculation_output": "",
+                    "grid_dimensions": [
+                        18,
+                        18,
+                        27
+                    ],
+                    "grid_size": 8748,
+                    "input_dimension": 91,
+                    "input_npy_directory": "/home/fiedlerl/data/mala_data_repo/Be2/training_data",
+                    "input_npy_file": "Be_snapshot2.in.npy",
+                    "input_units": "None",
+                    "output_dimension": 11,
+                    "output_npy_directory": "/home/fiedlerl/data/mala_data_repo/Be2/training_data",
+                    "output_npy_file": "Be_snapshot2.out.npy",
+                    "output_units": "1/eV",
+                    "snapshot_function": "va"
+                }
+            }
+        ],
+        "train_ratio": 0.1,
+        "use_clustering": false,
+        "use_lazy_loading": false,
+        "_parameters_type": "ParametersData"
+    },
+    "datageneration": {
+        "local_psp_name": null,
+        "local_psp_path": null,
+        "ofdft_friction": 0.1,
+        "ofdft_kedf": "WT",
+        "ofdft_number_of_timesteps": 0,
+        "ofdft_temperature": 0,
+        "ofdft_timestep": 0,
+        "trajectory_analysis_below_average_counter": 50,
+        "trajectory_analysis_denoising_width": 100,
+        "trajectory_analysis_estimated_equilibrium": 0.1,
+        "_parameters_type": "ParametersDataGeneration"
+    },
+    "debug": {
+        "grid_dimensions": [],
+        "_parameters_type": "ParametersDebug"
+    },
+    "descriptors": {
+        "acsd_points": 100,
+        "descriptor_type": "SNAP",
+        "descriptors_contain_xyz": true,
+        "lammps_compute_file": "",
+        "rcutfac": 4.67637,
+        "twojmax": 10,
+        "_parameters_type": "ParametersDescriptors"
+    },
+    "hyperparameters": {
+        "checkpoint_name": "checkpoint_mala_ho",
+        "checkpoints_each_trial": 0,
+        "direction": "minimize",
+        "hlist": [],
+        "hyper_opt_method": "optuna",
+        "n_trials": 100,
+        "naswot_pruner_batch_size": 0,
+        "naswot_pruner_cutoff": 0,
+        "number_bad_trials_before_stopping": null,
+        "number_training_per_trial": 1,
+        "pruner": null,
+        "rdb_storage": null,
+        "rdb_storage_heartbeat": null,
+        "study_name": null,
+        "trial_ensemble_evaluation": "mean",
+        "use_multivariate": true,
+        "_parameters_type": "ParametersHyperparameterOptimization"
+    },
+    "network": {
+        "bidirection": false,
+        "dropout": 0.1,
+        "layer_activations": [
+            "ReLU"
+        ],
+        "layer_sizes": [
+            91,
+            100,
+            11
+        ],
+        "loss_function_type": "mse",
+        "nn_type": "feed-forward",
+        "no_hidden_state": false,
+        "num_heads": 10,
+        "num_hidden_layers": 1,
+        "_parameters_type": "ParametersNetwork"
+    },
+    "running": {
+        "after_before_training_metric": "ldos",
+        "checkpoint_name": "checkpoint_mala",
+        "checkpoints_each_epoch": 0,
+        "during_training_metric": "ldos",
+        "early_stopping_epochs": 0,
+        "early_stopping_threshold": 0,
+        "inference_data_grid": [
+            0,
+            0,
+            0
+        ],
+        "learning_rate": 0.0001,
+        "learning_rate_decay": 0.1,
+        "learning_rate_patience": 0,
+        "learning_rate_scheduler": null,
+        "max_number_epochs": 2000,
+        "mini_batch_size": 40,
+        "num_workers": 0,
+        "trainingtype": "Adam",
+        "use_compression": false,
+        "use_shuffling_for_samplers": true,
+        "verbosity": true,
+        "visualisation": 0,
+        "visualisation_dir": "./mala_logging",
+        "visualisation_dir_append_date": true,
+        "weight_decay": 0,
+        "_parameters_type": "ParametersRunning"
+    },
+    "targets": {
+        "ldos_gridoffset_ev": 0,
+        "ldos_gridsize": 0,
+        "ldos_gridspacing_ev": 0,
+        "pseudopotential_path": null,
+        "rdf_parameters": {
+            "number_of_bins": 500,
+            "rMax": "mic"
+        },
+        "restrict_targets": "zero_out_negative",
+        "ssf_parameters": {
+            "number_of_bins": 100,
+            "kMax": 12.0
+        },
+        "target_type": "LDOS",
+        "tpcf_parameters": {
+            "number_of_bins": 20,
+            "rMax": "mic"
+        },
+        "_parameters_type": "ParametersTargets"
+    }
+}

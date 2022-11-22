@@ -26,5 +26,72 @@
     margin-left: 18rem;
     margin-right: 2rem;
     padding: 2rem 1rem;
+}
 
+
+
+#plot-choice {
+    padding: 1em 1em;
+
+}
+
+#cam-pos {
+    margin-left: 1em;
+    margin-right: 1em;
+
+}
+
+
+
+
+
+
+
+#arrowAnim {
+  width: 20vw;
+  height: 25vh;
+  display: flex;
+  justify-content: center;
+
+}
+
+.arrow {
+  width: 1em;
+  height: 1em;
+  border: 0.15em solid;
+  border-color: #839496 transparent transparent #839496;
+  transform: rotate(-45deg);
+}
+
+
+.arrowSliding {
+  position: absolute;
+  -webkit-animation: slide 1.75s linear infinite;
+          animation: slide 1.75s linear infinite;
+}
+
+.delay1 {
+  -webkit-animation-delay: 0.25s;
+    animation-delay: 0.25s;
+}
+.delay2 {
+  -webkit-animation-delay: 0.5s;
+    animation-delay: 0.5s;
+}
+.delay3 {
+  -webkit-animation-delay: 0.75s;
+    animation-delay: 0.75s;
+}
+
+@-webkit-keyframes slide {
+    0% { opacity:0; transform: translateX(-1vw); }
+   20% { opacity:1; transform: translateX(-3vw); }
+   80% { opacity:1; transform: translateX(-9vw); }
+  100% { opacity:0; transform: translateX(-8.5vw); }
+}
+@keyframes slide {
+    0% { opacity:0; transform: translateX(-1vw); }
+   20% { opacity:1; transform: translateX(-3vw); }
+   80% { opacity:1; transform: translateX(-9vw); }
+  100% { opacity:0; transform: translateX(-8.5vw); }
 }
