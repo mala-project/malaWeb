@@ -277,9 +277,12 @@ dos_plot_layout = {
 print("FIGURES LOADED")
 print("_________________________________________________________________________________________")
 
-app = dash.Dash(__name__, external_stylesheets=[dbc.icons.BOOTSTRAP], suppress_callback_exceptions=True)
+app = dash.Dash(__name__, external_stylesheets=[dbc.icons.BOOTSTRAP, dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)
 app.title = 'MALAweb'
 
+# until data is uploaded, show:
+bandEn = 0
+totalEn = 0
 # TABLE SECTION
 indent = '      '
 # Data
@@ -294,72 +297,75 @@ table_body = [html.Tbody([row1, row2, row3, row4, row5, row6])]
 # ----------------
 
 # SIDEBAR
-sidebar = html.Div(
-            [
-                # Logo Section
-                html.Div([
-                    html.Img(src='https://avatars.githubusercontent.com/u/81354661?s=200&v=4', className="logo"),
-                    html.H2(children='MALA', style={'text-align': 'center'}),
-                    html.Div(children='''
-        Framework for machine learning materials properties from first-principles data.
-    ''', style={'text-align': 'center'})], className="logo"),
 
-                html.Hr(style={'margin-bottom': '2rem', 'margin-top': '2rem'}),
 
-                # Upload Section
-                html.Div([
-                    html.H5(children='File-Upload'),
-                    html.Div(children='''
-                MALA needs Atompositions
-                Upload a .cube! (later npy)
-                ''', style={'text-align': 'center'}),
-                    dcc.Upload(
-                        id='upload-data',
-                        children=html.Div([
-                            'Drag & Drop', html.Br(), 'or ', html.Br(),
-                            html.A('Click to select Files')
-                        ]),
-                        style={
-                            'width': '90%',
-                            'height': 'auto',
-                            'lineHeight': '20px',
-                            'borderWidth': '1px',
-                            'borderStyle': 'dashed',
-                            'borderRadius': '5px',
-                            'textAlign': 'center',
-                            'margin': '0.5rem',
-                        },
-                        # don't allow multiple files to be uploaded
-                        multiple=False
-                    ),
-                    html.Div(id='output-upload-state', style={'margin': '10px'})
-                ], className="upload-section"),
-                html.Hr(style={'margin-bottom': '2rem', 'margin-top': '2rem'}),
-
-                # Plot Chooser
-                html.H5(children='Choose Plots'),
-                html.Div(children=dcc.Dropdown(
-                    {'scatter': 'Scatter', 'volume': 'Volume', 'dos': 'DoS'}, multi=True,
-                    id='plot-choice', placeholder='Choose Plot Type', persistence=True)),
-                html.Hr(style={'margin-bottom': '2rem'}),
-                html.H5(children='Values'),
-                dbc.Table(table_body, bordered=True, striped=True)
-
-            ],
-            className="sidebar",
-        )
-# l_content_
 
 offcanvas = html.Div(
     [
-        dbc.Button(
-            "Open Offcanvas", id="open-offcanvas-placement", n_clicks=0,
-            style={'top': '5vh'}
-        ),
+
         dbc.Offcanvas(
-            sidebar,
-            id="offcanvas-placement",
+            # default sidebar
+            html.Div(
+                [
+                    # Logo Section
+                    html.Div([
+                        html.Img(src='https://avatars.githubusercontent.com/u/81354661?s=200&v=4', className="logo"),
+                        html.H2(children='MALA', style={'text-align': 'center'}),
+                        html.Div(children='''
+                    Framework for machine learning materials properties from first-principles data.
+                ''', style={'text-align': 'center'})], className="logo"),
+
+                    html.Hr(style={'margin-bottom': '2rem', 'margin-top': '2rem'}),
+
+                    # Upload Section
+                    html.Div([
+                        html.H5(children='File-Upload'),
+                        html.Div(children='''
+                            MALA needs Atompositions
+                            Upload a .cube! (later npy)
+                            ''', style={'text-align': 'center'}),
+                        dcc.Upload(
+                            id='upload-data',
+                            children=html.Div([
+                                'Drag & Drop', html.Br(), 'or ', html.Br(),
+                                html.A('Click to select Files')
+                            ]),
+                            style={
+                                'width': '90%',
+                                'height': 'auto',
+                                'lineHeight': '20px',
+                                'borderWidth': '1px',
+                                'borderStyle': 'dashed',
+                                'borderRadius': '5px',
+                                'textAlign': 'center',
+                                'margin': '0.5rem',
+                            },
+                            # don't allow multiple files to be uploaded
+                            multiple=False
+                        ),
+                        html.Div(id='output-upload-state', style={'margin': '10px'})
+                    ], className="upload-section"),
+                    html.Hr(style={'margin-bottom': '2rem', 'margin-top': '2rem'}),
+
+                    # Plot Chooser
+                    html.H5(children='Choose Plots'),
+                    html.Div(children=dcc.Dropdown(
+                        {'scatter': 'Scatter', 'volume': 'Volume', 'dos': 'DoS'}, multi=True,
+                        id='plot-choice', placeholder='Choose Plot Type', persistence=True)),
+                    html.Hr(style={'margin-bottom': '2rem'}),
+                    html.H5(children='Values'),
+                    dbc.Table(table_body, bordered=True, striped=True)
+
+                ],
+                className="sidebar",
+            )
+            ,
+
+
+            id="offcanvas-left",
             is_open=False,
+            style={'width': '15rem', 'height': 'min-content'},
+            scrollable=True, backdrop=False
         ),
     ]
 )
@@ -541,8 +547,8 @@ dos_plot = html.Div(
 )
 
 # ----------------
-# uploaded - layout
-app.layout = dbc.Container(
+# default layout
+app.layout = html.Div(dbc.Container(
     [
         dcc.Store(id="val_store"),
         dbc.Row(
@@ -566,8 +572,8 @@ app.layout = dbc.Container(
                 dbc.Col(html.Div()),    #settings tab
             ]
         )
-    ], id="content-layout")
-
+    ], id="content-layout", className="g-0",), style={'background-color': '#023B59'})
+# FGEDF4 as contrast
 
 print("COMPONENTS LOADED")
 print("_________________________________________________________________________________________")
@@ -717,14 +723,18 @@ def change_layout(plots):
             mc[0] = default_main
             mc[1] = default_main2
 
-    return html.Div(dbc.Container([
+    return dbc.Container(
+        [
         dcc.Store(id="val_store"),
         dbc.Row(  # First Plot
             [
-                dbc.Col(offcanvas, style={'background': 'red', 'width': 'min-content', 'height': 'min-content'}),
+                dbc.Col(
+                    [dbc.Button(">", id="open-offcanvas-left", n_clicks=0, style={'margin-top': '35vh', 'margin-left':'0'}),
+                    offcanvas]
+                    , style={'background': 'red', 'width': 'min-content', 'height': 'min-content'}),
                 dbc.Col(mc[0], style={'background': 'blue', 'width': 'min-content', 'height': 'min-content'}),
                 dbc.Col(rc[0], style={'background': 'green'}),  # settings
-            ]
+            ], style={'width': '100vw'}
         ),
 
         dbc.Row(  # Second Plot
@@ -732,16 +742,16 @@ def change_layout(plots):
                 dbc.Col(html.Div()),
                 dbc.Col(mc[1]),
                 dbc.Col(rc[1]),  # gonna be the settings tab
-            ]
+            ], style={'width': '100vw'}
         ),
         dbc.Row(  # Third Plot
             [
                 dbc.Col(html.Div()),
                 dbc.Col(mc[2]),  # DOF Plot
                 dbc.Col(rc[2]),
-            ]
+            ], style={'width': '100vw'}
         )
-    ]))
+    ], id="content-layout", className="g-0", style={'background-color': '#000', 'width': '100vw'})
 
 # (STORED) CAM SETTINGS
 @app.callback(
@@ -898,9 +908,9 @@ def update_scatter(slider_range, dense_active, slider_range_cs_x, cs_x_active, s
 
 
 @app.callback(  # sidebar canvas
-    Output("offcanvas-placement", "is_open"),
-    Input("open-offcanvas-placement", "n_clicks"),
-    [State("offcanvas-placement", "is_open")],
+    Output("offcanvas-left", "is_open"),
+    Input("open-offcanvas-left", "n_clicks"),
+    [State("offcanvas-left", "is_open")],
 )
 def toggle_offcanvas(n1, is_open):
     if n1:
