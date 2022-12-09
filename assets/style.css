@@ -3,36 +3,34 @@
 }
 .sidebar = {
 
-    position: fixed;
-    top: 0;
+    top: 5vh;
     left: 0;
     bottom: 0;
-    width: 16rem;
+    width: 15rem;
     padding: 2rem 1rem;
     background-color: #f8f9fa;
-
-
+    border-radius: 10px;
+    height: min-content;
+    box-shadow: rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px;
 }
 
 .logo {
     display: block;
     margin-right: auto;
     margin-left: auto;
-
 }
-
 
 .content = {
-    margin-left: 18rem;
-    margin-right: 2rem;
-    padding: 2rem 1rem;
+    width: min-content;
 }
 
-
+.scatter_settings = {
+    display: flex;
+    margin-top: 5vh;
+}
 
 #plot-choice {
     padding: 1em 1em;
-
 }
 
 #cam-pos {
