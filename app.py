@@ -264,7 +264,7 @@ dos_fig.add_trace(
 plot_layout = {
     'title': 'Test',
     'height': '55vh',
-    'width': '55vw',
+    'width': '72vw',
     'background': '#000',  # not working
 }
 
@@ -357,14 +357,9 @@ offcanvas = html.Div(
                     dbc.Table(table_body, bordered=True, striped=True)
 
                 ],
-                className="sidebar",
-            )
-            ,
-
-
-            id="offcanvas-left",
-            is_open=False,
-            style={'width': '15rem', 'height': 'min-content'},
+                className="sidebar")
+            , id="offcanvas-left", is_open=False, style={'width': '15rem', 'margin-top': '2.5vh', 'margin-left': '0.5vw', 'border-radius': '10px',
+    'height': 'min-content', 'box-shadow': 'rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px'},
             scrollable=True, backdrop=False
         ),
     ]
@@ -375,69 +370,78 @@ offcanvas = html.Div(
 # scatter
 r_content_sc = html.Div(
     [
-        # Scatter-Options
-        dbc.Card([
-            html.Button('X', id='collapse-x', n_clicks=0, style={'width': '2em'}),
+        # Idea: draw markers on coord-rangeslider where atoms are
+        dbc.Row(
+            [
+                dbc.Col(
+                    dbc.Card([
+                        html.Button('X', id='collapse-x', n_clicks=0, style={'width': '2em'}),
+                        dbc.Collapse(dbc.Card(dbc.CardBody([
+                                        html.Img(id="reset-cs-x", src="/assets/x.svg", n_clicks=0, style={'width': '1.25em'}),
+                                        dcc.RangeSlider(id='range-slider-cs-x', min=min(scatter_df['x']), max=max(scatter_df['x']),
+                                            marks=None, tooltip={"placement": "bottom", "always_visible": False},
+                                            updatemode='drag', vertical=True, verticalHeight=800, pushable=x_axis[1])
+                                        ], style={'padding': '7px'}
+                        )), id="x-collapse", is_open=False
+                                    )
+                    ], style={'width': 'min-content', 'background-color': '#f8f9fa'})
+                ),
+                dbc.Col(
+                    dbc.Card([
+                    html.Button('Y', id='collapse-y', n_clicks=0, style={'width': '2em'}),
 
-            dbc.Collapse(
-                dbc.Card(dbc.CardBody(
-                    [
-                    html.Img(id="reset-cs-x", src="/assets/x.svg", n_clicks=0),        # why not working????
-                    dcc.RangeSlider(
-                        id='range-slider-cs-x',
-                        min=min(scatter_df['x']), max=max(scatter_df['x']),
-                        marks=None, tooltip={"placement": "bottom", "always_visible": False},
-                        updatemode='drag', vertical=True, verticalHeight=800, pushable=x_axis[1])
-                    ], style={'padding': '7px'}
-                )),
-                id="x-collapse",
-                is_open=False),
-        ], style={'width': '2em', 'background-color': '#f8f9fa'}),
-        dbc.Card([
-            html.Button('Y', id='collapse-y', n_clicks=0, style={'width': '2em'}),
+                    dbc.Collapse(
+                        dbc.Card(dbc.CardBody([
+                            html.Img(id="reset-cs-y", src="/assets/x.svg", n_clicks=0, style= {'width': '1.25em'}),
+                            dcc.RangeSlider(
+                                id='range-slider-cs-y',
+                                min=min(scatter_df['y']), max=max(scatter_df['y']),
+                                marks=None, tooltip={"placement": "bottom", "always_visible": False},
+                                updatemode='drag', vertical=True, verticalHeight=800,  pushable=y_axis[2])], style={'padding': '7px'})),
+                        id="y-collapse",
+                        is_open=False),
+                ], style={'width': 'min-content', 'background-color': '#f8f9fa'})
+                ),
+                dbc.Col(
+                    dbc.Card([
+                    html.Button('Z', id='collapse-z', n_clicks=0, style={'width': '2em'}),
 
-            dbc.Collapse(
-                dbc.Card(dbc.CardBody([
-                    html.Img(id="reset-cs-y", src="/assets/x.svg", n_clicks=0),
-                    dcc.RangeSlider(
-                        id='range-slider-cs-y',
-                        min=min(scatter_df['y']), max=max(scatter_df['y']),
-                        marks=None, tooltip={"placement": "bottom", "always_visible": False},
-                        updatemode='drag', vertical=True, verticalHeight=800,  pushable=y_axis[2])], style={'padding': '7px'})),
-                id="y-collapse",
-                is_open=False),
-        ], style={'width': '2em', 'background-color': '#f8f9fa'}),
-        dbc.Card([
-            html.Button('Z', id='collapse-z', n_clicks=0, style={'width': '2em'}),
+                    dbc.Collapse(dbc.Card(dbc.CardBody([
+                        html.Img(id="reset-cs-z", src="/assets/x.svg", n_clicks=0, style= {'width': '1.25em'}),
+                        dcc.RangeSlider(
+                            id='range-slider-cs-z',
+                            min=min(scatter_df['z']), max=max(scatter_df['z']),
+                            marks=None, tooltip={"placement": "bottom", "always_visible": False},
+                            updatemode='drag', vertical=True, verticalHeight=800,  pushable=z_axis[3])], style={'padding': '7px'})),
+                        id="z-collapse",
+                        is_open=False)
+                ], style={'width': 'min-content', 'background-color': '#f8f9fa'})
+                ),
+                dbc.Col(
+                    dbc.Card([
+                    html.Img(src="assets/dens.png", id='collapse-dense', style={"width": "1.8em", "height": "1.8em"}, n_clicks=0),
 
-            dbc.Collapse(dbc.Card(dbc.CardBody([
-                html.Img(id="reset-cs-z", src="/assets/x.svg", n_clicks=0),
-                dcc.RangeSlider(
-                    id='range-slider-cs-z',
-                    min=min(scatter_df['z']), max=max(scatter_df['z']),
-                    marks=None, tooltip={"placement": "bottom", "always_visible": False},
-                    updatemode='drag', vertical=True, verticalHeight=800,  pushable=z_axis[3])], style={'padding': '7px'})),
-                id="z-collapse",
-                is_open=False)
-        ], style={'width': '2em', 'background-color': '#f8f9fa'}),
-        dbc.Card([
-            html.Img(src="assets/dens.png", id='collapse-dense', style={"width": "1.8em", "height": "1.8em"}, n_clicks=0),
+                    dbc.Collapse(dbc.Card(dbc.CardBody([
+                        # density range-slider
+                        html.Img(id="reset-dense", src="/assets/x.svg", n_clicks=0, width="content-min", style= {'width': '1.25em'}),
+                        dcc.RangeSlider(
+                            id='range-slider-dense',
+                            min=min(scatter_df['val']), max=max(scatter_df['val']),
+                            step=round((max(scatter_df['val']) - min(scatter_df['val'])) / 30),
+                            marks=None, tooltip={"placement": "bottom", "always_visible": False},
+                            updatemode='drag', vertical=True, verticalHeight=800
+                        )], style={'width': 'min-content', 'padding': '7px'})),
+                        id="dense-collapse",
+                        is_open=False)
+                ], style={'width': 'min-content', 'background-color': '#f8f9fa'})
+                )
+            ], className="g-0", style={'margin-top': '2.5vh', 'background-color': '#f8f9fa', 'justify-content': 'center',
+                                       'border-radius': '4px', 'height': 'min-content',
+                                       'box-shadow': 'rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 8px -16px'}
+            # Scatter-Options
+        )
 
-            dbc.Collapse(dbc.Card(dbc.CardBody([
-                # density range-slider
-                html.Img(id="reset-dense", src="/assets/x.svg", n_clicks=0, width="content-min"),
-                dcc.RangeSlider(
-                    id='range-slider-dense',
-                    min=min(scatter_df['val']), max=max(scatter_df['val']),
-                    step=round((max(scatter_df['val']) - min(scatter_df['val'])) / 30),
-                    marks=None, tooltip={"placement": "bottom", "always_visible": False},
-                    updatemode='drag', vertical=True, verticalHeight=800,
-                )], style={'width': 'min-content', 'background-color': '#f8f9fa'})),
-                id="dense-collapse",
-                is_open=False)
-        ], style={'width': 'min-content'})
-    ], className="scatter_settings"
-)
+    ], style={}, className="scatter_settings")
 # TODO:
 #  - ability to lock range? (difficult/rechenintensiv)
 #  - top range-marker reverse-pushable??
@@ -548,7 +552,7 @@ dos_plot = html.Div(
 
 # ----------------
 # default layout
-app.layout = html.Div(dbc.Container(
+app.layout = html.Div(
     [
         dcc.Store(id="val_store"),
         dbc.Row(
@@ -572,7 +576,7 @@ app.layout = html.Div(dbc.Container(
                 dbc.Col(html.Div()),    #settings tab
             ]
         )
-    ], id="content-layout", className="g-0",), style={'background-color': '#023B59'})
+    ], id="content-layout", style={'background-color': '#023B59'})
 # FGEDF4 as contrast
 
 print("COMPONENTS LOADED")
@@ -723,35 +727,33 @@ def change_layout(plots):
             mc[0] = default_main
             mc[1] = default_main2
 
-    return dbc.Container(
-        [
+    return [
         dcc.Store(id="val_store"),
         dbc.Row(  # First Plot
             [
                 dbc.Col(
-                    [dbc.Button(">", id="open-offcanvas-left", n_clicks=0, style={'margin-top': '35vh', 'margin-left':'0'}),
-                    offcanvas]
-                    , style={'background': 'red', 'width': 'min-content', 'height': 'min-content'}),
-                dbc.Col(mc[0], style={'background': 'blue', 'width': 'min-content', 'height': 'min-content'}),
-                dbc.Col(rc[0], style={'background': 'green'}),  # settings
-            ], style={'width': '100vw'}
+                    [dbc.Button(">", id="open-offcanvas-left", n_clicks=0, style={'position': 'fixed', 'margin-top': '35vh', 'margin-left': '0.5vw'}),
+                    offcanvas], width=1, style={'background': 'red'}),
+                dbc.Col(mc[0], width=9, style={'background': 'blue', 'height': 'min-content'}),
+                dbc.Col(rc[0], width=2, style={'background': 'green'}),  # settings
+            ], style={'width': '100vw'}, justify='center'
         ),
 
         dbc.Row(  # Second Plot
             [
-                dbc.Col(html.Div()),
-                dbc.Col(mc[1]),
-                dbc.Col(rc[1]),  # gonna be the settings tab
+                dbc.Col(html.Div(), width=1,),
+                dbc.Col(mc[1], width=9,),
+                dbc.Col(rc[1], width=2,),  # gonna be the settings tab
             ], style={'width': '100vw'}
         ),
         dbc.Row(  # Third Plot
             [
-                dbc.Col(html.Div()),
-                dbc.Col(mc[2]),  # DOF Plot
-                dbc.Col(rc[2]),
+                dbc.Col(html.Div(), width=1,),
+                dbc.Col(mc[2], width=9,),  # DOF Plot
+                dbc.Col(rc[2], width=2,),
             ], style={'width': '100vw'}
         )
-    ], id="content-layout", className="g-0", style={'background-color': '#000', 'width': '100vw'})
+    ]
 
 # (STORED) CAM SETTINGS
 @app.callback(
