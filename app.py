@@ -292,9 +292,9 @@ row6 = html.Tr([html.Td("placeholder", style={'text-align': 'right'})])
 table_body = [html.Tbody([row1, row2, row3, row4, row5, row6])]
 
 # ----------------
-
 # Left SIDEBAR
-offcanvas = html.Div(
+# START (or data reset)
+sidebar = html.Div(
     dbc.Offcanvas(
         # default sidebar
         html.Div(
@@ -337,8 +337,21 @@ offcanvas = html.Div(
                     ),
                     html.Div(id='output-upload-state', style={'margin': '10px'})
                 ], className="upload-section"),
-                html.Hr(style={'margin-bottom': '2rem', 'margin-top': '2rem'}),
+            ], className="sidebar"
+        ), id="offcanvas-l", is_open=True, scrollable=True, backdrop=False,
+        style={'width': '15rem', 'margin-top': '1.5rem', 'margin-left': '0.5vw', 'border-radius': '10px',
+               'height': 'min-content',
+               'box-shadow': 'rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px'},
+    ),
+)
 
+sidebar_uploaded = html.Div(
+    dbc.Offcanvas(
+        # default sidebar
+        html.Div(
+            [
+                dbc.Button("Reupload data", id="reset-data"),
+                html.Hr(style={'margin-bottom': '2rem'}),
                 # Plot Chooser
                 html.H5(children='Choose Plots'),
                 html.Div(children=dcc.Dropdown(
@@ -421,9 +434,7 @@ r_content_sc = html.Div(
                                 step=round((max(scatter_df['val']) - min(scatter_df['val'])) / 30),
                                 marks=None, tooltip={"placement": "bottom", "always_visible": False},
                                 updatemode='drag', vertical=True, verticalHeight=800
-                            )], style={'width': '2em', 'padding': '7px'},
-                        id="dense-collapse",
-                        is_open=False
+                            )], style={'width': '2em', 'padding': '7px'}, id="dense-collapse", is_open=False
                     )
                 )
             ], className='g-0')
@@ -477,9 +488,10 @@ scatter_plot = html.Div(
         # Plot Section
         html.Div(
             [
-                html.H3([indent.join('3D-Density-Plot'), ' (scatter)'], style={'margin-top': '1.5rem'}),
+                html.H3([indent.join('3D-Density-Plot'), ' (scatter)'], style={'color': 'white', 'margin-top': '1.5rem'}),
                 dbc.Card(dbc.CardBody(
-                    [html.Div(
+                    [
+                        html.Div(
                         dcc.Graph(id="scatter-plot", figure=fig1, style=plot_layout),
                         className="density-scatter-plot"
                     ),
@@ -521,7 +533,7 @@ volume_plot = html.Div(
     [
         html.Div(
             [
-                html.H5([indent.join('3D-Density-Plot (volume)')], style={'margin-top': '1.5rem'}),
+                html.H5([indent.join('3D-Density-Plot (volume)')], style={'color': 'white', 'margin-top': '1.5rem'}),
                 dbc.Card(dbc.CardBody(html.Div(
                     dcc.Graph(figure=vol_fig, style=plot_layout),
                     className="density-vol-plot"
@@ -536,7 +548,7 @@ volume_plot = html.Div(
 dos_plot = html.Div(
     [
         # Density of State Section
-        html.H4(indent.join('2D-Density-of-State-Plot'), style={'margin-top': '1.5rem'}),
+        html.H4(indent.join('2D-Density-of-State-Plot'), style={'color': 'white', 'margin-top': '1.5rem'}),
         dbc.Card(dbc.CardBody(html.Div(
             dcc.Graph(figure=dos_fig, style=dos_plot_layout),
             className='dos-plot',
@@ -555,7 +567,7 @@ app.layout = html.Div(
         dcc.Store(id="val_store"),
         dbc.Row(
             [
-                dbc.Col(offcanvas),
+                dbc.Col(sidebar),
                 dbc.Col(default_main),  # content ROW 1
                 dbc.Col(html.Div()),  # empty settings tab
             ],
@@ -693,7 +705,7 @@ def reset_cs_dense(n_clicks):
     Input("plot-choice", "value")
 )
 def change_layout(plots):
-    lc = [html.Div(), html.Div(), html.Div()]
+    lc = [sidebar, html.Div(), html.Div()]
     mc = [html.Div(), html.Div(), html.Div()]  # main content components
     rc = [html.Div(), html.Div(), html.Div()]  # right side content
     # each element(component) of mc[] is one centered cell of content
@@ -701,7 +713,7 @@ def change_layout(plots):
 
     # check if a plot has been chosen to render
     if len(df) != 0:  # df filled with data -> upload (of some .cube-file at least) complete
-        lc[0] = offcanvas
+        lc[0] = sidebar_uploaded
         mc[0] = uploaded_main  # zur plotauswahl auffordern
         mc[1] = uploaded_main2
         # File Upload Section durch Plot Settings ersetzen
@@ -731,7 +743,7 @@ def change_layout(plots):
                 dbc.Col(
                     [dbc.Button(">", id="open-offcanvas-l", n_clicks=0,
                                 style={'position': 'fixed', 'margin-top': '40vh', 'margin-left': '0.5vw'}),
-                     offcanvas],
+                     lc[0]],
                     width=1),
                 dbc.Col(mc[0],
                     width=9),
