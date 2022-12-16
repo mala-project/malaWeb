@@ -727,9 +727,11 @@ def reset_cs_dense(n_clicks):
 @app.callback(
     Output("page_state", "data"),
     [Input("upload-data", "contents"),
-     Input("choice_store", "data")]
+     Input("choice_store", "data"),
+     Input("reset-data", "n_clicks")],
+    prevent_initial_call=True,
 )
-def updatePageState(trig1, trig2):
+def updatePageState(trig1, trig2, trig3):
         # TODO: check if data is valid
     if trig1 is not None and dash.callback_context.triggered_id == "upload-data":
         print("State set to uploaded")
@@ -737,12 +739,15 @@ def updatePageState(trig1, trig2):
     if trig2 is not None and dash.callback_context.triggered_id == "choice_store":
         print("State set to plotting")
         return "plotting"
+    if trig3 is not None and dash.callback_context.triggered_id == "reset-data":
+        return "landing"
 
 
 # storing uploaded data as a DF.to_dict in dcc.Store -- don't think this is working properly
 @app.callback(
     Output("df_store", "data"),
-    [Input('upload-data', 'contents')]
+    [Input('upload-data', 'contents')],
+    prevent_initial_call=True,
 )
 def updateDF(f_data):
     # TODO:
@@ -768,7 +773,8 @@ def updateDF(f_data):
     Output("content-layout", "children"),
     [State("df_store", "data"),
     State("choice_store", "data"),
-    Input("page_state", "data")]
+    Input("page_state", "data")],
+    prevent_initial_call=True,
     #Input("plot-choice", "value")]
 )
 # so wie zuvor schon gemacht prüfen, was der letze input war (cam stored)
@@ -915,7 +921,8 @@ def updateLayout(df, choice, page_state):
     Input("x-y-cam", "n_clicks"),
     Input("x-z-cam", "n_clicks"),
     Input("y-z-cam", "n_clicks"),
-    Input("scatter-plot", "relayoutData")
+    Input("scatter-plot", "relayoutData"),
+    prevent_initial_call=True,
 )
 def storeCamSettings(default_clicks, x_y_clicks, x_z_clicks, y_z_clicks, user_in):
     # user_in is the camera position set by mouse movement, it has to be updated on every mouse input on the fig
@@ -964,7 +971,9 @@ def storeCamSettings(default_clicks, x_y_clicks, x_z_clicks, y_z_clicks, user_in
      Input("outline-check", 'value'),
      Input("val_store", "data"),
      Input("scatter-atoms", "value")],
-    [State("scatter-plot", "relayoutData")])
+    [State("scatter-plot", "relayoutData")],
+    prevent_initial_call=True
+    )
 def updateScatter(slider_range, dense_active, slider_range_cs_x, cs_x_active, slider_range_cs_y, cs_y_active,
                    slider_range_cs_z, cs_z_active,
                    size_slider, opacity_slider, outline, stored_cam_settings, atoms_enabled, relayout_data):
@@ -1085,7 +1094,8 @@ def toggle_offcanvas_r(n1, is_open):
 @app.callback(  # FILE-UPLOAD-STATUS
     Output('output-upload-state', 'children'),
     [Input('upload-data', 'filename'),
-     Input('upload-data', 'contents'), ]
+     Input('upload-data', 'contents'), ],
+    prevent_initial_call=True,
 )
 def uploadInput(filename, contents):
     # checks for .cubes for now, as long as im working on visuals
