@@ -1,7 +1,4 @@
 # IMPORTS
-from collections import Counter
-
-from pprint import pprint
 
 import mala_inference
 import ase.io
@@ -11,7 +8,6 @@ from dash import dcc, html, dash_table
 
 import dash_bootstrap_components as dbc
 from dash_bootstrap_templates import load_figure_template
-
 from dash.exceptions import PreventUpdate
 
 # visualization
@@ -20,19 +16,78 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objs as go
 
-# TODO: (optional) ability to en-/disable individual Atoms (that are in the uploaded file) and let MALA recalculate
-#  -> helps see each Atoms' impact in the grid
+# TODO:
+#  ----------------------------------------------------------
+#                       LANDING STATE
+#  ----------------------------------------------------------
+
+# Theming scatter
+templ1 = dict(layout=go.Layout(
+    scene={
+        'xaxis': {'backgroundcolor': '#E5ECF6',
+                  'gridcolor': 'white',
+                  'gridwidth': 0,
+                  'linecolor': 'white',
+                  'showbackground': False,
+                  'ticks': '',
+                  'zerolinecolor': 'white',
+                  'visible': False},
+        'yaxis': {'backgroundcolor': '#E5ECF6',
+                  'gridcolor': 'white',
+                  'gridwidth': 0,
+                  'linecolor': 'white',
+                  'showbackground': False,
+                  'ticks': '',
+                  'zerolinecolor': 'white',
+                  'visible': False},
+        'zaxis': {'backgroundcolor': '#E5ECF6',
+                  'gridcolor': 'white',
+                  'gridwidth': 0,
+                  'linecolor': 'white',
+                  'showbackground': False,
+                  'ticks': '',
+                  'zerolinecolor': 'white',
+                  'visible': False}
+    },
+    paper_bgcolor='#f8f9fa',
+))
+
+default_scatter_marker = dict(marker=dict(
+    size=12,
+    opacity=1,
+    line=dict(width=1, color='DarkSlateGrey')),
+    )
+# not tested
+
+plot_layout = {
+    'title': 'Test',
+    'height': '55vh',
+    'width': '72vw',
+    'background': '#000',  # not working
+}
+dos_plot_layout = {
+    'height': '400px',
+    'width': '800px',
+    'background': '#f8f9fa',
+}
 
 
-# TODO: run the following, IF data has been uploaded (/button has been clicked for now)
+
+# TODO: run the following, IF page_state = uploaded; triggered by uploaded data (Input('upload-data', 'contents'))
+#  ----------------------------------------------------------
+#                       UPLOADED STATE
+#  ----------------------------------------------------------
+
+
+
 print("_________________________________________________________________________________________")
 print("STARTING UP...")
 
-# TODO: check if inference was already running (reduce refresh time for now)
+    # TODO: (optional) ability to en-/disable individual Atoms (that are in the uploaded file) and let MALA recalculate
+    #  -> helps see each Atoms' impact in the grid
 
 # (a) GET (most) DATA FROM MALA (/ inference script)
 mala_data = mala_inference.results
-# TODO: bring order into this mess
 bandEn = mala_data['band_energy']
 totalEn = mala_data['total_energy']
 density = mala_data['density']
@@ -89,9 +144,9 @@ print("_________________________________________________________________________
 # (a)
 coord_arr = np.column_stack(
     list(map(np.ravel, np.meshgrid(*map(np.arange, density.shape), indexing="ij"))) + [density.ravel()])
+df = pd.DataFrame(coord_arr, columns=['x', 'y', 'z', 'val'])
 
 # (b) SCALING to right voxel-size
-df = pd.DataFrame(coord_arr, columns=['x', 'y', 'z', 'val'])
 df['x'] *= x_axis[1]
 df['y'] *= y_axis[2]
 df['z'] *= z_axis[3]
@@ -160,39 +215,9 @@ for i in range(0, int(no_of_atoms)):
 atoms_DF = pd.DataFrame(data={'x': atoms[2], 'y': atoms[3], 'z': atoms[4], 'ordinal': atoms[0], 'charge': atoms[1]})
 # _______________________________________________________________________________________
 
-# THEME & FIGUREs
-# theme for DoS
 
-# Theme for scatter
-templ1 = dict(layout=go.Layout(
-    scene={
-        'xaxis': {'backgroundcolor': '#E5ECF6',
-                  'gridcolor': 'white',
-                  'gridwidth': 0,
-                  'linecolor': 'white',
-                  'showbackground': False,
-                  'ticks': '',
-                  'zerolinecolor': 'white',
-                  'visible': False},
-        'yaxis': {'backgroundcolor': '#E5ECF6',
-                  'gridcolor': 'white',
-                  'gridwidth': 0,
-                  'linecolor': 'white',
-                  'showbackground': False,
-                  'ticks': '',
-                  'zerolinecolor': 'white',
-                  'visible': False},
-        'zaxis': {'backgroundcolor': '#E5ECF6',
-                  'gridcolor': 'white',
-                  'gridwidth': 0,
-                  'linecolor': 'white',
-                  'showbackground': False,
-                  'ticks': '',
-                  'zerolinecolor': 'white',
-                  'visible': False}
-    },
-    paper_bgcolor='#f8f9fa',
-))
+
+# THEME & FIGUREs
 
 # DECIDING ON ATOM-COLOR BASEd OFF THEIR CHARGE TODO
 atom_colors = []
@@ -214,16 +239,15 @@ fig1 = px.scatter_3d(
     template=templ1)
 
 # Default Marker Params Scatter Plot
-fig1.update_traces(marker=dict(
-    size=12,
-    opacity=1,
-    line=dict(width=1, color='DarkSlateGrey')),
-    selector=dict(mode='markers'))
+fig1.update_traces(default_scatter_marker)
+
 
 # ATOMS-FIG
 fig1.add_trace(
     go.Scatter3d(x=atoms_DF['x'], y=atoms_DF['y'], z=atoms_DF['z'], mode='markers',
                  marker=dict(size=30, color=atom_colors)))
+
+
 
 # SCATTER CAMERA
 camera_params = dict(
@@ -257,18 +281,13 @@ dos_fig = go.Figure()
 dos_fig.add_trace(
     go.Scatter(x=dosDf['x'], y=dosDf['y'], name='densityOfstate', line=dict(color='#f15e64', width=3, dash='dot')))
 
-plot_layout = {
-    'title': 'Test',
-    'height': '55vh',
-    'width': '72vw',
-    'background': '#000',  # not working
-}
 
-dos_plot_layout = {
-    'height': '400px',
-    'width': '800px',
-    'background': '#f8f9fa',
-}
+
+
+
+
+
+
 
 print("FIGURES LOADED")
 print("_________________________________________________________________________________________")
@@ -299,6 +318,7 @@ sidebar = html.Div(
         # default sidebar
         html.Div(
             [
+                dbc.Button("Reupload data", id="reset-data"),
                 # Logo Section
                 html.Div([
                     html.Img(src='https://avatars.githubusercontent.com/u/81354661?s=200&v=4', className="logo"),
@@ -316,6 +336,7 @@ sidebar = html.Div(
                             MALA needs Atompositions
                             Upload a .cube! (later npy)
                             ''', style={'text-align': 'center'}),
+                    # TODO: make this give dynamic promts (like "choose a plot!")
                     dcc.Upload(
                         id='upload-data',
                         children=html.Div([
@@ -460,8 +481,6 @@ r_canvas_sc = html.Div(dbc.Offcanvas(r_content_sc, id="offcanvas-r-sc", is_open=
 
 # MAIN CONTENT / PLOT
 
-# load_figure_template("quartz")
-# df = 0
 # column 2 | PRE UPLOAD
 default_main = html.Div([
     html.Div([html.H1([indent.join('Welcome')], className='greetings', style={'text-align': 'center', 'width': '10em'}),
@@ -560,33 +579,50 @@ dos_plot = html.Div(
     className="content"
 )
 
+
+
+
 # ----------------
-# default layout
-app.layout = html.Div(
-    [
+# landing-layout
+p_layout_landing = html.Div([
+        dcc.Store(id="page_state", data="landing"),
         dcc.Store(id="val_store"),
+        dcc.Store(id="df_store"),
+        dcc.Store(id="choice_store"),
         dbc.Row(
             [
                 dbc.Col(sidebar),
-                dbc.Col(default_main),  # content ROW 1
+                dbc.Col(html.Div([
+    html.Div([html.H1([indent.join('Welcome')], className='greetings', style={'text-align': 'center', 'width': '10em'}),
+              html.H1([indent.join('To')], className='greetings', style={'text-align': 'center', 'width': '10em'}),
+              html.H1([indent.join('MALA')], className='greetings', style={'text-align': 'center', 'width': '10em'}),
+              html.Div('Upload a .cube-File for MALA to process', )],
+             style={'text-align': 'center', 'margin-left': '1vw'}),
+], style={'width': 'content-min', 'margin-top': '20vh'})),  # content ROW 1
                 dbc.Col(html.Div()),  # empty settings tab
             ],
-        ),
-        dbc.Row(
-            [
-                dbc.Col(html.Div()),  # empty
-                dbc.Col(default_main2),  # content ROW 2
-                dbc.Col(html.Div()),  # settings tab
-            ]
-        ),
-        dbc.Row(
-            [
-                dbc.Col(html.Div()),  # empty
-                dbc.Col(html.Div()),  # content ROW 3
-                dbc.Col(html.Div()),  # settings tab
-            ]
         )
     ], id="content-layout", style={'height': '100vh', 'background-color': '#023B59'})
+app.layout = p_layout_landing
+
+# uploaded-layout
+p_layout_uploaded = [
+        dcc.Store(id="page_state", data="landing"),
+        dcc.Store(id="val_store"),
+        dcc.Store(id="df_store"),
+        dcc.Store(id="choice_store"),
+
+        dbc.Row(
+            [
+                dbc.Col(sidebar_uploaded),
+                dbc.Col(uploaded_main),  # content ROW 1
+                dbc.Col(html.Div()),  # empty settings tab
+            ],
+        )
+    ]
+
+# plotting_layout will be redefined on plot-choice
+    # parts of plotting_layout will be redefined on data-upload
 
 # FGEDF4 as contrast
 
@@ -594,25 +630,14 @@ print("COMPONENTS LOADED")
 print("_________________________________________________________________________________________")
 
 
+
+
 # CALLBACKS & FUNCTIONS
 
-# this is quatsch i think
-# load mala_data on page-refresh (if not done yet)
-@app.callback(
-    Output("store_mala_data", "data"),
-    Input("store_mala_data", "data")
-)
-def load_data(stored_data):
-    print(stored_data)
-    if stored_data is None:
-        print("no data stored")
-        app.mala_data = mala_inference.results
-        return mala_inference.results
 
 
-# ----------
+
 # CALLBACKS FOR SCATTERPLOT
-
 
 # collapsable cross-section settings
 @app.callback(
@@ -696,23 +721,131 @@ def reset_cs_z(n_clicks):
 def reset_cs_dense(n_clicks):
     return [min(scatter_df['val']), max(scatter_df['val'])]
 
-    # UPDATE VISIBLE CONTENT
-    # TODO: only run this when data has been uploaded
+
+
+
+@app.callback(
+    Output("page_state", "data"),
+    [Input("upload-data", "contents"),
+     Input("choice_store", "data")]
+)
+def updatePageState(trig1, trig2):
+        # TODO: check if data is valid
+    if trig1 is not None and dash.callback_context.triggered_id == "upload-data":
+        print("State set to uploaded")
+        return "uploaded"
+    if trig2 is not None and dash.callback_context.triggered_id == "choice_store":
+        print("State set to plotting")
+        return "plotting"
+
+
+# storing uploaded data as a DF.to_dict in dcc.Store -- don't think this is working properly
+@app.callback(
+    Output("df_store", "data"),
+    [Input('upload-data', 'contents')]
+)
+def updateDF(f_data):
+    # TODO:
+    #  smth like "mala_data = mala_inference(f_data)"
+    #  --> mala takes uploaded data and returns calculations
+
+    # (a) GET (most) DATA FROM MALA (/ inference script)
+    #mala_data = mala_inference.results
+    bandEn = mala_data['band_energy']
+    totalEn = mala_data['total_energy']
+    density = mala_data['density']
+    dOs = mala_data['density_of_states']
+    enGrid = mala_data['energy_grid']
+    coord_arr = np.column_stack(
+        list(map(np.ravel, np.meshgrid(*map(np.arange, density.shape), indexing="ij"))) + [density.ravel()])
+    dfst=pd.DataFrame(coord_arr, columns=['x', 'y', 'z', 'val'])
+    print("stored DF data")
+    return dfst.to_dict()
+# TODO: this is a mess - find a way to store dataframes
 
 
 @app.callback(
     Output("content-layout", "children"),
-    Input("plot-choice", "value")
+    [State("df_store", "data"),
+    State("choice_store", "data"),
+    Input("page_state", "data")]
+    #Input("plot-choice", "value")]
 )
-def change_layout(plots):
+# so wie zuvor schon gemacht prüfen, was der letze input war (cam stored)
+def updateLayout(df, choice, page_state):
+
+    # add plots as parameter instead of defining it here
+    plots = ["scatter", "volume", "dos"]
     lc = [sidebar, html.Div(), html.Div()]
     mc = [html.Div(), html.Div(), html.Div()]  # main content components
     rc = [html.Div(), html.Div(), html.Div()]  # right side content
     # each element(component) of mc[] is one centered cell of content
-    # rc contains settings-elements for the according mc element
+    # rc contains settings-elements for the according mc-element
 
+
+
+
+
+
+# on page-load, page_state will be None. Default-layout before updateLayout is run is p_layout_landing though, so it's fine
+    if page_state == "landing":
+        print("STATE: landing")
+        return p_layout_landing
+
+    elif page_state == "uploaded":
+        print("STATE: uploaded")
+        # TODO: all those DF calcs? Or do them when df_store is set? (Probs better) Or maybe some here, some there?
+        return p_layout_uploaded
+
+    elif page_state == "plotting":
+        print("STATE: plotting")
+        p_layout_plotting = [
+            dcc.Store(id="val_store"),
+            dcc.Store("df_store"),
+            dcc.Store("choice_store"),
+            dbc.Row(  # First Plot
+                [
+                    dbc.Col(
+                        [dbc.Button(">", id="open-offcanvas-l", n_clicks=0,
+                                    style={'position': 'fixed', 'margin-top': '40vh', 'margin-left': '0.5vw'}),
+                         lc[0]],
+                        width=1),
+                    dbc.Col(mc[0],
+                        width=9),
+                    dbc.Col(
+                        [
+                        rc[0],
+                        dbc.Button("<", id="open-offcanvas-r0", n_clicks=0,
+                        style={'margin-top': '35vh', 'margin-right': '0.5vw'})],
+                        width=2),  # settings
+                ], style={'width': '100vw'}, justify='center'
+            ),
+            dbc.Row(  # Second Plot
+                [
+                    dbc.Col(html.Div(), width=1, ),
+                    dbc.Col(mc[1], width=9, ),
+                    dbc.Col(rc[1], width=2, ),  # gonna be the settings tab
+                ], style={'width': '100vw'}
+            ),
+            dbc.Row(  # Third Plot
+                [
+                    dbc.Col(html.Div(), width=1, ),
+                    dbc.Col(mc[2], width=9, ),  # DOF Plot
+                    dbc.Col(rc[2], width=2, ),
+                ], style={'width': '100vw'}
+            )
+        ]
+        return p_layout_plotting
+
+
+
+    print("updated layout to page_state: ", page_state)
+
+    #if dash.callback_context.triggered_id == "plot-choice":
     # check if a plot has been chosen to render
     if len(df) != 0:  # df filled with data -> upload (of some .cube-file at least) complete
+
+
         lc[0] = sidebar_uploaded
         mc[0] = uploaded_main  # zur plotauswahl auffordern
         mc[1] = uploaded_main2
@@ -736,40 +869,43 @@ def change_layout(plots):
             mc[0] = default_main
             mc[1] = default_main2
 
-    return [
-        dcc.Store(id="val_store"),
-        dbc.Row(  # First Plot
-            [
-                dbc.Col(
-                    [dbc.Button(">", id="open-offcanvas-l", n_clicks=0,
-                                style={'position': 'fixed', 'margin-top': '40vh', 'margin-left': '0.5vw'}),
-                     lc[0]],
-                    width=1),
-                dbc.Col(mc[0],
-                    width=9),
-                dbc.Col(
-                    [
-                    rc[0],
-                    dbc.Button("<", id="open-offcanvas-r0", n_clicks=0,
-                    style={'margin-top': '35vh', 'margin-right': '0.5vw'})],
-                    width=2),  # settings
-            ], style={'width': '100vw'}, justify='center'
-        ),
-        dbc.Row(  # Second Plot
-            [
-                dbc.Col(html.Div(), width=1, ),
-                dbc.Col(mc[1], width=9, ),
-                dbc.Col(rc[1], width=2, ),  # gonna be the settings tab
-            ], style={'width': '100vw'}
-        ),
-        dbc.Row(  # Third Plot
-            [
-                dbc.Col(html.Div(), width=1, ),
-                dbc.Col(mc[2], width=9, ),  # DOF Plot
-                dbc.Col(rc[2], width=2, ),
-            ], style={'width': '100vw'}
-        )
-    ]
+    if False:
+        return [
+            dcc.Store(id="val_store"),
+            dcc.Store("df_store"),
+            dcc.Store("choice_store"),
+            dbc.Row(  # First Plot
+                [
+                    dbc.Col(
+                        [dbc.Button(">", id="open-offcanvas-l", n_clicks=0,
+                                    style={'position': 'fixed', 'margin-top': '40vh', 'margin-left': '0.5vw'}),
+                         lc[0]],
+                        width=1),
+                    dbc.Col(mc[0],
+                        width=9),
+                    dbc.Col(
+                        [
+                        rc[0],
+                        dbc.Button("<", id="open-offcanvas-r0", n_clicks=0,
+                        style={'margin-top': '35vh', 'margin-right': '0.5vw'})],
+                        width=2),  # settings
+                ], style={'width': '100vw'}, justify='center'
+            ),
+            dbc.Row(  # Second Plot
+                [
+                    dbc.Col(html.Div(), width=1, ),
+                    dbc.Col(mc[1], width=9, ),
+                    dbc.Col(rc[1], width=2, ),  # gonna be the settings tab
+                ], style={'width': '100vw'}
+            ),
+            dbc.Row(  # Third Plot
+                [
+                    dbc.Col(html.Div(), width=1, ),
+                    dbc.Col(mc[2], width=9, ),  # DOF Plot
+                    dbc.Col(rc[2], width=2, ),
+                ], style={'width': '100vw'}
+            )
+        ]
 
 
 # (STORED) CAM SETTINGS
@@ -829,7 +965,7 @@ def storeCamSettings(default_clicks, x_y_clicks, x_z_clicks, y_z_clicks, user_in
      Input("val_store", "data"),
      Input("scatter-atoms", "value")],
     [State("scatter-plot", "relayoutData")])
-def update_scatter(slider_range, dense_active, slider_range_cs_x, cs_x_active, slider_range_cs_y, cs_y_active,
+def updateScatter(slider_range, dense_active, slider_range_cs_x, cs_x_active, slider_range_cs_y, cs_y_active,
                    slider_range_cs_z, cs_z_active,
                    size_slider, opacity_slider, outline, stored_cam_settings, atoms_enabled, relayout_data):
     dfu = scatter_df.copy()
@@ -924,18 +1060,18 @@ def update_scatter(slider_range, dense_active, slider_range_cs_x, cs_x_active, s
 # CALLBACKS FOR SIDEBAR
 
 
-@app.callback(  # sidebar canvas
+@app.callback(  # sidebar_l canvas
     Output("offcanvas-l", "is_open"),
     Input("open-offcanvas-l", "n_clicks"),
     [State("offcanvas-l", "is_open")],
 )
-def toggle_offcanvas(n1, is_open):
+def toggle_offcanvas_l(n1, is_open):
     if n1:
         return not is_open
     return is_open
 
 
-@app.callback(  # sidebar right canvas
+@app.callback(  # sidebar_r canvas (1/?)
     Output("offcanvas-r-sc", "is_open"),
     Input("open-offcanvas-r0", "n_clicks"),
     [State("offcanvas-r-sc", "is_open")],
@@ -946,7 +1082,7 @@ def toggle_offcanvas_r(n1, is_open):
     return is_open
 
 
-@app.callback(  # FILE-UPLOAD
+@app.callback(  # FILE-UPLOAD-STATUS
     Output('output-upload-state', 'children'),
     [Input('upload-data', 'filename'),
      Input('upload-data', 'contents'), ]
