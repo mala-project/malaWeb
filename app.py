@@ -73,7 +73,7 @@ dos_plot_layout = {
 
 
 
-# TODO: run the following, IF page_state = uploaded; triggered by uploaded data (Input('upload-data', 'contents'))
+# TODO: run the following, IF page_state = uploaded; triggered page_state update
 #  ----------------------------------------------------------
 #                       UPLOADED STATE
 #  ----------------------------------------------------------
@@ -227,39 +227,8 @@ for i in range(0, int(no_of_atoms)):
     else:
         atom_colors.append("white")
 
-# SCATTER-FIG
-fig1 = px.scatter_3d(
-    scatter_df,
-    x='x',
-    y='y',
-    z='z',
-    color='val',
-    color_continuous_scale=px.colors.sequential.Inferno_r,
-    range_color=[df.min()['val'], df.max()['val']],
-    template=templ1)
-
-# Default Marker Params Scatter Plot
-fig1.update_traces(default_scatter_marker)
 
 
-# ATOMS-FIG
-fig1.add_trace(
-    go.Scatter3d(x=atoms_DF['x'], y=atoms_DF['y'], z=atoms_DF['z'], mode='markers',
-                 marker=dict(size=30, color=atom_colors)))
-
-
-
-# SCATTER CAMERA
-camera_params = dict(
-    up=dict(x=0, y=0, z=1),
-    center=dict(x=0, y=0, z=0),
-    eye=dict(x=1.5, y=1.5, z=1.5)
-)
-
-# END
-
-# SCATTER GRID PROPERTIES
-fig1.update_scenes(xaxis_showgrid=False, yaxis_showgrid=False, zaxis_showgrid=False, camera=camera_params)
 
 # VOLUME-FIG - WORK IN PROGRESS
 vol_fig = go.Figure(data=go.Volume(
@@ -376,7 +345,7 @@ sidebar = html.Div(
 
                 dbc.Collapse(dbc.Card(dbc.CardBody(html.Div(children=dcc.Dropdown(
                     {'scatter': 'Scatter', 'volume': 'Volume', 'dos': 'DoS'}, multi=True,
-                    id='plot-choice', placeholder='Choose Plot Type', persistence=True)))),
+                    id='plot-choice', placeholder='Choose Plot Type', persistence=True, persistence_type='memory')))),
                             id="collapse-plot-choice",
                             is_open=False,
                         ),
@@ -526,6 +495,7 @@ uploaded_main2 = html.Div()
 
 # column 2 | PLOT(S) CHOSEN
 # SCATTER
+sc_fig = go.Figure()
 scatter_plot = html.Div(
     [
         # Plot Section
@@ -535,7 +505,7 @@ scatter_plot = html.Div(
                 dbc.Card(dbc.CardBody(
                     [
                         html.Div(
-                        dcc.Graph(id="scatter-plot", figure=fig1, style=plot_layout),
+                        dcc.Graph(id="scatter-plot", figure=sc_fig, style=plot_layout),
                         className="density-scatter-plot"
                     ),
                         html.Hr(style={'margin-bottom': '2rem', 'margin-top': '2rem'}),
@@ -611,7 +581,7 @@ dos_plot = html.Div(
 p_layout_landing = html.Div([
 
     dcc.Store(id="page_state", data="landing"),
-    dcc.Store(id="val_store"),
+    dcc.Store(id="cam_store"),
     dcc.Store(id="df_store"),
     dcc.Store(id="choice_store"),
     html.Div([
@@ -634,23 +604,7 @@ p_layout_landing = html.Div([
     ])
 app.layout = p_layout_landing
 
-# uploaded-layout
-p_layout_uploaded = [
-        #dcc.Store(id="page_state", data="landing"),
-        #dcc.Store(id="val_store"),
-        #dcc.Store(id="df_store"),
-        #dcc.Store(id="choice_store"),
-
-        dbc.Row(
-            [
-                dbc.Col(sidebar_uploaded),
-                dbc.Col(uploaded_main),  # content ROW 1
-                dbc.Col(html.Div()),  # empty settings tab
-            ],
-        )
-    ]
-
-# plotting_layout will be redefined on plot-choice
+# p_layout_plotting will be redefined on plot-choice Input
     # parts of plotting_layout will be redefined on data-upload
 
 # FGEDF4 as contrast
@@ -812,6 +766,45 @@ def updateDF(f_data):
     #  smth like "mala_data = mala_inference(f_data)"
     #  --> mala takes uploaded data and returns calculations
 
+
+
+    # playground
+
+    # SCATTER-FIG
+    sc_fig = px.scatter_3d(
+        scatter_df,
+        x='x',
+        y='y',
+        z='z',
+        color='val',
+        color_continuous_scale=px.colors.sequential.Inferno_r,
+        range_color=[df.min()['val'], df.max()['val']],
+        template=templ1)
+
+    # Default Marker Params Scatter Plot
+    sc_fig.update_traces(default_scatter_marker)
+
+    # ATOMS-FIG
+    sc_fig.add_trace(
+        go.Scatter3d(x=atoms_DF['x'], y=atoms_DF['y'], z=atoms_DF['z'], mode='markers',
+                     marker=dict(size=30, color=atom_colors)))
+
+    # SCATTER default CAMERA
+    camera_params = dict(
+        up=dict(x=0, y=0, z=1),
+        center=dict(x=0, y=0, z=0),
+        eye=dict(x=1.5, y=1.5, z=1.5)
+    )
+
+    # SCATTER GRID PROPERTIES
+    sc_fig.update_scenes(xaxis_showgrid=False, yaxis_showgrid=False, zaxis_showgrid=False, camera=camera_params)
+
+    #end playground
+
+
+
+
+
     # (a) GET (most) DATA FROM MALA (/ inference script)
     # mala_data = mala_inference.results
     bandEn = mala_data['band_energy']
@@ -925,7 +918,7 @@ def updateLayout(df, plots, page_state):
 
 # (STORED) CAM SETTINGS
 @app.callback(
-    Output("val_store", "data"),
+    Output("cam_store", "data"),
     [Input("default-cam", "n_clicks"),
     Input("x-y-cam", "n_clicks"),
     Input("x-z-cam", "n_clicks"),
@@ -980,14 +973,23 @@ def storeCamSettings(default_clicks, x_y_clicks, x_z_clicks, y_z_clicks, user_in
      Input("size-slider", 'value'),
      Input("opacity-slider", 'value'),
      Input("outline-check", 'value'),
-     Input("val_store", "data"),
+     Input("cam_store", "data"),
+     State("df_store", "data"),
      Input("scatter-atoms", "value")],
     [State("scatter-plot", "relayoutData")],
     prevent_initial_call=True
     )
 def updateScatter(slider_range, dense_active, slider_range_cs_x, cs_x_active, slider_range_cs_y, cs_y_active,
                    slider_range_cs_z, cs_z_active,
-                   size_slider, opacity_slider, outline, stored_cam_settings, atoms_enabled, relayout_data):
+                   size_slider, opacity_slider, outline, stored_cam_settings, f_data, atoms_enabled, relayout_data):
+
+
+# df transmission via .to_dict() seems to be working
+# TODO: transmit the right (scaled, etc) DF)
+    df_try = pd.DataFrame.from_dict(f_data)
+    print(df)
+    print("dataframing", df_try)
+
     dfu = scatter_df.copy()
     # filter-by-density
     if slider_range is not None and dense_active:  # Any slider Input there?
