@@ -318,24 +318,26 @@ sidebar = html.Div(
         # default sidebar
         html.Div(
             [
-                dbc.Button("Reupload data", id="reset-data"),
                 # Logo Section
                 html.Div([
                     html.Img(src='https://avatars.githubusercontent.com/u/81354661?s=200&v=4', className="logo"),
                     html.H2(children='MALA', style={'text-align': 'center'}),
                     html.Div(children='''
                     Framework for machine learning materials properties from first-principles data.
-                ''', style={'text-align': 'center'})], className="logo"),
+                ''', style={'text-align': 'center'}),
+                ], className="logo"),
 
-                html.Hr(style={'margin-bottom': '2rem', 'margin-top': '2rem', 'width': '15rem'}),
-                dbc.Card(html.H5(children='File-Upload', style={'margin': '5px'}, n_clicks=0), style={"text-align": "center"}),
+                html.Hr(style={'margin-bottom': '2rem', 'margin-top': '1rem', 'width': '5rem'}),
+
+                dbc.Card(html.H5(children='File-Upload', style={'margin': '5px'}, id="open-upload", n_clicks=0),
+                         style={"text-align": "center"}),
+
                 dbc.Collapse(
                             dbc.Card(dbc.CardBody(# Upload Section
                                 html.Div([
 
                     html.Div(children='''
-                            MALA needs Atompositions    -
-                            Upload a .cube! (later npy)
+                            Upload atompositions via .cube! (later npy)
                             ''', style={'text-align': 'center'}),
                     # TODO: make this give dynamic promts (like "choose a plot!")
                     dcc.Upload(
@@ -352,18 +354,26 @@ sidebar = html.Div(
                             'borderStyle': 'dashed',
                             'borderRadius': '5px',
                             'textAlign': 'center',
-                            'margin': '0.5rem',
+                            'margin': '1rem',
                         },
                         # don't allow multiple files to be uploaded
                         multiple=False
                     ),
-                    html.Div(id='output-upload-state', style={'margin': '10px'})
+
+                    dbc.Row([
+                        dbc.Col(dbc.Button("reset", id="reset-data"), width=4),
+                        dbc.Col(html.Div(id='output-upload-state', style={'margin': '2px'}), style={'text-align': 'center'}, width=8)
+                    ])
+
                 ], className="upload-section"),)),
                             id="collapse-upload",
                             is_open=True,
                             style={'margin-bottom': '15px'}
                         ),
-                dbc.Card(html.H5(children='Choose Plot Style', style={'margin': '5px'}, n_clicks=0), style={"text-align": "center"}),
+
+                dbc.Card(html.H5(children='Choose Plot Style', style={'margin': '5px'}, id="open-plot-choice", n_clicks=0),
+                         style={"text-align": "center"}),
+
                 dbc.Collapse(dbc.Card(dbc.CardBody(html.Div(children=dcc.Dropdown(
                     {'scatter': 'Scatter', 'volume': 'Volume', 'dos': 'DoS'}, multi=True,
                     id='plot-choice', placeholder='Choose Plot Type', persistence=True)))),
@@ -381,7 +391,7 @@ sidebar = html.Div(
 
 sidebar_uploaded = html.Div(
     dbc.Offcanvas(
-        # default sidebar
+        # uploaded sidebar
         html.Div(
             [
                 dbc.Button("Reupload data", id="reset-data"),
@@ -402,6 +412,7 @@ sidebar_uploaded = html.Div(
                'box-shadow': 'rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px'},
     ),
 )
+sidebar_uploaded = sidebar
 # __________________________________________________________________________________________________
 
 # Right sidebar CONTENT        -       Options
@@ -598,10 +609,13 @@ dos_plot = html.Div(
 # ----------------
 # landing-layout
 p_layout_landing = html.Div([
-        dcc.Store(id="page_state", data="landing"),
-        dcc.Store(id="val_store"),
-        dcc.Store(id="df_store"),
-        dcc.Store(id="choice_store"),
+
+    dcc.Store(id="page_state", data="landing"),
+    dcc.Store(id="val_store"),
+    dcc.Store(id="df_store"),
+    dcc.Store(id="choice_store"),
+    html.Div([
+
         dbc.Row(
             [
                 dbc.Col(sidebar),
@@ -611,19 +625,21 @@ p_layout_landing = html.Div([
               html.H1([indent.join('MALA')], className='greetings', style={'text-align': 'center', 'width': '10em'}),
               html.Div('Upload a .cube-File for MALA to process', )],
              style={'text-align': 'center', 'margin-left': '1vw'}),
-], style={'width': 'content-min', 'margin-top': '20vh'})),  # content ROW 1
+                ], style={'width': 'content-min', 'margin-top': '20vh'})),  # content ROW 1
                 dbc.Col(html.Div()),  # empty settings tab
             ],
         )
     ], id="content-layout", style={'height': '100vh', 'background-color': '#023B59'})
+
+    ])
 app.layout = p_layout_landing
 
 # uploaded-layout
 p_layout_uploaded = [
-        dcc.Store(id="page_state", data="landing"),
-        dcc.Store(id="val_store"),
-        dcc.Store(id="df_store"),
-        dcc.Store(id="choice_store"),
+        #dcc.Store(id="page_state", data="landing"),
+        #dcc.Store(id="val_store"),
+        #dcc.Store(id="df_store"),
+        #dcc.Store(id="choice_store"),
 
         dbc.Row(
             [
@@ -647,7 +663,29 @@ print("_________________________________________________________________________
 
 # CALLBACKS & FUNCTIONS
 
+@app.callback(
+    Output("collapse-upload", "is_open"),
+    Input("open-upload", "n_clicks"),
+    Input("collapse-upload", "is_open"),
+    prevent_initial_call=True,
+)
+def toggle_upload(n_header, is_open):
+    if n_header:
+        return not is_open
 
+@app.callback(
+    Output("collapse-plot-choice", "is_open"),
+    Input("open-plot-choice", "n_clicks"),
+    #Inplandingut("page_state", "data"),
+    Input("collapse-plot-choice", "is_open"),
+    prevent_initial_call=True,
+)
+def toggle_plot_choice(n_header, is_open):
+    # optional TODO: if last input was page_state, return open
+    if n_header:
+        return not is_open
+
+# end of sidebar_l collapses
 
 
 # CALLBACKS FOR SCATTERPLOT
@@ -739,19 +777,22 @@ def reset_cs_dense(n_clicks):
 
 @app.callback(
     Output("page_state", "data"),
-    [State("upload-data", "contents"),
+    [Input("df_store", "data"),
      Input("choice_store", "data"),
      Input("reset-data", "n_clicks")],
     prevent_initial_call=True,
 )
 def updatePageState(trig1, trig2, trig3):
         # TODO: check if data is valid
-    if trig1 is not None and dash.callback_context.triggered_id == "upload-data":
+    if trig1 is not None and dash.callback_context.triggered_id == "df_store":
         print("State set to uploaded")
         return "uploaded"
+
     if trig2 is not None and dash.callback_context.triggered_id == "choice_store":
         print("State set to plotting")
         return "plotting"
+
+
     if trig3 is not None and dash.callback_context.triggered_id == "reset-data":
         return "landing"
 
@@ -768,19 +809,31 @@ def updateDF(f_data):
     #  --> mala takes uploaded data and returns calculations
 
     # (a) GET (most) DATA FROM MALA (/ inference script)
-    #mala_data = mala_inference.results
+    # mala_data = mala_inference.results
     bandEn = mala_data['band_energy']
     totalEn = mala_data['total_energy']
     density = mala_data['density']
     dOs = mala_data['density_of_states']
     enGrid = mala_data['energy_grid']
+
     coord_arr = np.column_stack(
         list(map(np.ravel, np.meshgrid(*map(np.arange, density.shape), indexing="ij"))) + [density.ravel()])
     dfst=pd.DataFrame(coord_arr, columns=['x', 'y', 'z', 'val'])
-    print("stored DF data")
-    print(dfst)
+    print("stored some DF data")
     return dfst.to_dict()
 # TODO: this is a mess - find a way to store dataframes
+
+
+@app.callback(
+    Output("choice_store", "data"),
+    [Input('plot-choice', 'value')],
+    prevent_initial_call=True,
+)
+def updatePlotChoice(choice):
+    return choice
+
+
+
 
 
 @app.callback(
@@ -792,10 +845,10 @@ def updateDF(f_data):
     #Input("plot-choice", "value")]
 )
 # so wie zuvor schon gemacht prüfen, was der letze input war (cam stored)
-def updateLayout(df, choice, page_state):
+def updateLayout(df, plots, page_state):
 
     # add plots as parameter instead of defining it here
-    plots = ["scatter", "volume", "dos"]
+
     lc = [sidebar, html.Div(), html.Div()]
     mc = [html.Div(), html.Div(), html.Div()]  # main content components
     rc = [html.Div(), html.Div(), html.Div()]  # right side content
@@ -803,26 +856,34 @@ def updateLayout(df, choice, page_state):
     # rc contains settings-elements for the according mc-element
 
 
-
-
-
-
+    print(page_state)
 # on page-load, page_state will be None. Default-layout before updateLayout is run is p_layout_landing though, so it's fine
     if page_state == "landing":
         print("STATE: landing")
+        print("updated layout to page_state: ", page_state)
         return p_layout_landing
-
     elif page_state == "uploaded":
-        print("STATE: uploaded")
-        # TODO: all those DF calcs? Or do them when df_store is set? (Probs better) Or maybe some here, some there?
-        return p_layout_uploaded
+        print("updated (naja) layout to page_state: ", page_state)
+        raise dash.exceptions.PreventUpdate
 
     elif page_state == "plotting":
         print("STATE: plotting")
+        if len(plots) > 0:
+            index = 0
+            for choice in plots:
+                if choice == "scatter":
+                    mc[index] = scatter_plot
+                    rc[index] = r_canvas_sc
+                    index += 1
+                if choice == "volume":
+                    mc[index] = volume_plot
+                    index += 1
+                if choice == "dos":
+                    mc[index] = dos_plot
+                    index += 1
+
         p_layout_plotting = [
-            dcc.Store(id="val_store"),
-            dcc.Store("df_store"),
-            dcc.Store("choice_store"),
+
             dbc.Row(  # First Plot
                 [
                     dbc.Col(
@@ -855,39 +916,8 @@ def updateLayout(df, choice, page_state):
                 ], style={'width': '100vw'}
             )
         ]
+        print("updated layout to page_state: ", page_state)
         return p_layout_plotting
-
-
-
-    print("updated layout to page_state: ", page_state)
-
-    #if dash.callback_context.triggered_id == "plot-choice":
-    # check if a plot has been chosen to render
-    if len(df) != 0:  # df filled with data -> upload (of some .cube-file at least) complete
-
-
-        lc[0] = sidebar_uploaded
-        mc[0] = uploaded_main  # zur plotauswahl auffordern
-        mc[1] = uploaded_main2
-        # File Upload Section durch Plot Settings ersetzen
-
-        if len(plots) > 0:
-            index = 0
-            for choice in plots:
-                if choice == "scatter":
-                    mc[index] = scatter_plot
-                    rc[index] = r_canvas_sc
-                    index += 1
-                if choice == "volume":
-                    mc[index] = volume_plot
-                    index += 1
-                if choice == "dos":
-                    mc[index] = dos_plot
-                    index += 1
-    else:
-        if len(df) == 0:  # not data in df -> no upload yet
-            mc[0] = default_main
-            mc[1] = default_main2
 
     if False:
         return [
