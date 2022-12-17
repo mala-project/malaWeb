@@ -327,13 +327,14 @@ sidebar = html.Div(
                     Framework for machine learning materials properties from first-principles data.
                 ''', style={'text-align': 'center'})], className="logo"),
 
-                html.Hr(style={'margin-bottom': '2rem', 'margin-top': '2rem'}),
+                html.Hr(style={'margin-bottom': '2rem', 'margin-top': '2rem', 'width': '15rem'}),
+                dbc.Card(html.H5(children='File-Upload', style={'margin': '5px'}, n_clicks=0), style={"text-align": "center"}),
+                dbc.Collapse(
+                            dbc.Card(dbc.CardBody(# Upload Section
+                                html.Div([
 
-                # Upload Section
-                html.Div([
-                    html.H5(children='File-Upload'),
                     html.Div(children='''
-                            MALA needs Atompositions
+                            MALA needs Atompositions    -
                             Upload a .cube! (later npy)
                             ''', style={'text-align': 'center'}),
                     # TODO: make this give dynamic promts (like "choose a plot!")
@@ -357,7 +358,19 @@ sidebar = html.Div(
                         multiple=False
                     ),
                     html.Div(id='output-upload-state', style={'margin': '10px'})
-                ], className="upload-section"),
+                ], className="upload-section"),)),
+                            id="collapse-upload",
+                            is_open=True,
+                            style={'margin-bottom': '15px'}
+                        ),
+                dbc.Card(html.H5(children='Choose Plot Style', style={'margin': '5px'}, n_clicks=0), style={"text-align": "center"}),
+                dbc.Collapse(dbc.Card(dbc.CardBody(html.Div(children=dcc.Dropdown(
+                    {'scatter': 'Scatter', 'volume': 'Volume', 'dos': 'DoS'}, multi=True,
+                    id='plot-choice', placeholder='Choose Plot Type', persistence=True)))),
+                            id="collapse-plot-choice",
+                            is_open=False,
+                        ),
+
             ], className="sidebar"
         ), id="offcanvas-l", is_open=True, scrollable=True, backdrop=False,
         style={'width': '15rem', 'margin-top': '1.5rem', 'margin-left': '0.5vw', 'border-radius': '10px',
@@ -726,7 +739,7 @@ def reset_cs_dense(n_clicks):
 
 @app.callback(
     Output("page_state", "data"),
-    [Input("upload-data", "contents"),
+    [State("upload-data", "contents"),
      Input("choice_store", "data"),
      Input("reset-data", "n_clicks")],
     prevent_initial_call=True,
@@ -765,6 +778,7 @@ def updateDF(f_data):
         list(map(np.ravel, np.meshgrid(*map(np.arange, density.shape), indexing="ij"))) + [density.ravel()])
     dfst=pd.DataFrame(coord_arr, columns=['x', 'y', 'z', 'val'])
     print("stored DF data")
+    print(dfst)
     return dfst.to_dict()
 # TODO: this is a mess - find a way to store dataframes
 
