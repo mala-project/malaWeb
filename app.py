@@ -659,10 +659,9 @@ print("COMPONENTS LOADED")
 print("_________________________________________________________________________________________")
 
 
+                                # CALLBACKS & FUNCTIONS
 
-
-# CALLBACKS & FUNCTIONS
-
+# sidebar_l collapses
 @app.callback(
     Output("collapse-upload", "is_open"),
     Input("open-upload", "n_clicks"),
@@ -676,19 +675,21 @@ def toggle_upload(n_header, is_open):
 @app.callback(
     Output("collapse-plot-choice", "is_open"),
     Input("open-plot-choice", "n_clicks"),
-    #Inplandingut("page_state", "data"),
+    Input("page_state", "data"),
     Input("collapse-plot-choice", "is_open"),
     prevent_initial_call=True,
 )
-def toggle_plot_choice(n_header, is_open):
-    # optional TODO: if last input was page_state, return open
-    if n_header:
+def toggle_plot_choice(n_header, page_state, is_open):
+    # open plot-style-chooser when state is uploaded
+    if dash.callback_context.triggered_id == "page_state":
+        print("choice-toggle bc page_state changed")
+        return True
+    elif n_header:
         return not is_open
-
 # end of sidebar_l collapses
 
 
-# CALLBACKS FOR SCATTERPLOT
+                # CALLBACKS FOR SCATTERPLOT
 
 # collapsable cross-section settings
 @app.callback(
@@ -772,9 +773,10 @@ def reset_cs_z(n_clicks):
 def reset_cs_dense(n_clicks):
     return [min(scatter_df['val']), max(scatter_df['val'])]
 
+# end of collapsable cross-section settings
 
 
-
+                # PAGE STATE
 @app.callback(
     Output("page_state", "data"),
     [Input("df_store", "data"),
@@ -785,18 +787,20 @@ def reset_cs_dense(n_clicks):
 def updatePageState(trig1, trig2, trig3):
         # TODO: check if data is valid
     if trig1 is not None and dash.callback_context.triggered_id == "df_store":
-        print("State set to uploaded")
+        print("Current state: uploaded")
         return "uploaded"
 
     if trig2 is not None and dash.callback_context.triggered_id == "choice_store":
-        print("State set to plotting")
+        print("Current state: plotting")
         return "plotting"
 
 
     if trig3 is not None and dash.callback_context.triggered_id == "reset-data":
+        print("Current state: landing")
         return "landing"
 
 
+                # DATA STORING
 # storing uploaded data as a DF.to_dict in dcc.Store -- don't think this is working properly
 @app.callback(
     Output("df_store", "data"),
@@ -819,11 +823,12 @@ def updateDF(f_data):
     coord_arr = np.column_stack(
         list(map(np.ravel, np.meshgrid(*map(np.arange, density.shape), indexing="ij"))) + [density.ravel()])
     dfst=pd.DataFrame(coord_arr, columns=['x', 'y', 'z', 'val'])
-    print("stored some DF data")
+    print("DATA has been stored in df_store")
     return dfst.to_dict()
 # TODO: this is a mess - find a way to store dataframes
 
 
+                # PLOT-CHOICE STORING
 @app.callback(
     Output("choice_store", "data"),
     [Input('plot-choice', 'value')],
@@ -833,16 +838,12 @@ def updatePlotChoice(choice):
     return choice
 
 
-
-
-
 @app.callback(
     Output("content-layout", "children"),
-    [State("df_store", "data"),
+    [State("df_store", "data"),       # this one might be unnecessary if figs are properly updated/initilized
     State("choice_store", "data"),
     Input("page_state", "data")],
     prevent_initial_call=True,
-    #Input("plot-choice", "value")]
 )
 # so wie zuvor schon gemacht prüfen, was der letze input war (cam stored)
 def updateLayout(df, plots, page_state):
@@ -856,7 +857,8 @@ def updateLayout(df, plots, page_state):
     # rc contains settings-elements for the according mc-element
 
 
-    print(page_state)
+    print("Updating layout according to ", page_state, " state")
+
 # on page-load, page_state will be None. Default-layout before updateLayout is run is p_layout_landing though, so it's fine
     if page_state == "landing":
         print("STATE: landing")
@@ -919,53 +921,16 @@ def updateLayout(df, plots, page_state):
         print("updated layout to page_state: ", page_state)
         return p_layout_plotting
 
-    if False:
-        return [
-            dcc.Store(id="val_store"),
-            dcc.Store("df_store"),
-            dcc.Store("choice_store"),
-            dbc.Row(  # First Plot
-                [
-                    dbc.Col(
-                        [dbc.Button(">", id="open-offcanvas-l", n_clicks=0,
-                                    style={'position': 'fixed', 'margin-top': '40vh', 'margin-left': '0.5vw'}),
-                         lc[0]],
-                        width=1),
-                    dbc.Col(mc[0],
-                        width=9),
-                    dbc.Col(
-                        [
-                        rc[0],
-                        dbc.Button("<", id="open-offcanvas-r0", n_clicks=0,
-                        style={'margin-top': '35vh', 'margin-right': '0.5vw'})],
-                        width=2),  # settings
-                ], style={'width': '100vw'}, justify='center'
-            ),
-            dbc.Row(  # Second Plot
-                [
-                    dbc.Col(html.Div(), width=1, ),
-                    dbc.Col(mc[1], width=9, ),
-                    dbc.Col(rc[1], width=2, ),  # gonna be the settings tab
-                ], style={'width': '100vw'}
-            ),
-            dbc.Row(  # Third Plot
-                [
-                    dbc.Col(html.Div(), width=1, ),
-                    dbc.Col(mc[2], width=9, ),  # DOF Plot
-                    dbc.Col(rc[2], width=2, ),
-                ], style={'width': '100vw'}
-            )
-        ]
 
 
 # (STORED) CAM SETTINGS
 @app.callback(
     Output("val_store", "data"),
-    Input("default-cam", "n_clicks"),
+    [Input("default-cam", "n_clicks"),
     Input("x-y-cam", "n_clicks"),
     Input("x-z-cam", "n_clicks"),
     Input("y-z-cam", "n_clicks"),
-    Input("scatter-plot", "relayoutData"),
+    Input("scatter-plot", "relayoutData")],
     prevent_initial_call=True,
 )
 def storeCamSettings(default_clicks, x_y_clicks, x_z_clicks, y_z_clicks, user_in):
@@ -999,6 +964,8 @@ def storeCamSettings(default_clicks, x_y_clicks, x_z_clicks, y_z_clicks, user_in
         elif dash.callback_context.triggered_id == "scatter-plot":
             return None
 
+
+                # UPDATE / INIT FIGS
 
 @app.callback(  # UPDATE SCATTER PLOT
     Output("scatter-plot", "figure"),
@@ -1135,6 +1102,7 @@ def toggle_offcanvas_r(n1, is_open):
     return is_open
 
 
+# part of this is more relevant to updateDF
 @app.callback(  # FILE-UPLOAD-STATUS
     Output('output-upload-state', 'children'),
     [Input('upload-data', 'filename'),
