@@ -593,7 +593,6 @@ def toggle_upload(n_header, is_open):
 def toggle_plot_choice(n_header, page_state, is_open):
     # open plot-style-chooser when state is uploaded
     if dash.callback_context.triggered_id == "page_state" and page_state == "uploaded" or "plotting":
-        print("choice-toggle bc page_state changed")
         return True
     elif n_header:
         return not is_open
@@ -812,13 +811,15 @@ def updateDF(f_data):
     # _______________________________________________________________________________________
 
     df_store = {'MALA_DF': {'default': data0.to_dict("records"), 'scatter': data_sc.to_dict("records"), 'volume': data_vol.to_dict("records")},'MALA_DATA': mala_data,'INPUT_DF': atoms_DF.to_dict("records")}
-
+    print(df_store)
 
 # removed .to_dict()
     return df_store
 
 
                 # PLOT-CHOICE STORING
+
+
 @app.callback(
     Output("choice_store", "data"),
     [Input('plot-choice', 'value')],
@@ -951,27 +952,28 @@ def store_Scatter_CamSettings(default_clicks, x_y_clicks, x_z_clicks, y_z_clicks
                 up=dict(x=0, y=0, z=1),
                 center=dict(x=0, y=0, z=0),
                 eye=dict(x=3.00, y=0, z=0))
-        # reset stored_cam_setting if user moves camera
+        # user input camera:
         elif dash.callback_context.triggered_id == "scatter-plot":
-            return None
+            print("cam error: ", user_in)
+            if user_in is not None:
+                if 'scene-camera' in user_in.keys():
+                    return user_in['scene.camera']
+            else:
+                raise dash.exceptions.PreventUpdate
 
-
-                # UPDATE / INIT FIGS
-
-
-                # UPDATE SCATTER PLOT
 
 
 @app.callback(
     Output("cam_store_v", "data"),
-    [Input("default-cam", "n_clicks"),
-    Input("x-y-cam", "n_clicks"),
-    Input("x-z-cam", "n_clicks"),
-    Input("y-z-cam", "n_clicks"),
+    [
+    #Input("default-cam", "n_clicks"),
+    #Input("x-y-cam", "n_clicks"),
+    #Input("x-z-cam", "n_clicks"),
+    #Input("y-z-cam", "n_clicks"),
     Input("volume-plot", "relayoutData")],
     prevent_initial_call=True,
 )
-def store_Volume_CamSettings(default_clicks, x_y_clicks, x_z_clicks, y_z_clicks, user_in):
+def store_Volume_CamSettings(user_in):
     # user_in is the camera position set by mouse movement, it has to be updated on every mouse input on the fig
     if dash.callback_context.triggered_id is not None:
         # set stored_cam_setting according to which button was last pressed
@@ -1003,6 +1005,7 @@ def store_Volume_CamSettings(default_clicks, x_y_clicks, x_z_clicks, y_z_clicks,
         elif dash.callback_context.triggered_id == "volume-plot":
             return None
 
+
 @app.callback(
     Output("scatter-plot", "figure"),
     [Input("range-slider-dense", "value"),
@@ -1016,21 +1019,28 @@ def store_Volume_CamSettings(default_clicks, x_y_clicks, x_z_clicks, y_z_clicks,
      Input("size-slider", 'value'),
      Input("opacity-slider", 'value'),
      Input("outline-check", 'value'),
-     Input("cam_store", "data"),
+     State("cam_store", "data"),    # this sshould be a state; no need to run this callback on every cam input
      State("df_store", "data"),
-     Input("scatter-atoms", "value")],
-    [State("scatter-plot", "relayoutData")],
+     Input("scatter-atoms", "value"),
+     #Input("default-cam", "n_clicks"),
+     #Input("x-y-cam", "n_clicks"),
+     #Input("x-z-cam", "n_clicks"),
+     #Input("y-z-cam", "n_clicks"),
+     ],
+    [State("scatter-plot", "relayoutData"),
+     State("scatter-plot", "figure")],
     prevent_initial_call=True
     )
 def updateScatter(slider_range, dense_active, slider_range_cs_x, cs_x_active, slider_range_cs_y, cs_y_active,
-                  slider_range_cs_z, cs_z_active, size_slider, opacity_slider, outline, stored_cam_settings, f_data,
-                  atoms_enabled, relayout_data):
-
+                  slider_range_cs_z, cs_z_active, size_slider, opacity_slider, outline, stored_cam_settings, f_data, atoms_enabled,
+                  relayout_data, fig):
+    print("??????")
+    #print( def_cam, xy_cam, xz_cam, yz_cam, )
     dfu = pd.DataFrame(f_data['MALA_DF']['scatter'])
     #mala_data = pd.DataFrame().from_dict(f_data.MALA_DATA)
     atoms = pd.DataFrame(f_data['INPUT_DF'])
 
-    # DECIDING ON ATOM-COLOR BASEd OFF THEIR CHARGE TODO
+    # TODO: DECIDING ON ATOM-COLOR BASEd OFF THEIR CHARGE
     atom_colors = []
     for i in range(0, int(no_of_atoms)):
         if atoms['charge'][i] == 4.0:
@@ -1095,6 +1105,7 @@ def updateScatter(slider_range, dense_active, slider_range_cs_x, cs_x_active, sl
 
 
     # UPDATING DATASET
+
     fig_upd = px.scatter_3d(
         dfu[mask], x="x", y="y", z="z",
         color="val",
@@ -1109,17 +1120,28 @@ def updateScatter(slider_range, dense_active, slider_range_cs_x, cs_x_active, sl
     # Default Marker Params Scatter Plot
     fig_upd.update_traces(default_scatter_marker)
 
-    # UPDATING FIG PROPERTIES
+    # UPDATING FIG-SCENE- PROPERTIES
     fig_upd.update_scenes(xaxis_showgrid=False, yaxis_showgrid=False, zaxis_showgrid=False)
 
+    # TODO: fig nicht einfach überschreiben, sondern mit als Input beziehen und updaten!!
+    '''
+    smth like: if last input was 'static-cam-setting'
+    -> update the fig accordingly
+    if it was not
+    
+    if last input was not (eine der 4 static cam-positions):
+        
+    
+    -> 
+    '''
+
     # CAMERA
-    if relayout_data is not None:  # no user input has been made
-        if "scene.camera" in relayout_data:
-            # custom re-layout cam settings
-            fig_upd.update_layout(scene_camera=relayout_data['scene.camera'])
-    if stored_cam_settings is not None:
-        # locked cam settings
-        fig_upd.update_layout(scene_camera=stored_cam_settings)
+    # TODO: this isn't even using the stored CAM_POS????
+
+    fig_upd.update_layout(scene_camera=stored_cam_settings)
+
+
+
 
     # Outline settings
     if outline:
