@@ -100,8 +100,10 @@ atomData = '/home/maxyyy/PycharmProjects/mala/app/Be2_density.cube'
 # 0-1 = Comment, Energy, broadening     //      2 = number of atoms, coord origin
 # 3-5 = number of voxels per Axis (x/y/z), lentgh of axis-vector -> info on cell-warping
 # 6-x = atompositions
-atoms = [[], [], [], [], []]
 
+
+
+    # TODO: this has to be received from the uploaded .npy
 with open(atomData, 'r') as f:
     lines = f.read().splitlines()
     no_of_atoms, _, _, _ = lines[2].split()
@@ -137,6 +139,9 @@ with open(atomData, 'r') as f:
 print("DATA IMPORT COMPLETE")
 print("_________________________________________________________________________________________")
 
+
+
+
 # Formatting + shearing Data
 # density- import / conversion to pandas dataframe / fig - density-visualisation params / plot-layout params
 
@@ -155,7 +160,7 @@ scatter_df = df.copy()  # important to keep / save df as kartesian coordinates:
 # they are used to calculate/scale shearing "factor" (actually summand)
 # used for unsheared x-values for go.Volume
 
-
+        # TODO: check if this scatter_df really can't be used for volume figures
 # SHEARING für scatter_3d
 scatter_df.x += y_axis[1] * (df.y / y_axis[2])
 scatter_df.x += z_axis[1] * (df.z / z_axis[3])
@@ -183,13 +188,13 @@ scatter_df.z += x_axis[3] * (df.x / x_axis[1])
 # (c) DATA für Volume
 
 #   Data table and vol_fig!!!)
-volume_DF = pd.DataFrame(data={'x': df.x, 'y': scatter_df.y, 'z': scatter_df.z, 'val': df.val})
-
+# volume_DF = pd.DataFrame(data={'x': df.x, 'y': scatter_df.y, 'z': scatter_df.z, 'val': df.val})
+volume_DF = df.copy()
 # SHEAR (as volume issues are fixed -  these might be deprecated ?
 # --> one DF for all
 
-# volume_DF.x += y_axis[1] * (df.y / y_axis[2])
-# volume_DF.x += z_axis[1] * (df.z / z_axis[3])
+volume_DF.x += y_axis[1] * (df.y / y_axis[2])
+volume_DF.x += z_axis[1] * (df.z / z_axis[3])
 
 volume_DF.y += x_axis[2] * (df.x / x_axis[1])
 volume_DF.y += z_axis[2] * (df.z / z_axis[3])
@@ -203,30 +208,7 @@ dosDf = pd.DataFrame(dosArr, columns=['x', 'y'])
 # _____________________________________________________________________________________________________________________
 
 
-# ATOMPOSITIONS
-for i in range(0, int(no_of_atoms)):
-    ordinalNumber, charge, x, y, z = lines[6 + i].split()  # atom-data starts @line-index 6
-    # atoms-List-Format: ordinalNumber[0]    charge[1]  x[2]   y[3]   z[4]
-    atoms[0].append(int(ordinalNumber))
-    atoms[1].append(float(charge))
-    atoms[2].append(float(x))
-    atoms[3].append(float(y))
-    atoms[4].append(float(z))
-atoms_DF = pd.DataFrame(data={'x': atoms[2], 'y': atoms[3], 'z': atoms[4], 'ordinal': atoms[0], 'charge': atoms[1]})
-# _______________________________________________________________________________________
-
-
-
 # THEME & FIGUREs
-
-# DECIDING ON ATOM-COLOR BASEd OFF THEIR CHARGE TODO
-atom_colors = []
-for i in range(0, int(no_of_atoms)):
-    if atoms[1][i] == 4.0:
-        atom_colors.append("black")
-    else:
-        atom_colors.append("white")
-
 
 
 
@@ -281,7 +263,6 @@ table_body = [html.Tbody([row1, row2, row3, row4, row5, row6])]
 
 # ----------------
 # Left SIDEBAR
-# START (or data reset)
 sidebar = html.Div(
     dbc.Offcanvas(
         # default sidebar
@@ -298,7 +279,7 @@ sidebar = html.Div(
 
                 html.Hr(style={'margin-bottom': '2rem', 'margin-top': '1rem', 'width': '5rem'}),
 
-                dbc.Card(html.H5(children='File-Upload', style={'margin': '5px'}, id="open-upload", n_clicks=0),
+                dbc.Card(html.H6(children='File-Upload', style={'margin': '5px'}, id="open-upload", n_clicks=0),
                          style={"text-align": "center"}),
 
                 dbc.Collapse(
@@ -337,11 +318,10 @@ sidebar = html.Div(
                 ], className="upload-section"),)),
                             id="collapse-upload",
                             is_open=True,
-                            style={'margin-bottom': '15px'}
                         ),
 
-                dbc.Card(html.H5(children='Choose Plot Style', style={'margin': '5px'}, id="open-plot-choice", n_clicks=0),
-                         style={"text-align": "center"}),
+                dbc.Card(html.H6(children='Choose Plot Style', style={'margin': '5px'}, id="open-plot-choice", n_clicks=0),
+                         style={"text-align": "center", 'margin-top': '15px'}),
 
                 dbc.Collapse(dbc.Card(dbc.CardBody(html.Div(children=dcc.Dropdown(
                     {'scatter': 'Scatter', 'volume': 'Volume', 'dos': 'DoS'}, multi=True,
@@ -349,30 +329,6 @@ sidebar = html.Div(
                             id="collapse-plot-choice",
                             is_open=False,
                         ),
-
-            ], className="sidebar"
-        ), id="offcanvas-l", is_open=True, scrollable=True, backdrop=False,
-        style={'width': '15rem', 'margin-top': '1.5rem', 'margin-left': '0.5vw', 'border-radius': '10px',
-               'height': 'min-content',
-               'box-shadow': 'rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px'},
-    ),
-)
-
-sidebar_uploaded = html.Div(
-    dbc.Offcanvas(
-        # uploaded sidebar
-        html.Div(
-            [
-                dbc.Button("Reupload data", id="reset-data"),
-                html.Hr(style={'margin-bottom': '2rem'}),
-                # Plot Chooser
-                html.H5(children='Choose Plots'),
-                html.Div(children=dcc.Dropdown(
-                    {'scatter': 'Scatter', 'volume': 'Volume', 'dos': 'DoS'}, multi=True,
-                    id='plot-choice', placeholder='Choose Plot Type', persistence=True)),
-                html.Hr(style={'margin-bottom': '2rem'}),
-                html.H5(children='Values'),
-                dbc.Table(table_body, bordered=True, striped=True)
 
             ], className="sidebar"
         ), id="offcanvas-l", is_open=True, scrollable=True, backdrop=False,
@@ -548,7 +504,7 @@ volume_plot = html.Div(
             [
                 html.H5([indent.join('3D-Density-Plot (volume)')], style={'color': 'white', 'margin-top': '1.5rem'}),
                 dbc.Card(dbc.CardBody(html.Div(
-                    dcc.Graph(figure=vol_fig, style=plot_layout),
+                    dcc.Graph(id="volume-plot", figure=vol_fig, style=plot_layout),
                     className="density-vol-plot"
                 )), style={'background-color': 'rgba(248, 249, 250, 1)', 'width': 'min-content', 'margin-top': '1rem'}),
             ],
@@ -563,7 +519,7 @@ dos_plot = html.Div(
         # Density of State Section
         html.H4(indent.join('2D-Density-of-State-Plot'), style={'color': 'white', 'margin-top': '1.5rem'}),
         dbc.Card(dbc.CardBody(html.Div(
-            dcc.Graph(figure=dos_fig, style=dos_plot_layout),
+            dcc.Graph(id="dos-plot", figure=dos_fig, style=dos_plot_layout),
             className='dos-plot',
         )),
             style={'background-color': 'rgba(248, 249, 250, 1)', 'width': 'min-content',
@@ -582,6 +538,7 @@ p_layout_landing = html.Div([
 
     dcc.Store(id="page_state", data="landing"),
     dcc.Store(id="cam_store"),
+    dcc.Store(id="cam_store_v"),
     dcc.Store(id="df_store"),
     dcc.Store(id="choice_store"),
     html.Div([
@@ -628,14 +585,14 @@ def toggle_upload(n_header, is_open):
 
 @app.callback(
     Output("collapse-plot-choice", "is_open"),
-    Input("open-plot-choice", "n_clicks"),
+    [Input("open-plot-choice", "n_clicks"),
     Input("page_state", "data"),
-    Input("collapse-plot-choice", "is_open"),
+    Input("collapse-plot-choice", "is_open")],
     prevent_initial_call=True,
 )
 def toggle_plot_choice(n_header, page_state, is_open):
     # open plot-style-chooser when state is uploaded
-    if dash.callback_context.triggered_id == "page_state":
+    if dash.callback_context.triggered_id == "page_state" and page_state == "uploaded" or "plotting":
         print("choice-toggle bc page_state changed")
         return True
     elif n_header:
@@ -739,22 +696,28 @@ def reset_cs_dense(n_clicks):
     prevent_initial_call=True,
 )
 def updatePageState(trig1, trig2, trig3):
-        # TODO: check if data is valid
     if trig1 is not None and dash.callback_context.triggered_id == "df_store":
-        print("Current state: uploaded")
+        print("State changed to: uploaded")
         return "uploaded"
 
     if trig2 is not None and dash.callback_context.triggered_id == "choice_store":
-        print("Current state: plotting")
+        print("State changed to: plotting")
         return "plotting"
 
 
     if trig3 is not None and dash.callback_context.triggered_id == "reset-data":
-        print("Current state: landing")
+        print("State changed to: landing")
         return "landing"
 
 
                 # DATA STORING
+
+
+
+
+# MAKE THIS ABOUT THE GRAPH (containing the fig) INSTEAD!!
+
+    # OR MAKE "data"-dict contain the DF and our 3 graphs!!!!!!!! VERY GOOD FOR REASONS
 # storing uploaded data as a DF.to_dict in dcc.Store -- don't think this is working properly
 @app.callback(
     Output("df_store", "data"),
@@ -762,51 +725,22 @@ def updatePageState(trig1, trig2, trig3):
     prevent_initial_call=True,
 )
 def updateDF(f_data):
+    # f_data = uploaded data -> to be .npy
     # TODO:
     #  smth like "mala_data = mala_inference(f_data)"
     #  --> mala takes uploaded data and returns calculations
+    #  --> waiting for Lenz
+
+    # TODO: check if data is valid before updating
+            #  maybe do this on upload, so this callback isn't even run
+    #  --> raise preventUpdate if not
 
 
 
-    # playground
+            # (a) GET DATA FROM MALA (/ inference script)
 
-    # SCATTER-FIG
-    sc_fig = px.scatter_3d(
-        scatter_df,
-        x='x',
-        y='y',
-        z='z',
-        color='val',
-        color_continuous_scale=px.colors.sequential.Inferno_r,
-        range_color=[df.min()['val'], df.max()['val']],
-        template=templ1)
-
-    # Default Marker Params Scatter Plot
-    sc_fig.update_traces(default_scatter_marker)
-
-    # ATOMS-FIG
-    sc_fig.add_trace(
-        go.Scatter3d(x=atoms_DF['x'], y=atoms_DF['y'], z=atoms_DF['z'], mode='markers',
-                     marker=dict(size=30, color=atom_colors)))
-
-    # SCATTER default CAMERA
-    camera_params = dict(
-        up=dict(x=0, y=0, z=1),
-        center=dict(x=0, y=0, z=0),
-        eye=dict(x=1.5, y=1.5, z=1.5)
-    )
-
-    # SCATTER GRID PROPERTIES
-    sc_fig.update_scenes(xaxis_showgrid=False, yaxis_showgrid=False, zaxis_showgrid=False, camera=camera_params)
-
-    #end playground
-
-
-
-
-
-    # (a) GET (most) DATA FROM MALA (/ inference script)
-    # mala_data = mala_inference.results
+    # TODO: smth like (mala_data = mala.webAPI(f_data))
+    mala_data = mala_inference.results
     bandEn = mala_data['band_energy']
     totalEn = mala_data['total_energy']
     density = mala_data['density']
@@ -815,10 +749,73 @@ def updateDF(f_data):
 
     coord_arr = np.column_stack(
         list(map(np.ravel, np.meshgrid(*map(np.arange, density.shape), indexing="ij"))) + [density.ravel()])
-    dfst=pd.DataFrame(coord_arr, columns=['x', 'y', 'z', 'val'])
-    print("DATA has been stored in df_store")
-    return dfst.to_dict()
-# TODO: this is a mess - find a way to store dataframes
+    data0 = pd.DataFrame(coord_arr, columns=['x', 'y', 'z', 'val']) # untransformed Dataset
+    data_sc = data0.copy()
+    data_vol = data0.copy()
+    print("MALA DF updated")
+
+
+
+            # (b) GET ATOMPOSITION & AXIS SCALING FROM .cube CREATED BY MALA (located where 'mala-inference-script' is located
+    atomData = '/home/maxyyy/PycharmProjects/mala/app/Be2_density.cube'
+
+    # 0-1 = Comment, Energy, broadening     //      2 = number of atoms, coord origin
+    # 3-5 = number of voxels per Axis (x/y/z), lentgh of axis-vector -> info on cell-warping
+    # 6-x = atompositions
+    atoms = [[], [], [], [], []]
+
+    # TODO: this has to be done with uploaded .npy
+    with open(atomData, 'r') as f:
+        lines = f.read().splitlines()
+        no_of_atoms, _, _, _ = lines[2].split()
+
+        # AXIS-SCALING-FACTOR
+        # axis-List-Format: voxelcount[0]   X-Scale[1]     Y-Scale[2]     Z-Scale[3]
+        x_axis = [float(i) for i in lines[3].split()]
+        y_axis = [float(i) for i in lines[4].split()]
+        z_axis = [float(i) for i in lines[5].split()]
+
+
+    # READING ATOMPOSITIONS
+    for i in range(0, int(no_of_atoms)):
+        ordinalNumber, charge, x, y, z = lines[6 + i].split()  # atom-data starts @line-index 6
+        # atoms-List-Format: ordinalNumber[0]    charge[1]  x[2]   y[3]   z[4]
+        atoms[0].append(int(ordinalNumber))
+        atoms[1].append(float(charge))
+        atoms[2].append(float(x))
+        atoms[3].append(float(y))
+        atoms[4].append(float(z))
+    atoms_DF = pd.DataFrame(data={'x': atoms[2], 'y': atoms[3], 'z': atoms[4], 'ordinal': atoms[0], 'charge': atoms[1]})
+    print("atoms DF updated")
+
+    # SCALING AND SHEARING SCATTER DF
+
+    # (b) SCALING to right voxel-size
+    data_sc['x'] *= x_axis[1]
+    data_sc['y'] *= y_axis[2]
+    data_sc['z'] *= z_axis[3]
+
+    data_vol['x'] *= x_axis[1]
+    data_vol['y'] *= y_axis[2]
+    data_vol['z'] *= z_axis[3]
+
+    # SHEARING für scatter_3d
+    data_sc.x += y_axis[1] * (df.y / y_axis[2])
+    data_sc.x += z_axis[1] * (df.z / z_axis[3])
+
+    data_sc.y += x_axis[2] * (df.x / x_axis[1])
+    data_sc.y += z_axis[2] * (df.z / z_axis[3])
+
+    data_sc.z += y_axis[3] * (df.y / y_axis[2])
+    data_sc.z += x_axis[3] * (df.x / x_axis[1])
+
+    # _______________________________________________________________________________________
+
+    df_store = {'MALA_DF': {'default': data0.to_dict("records"), 'scatter': data_sc.to_dict("records"), 'volume': data_vol.to_dict("records")},'MALA_DATA': mala_data,'INPUT_DF': atoms_DF.to_dict("records")}
+
+
+# removed .to_dict()
+    return df_store
 
 
                 # PLOT-CHOICE STORING
@@ -831,6 +828,7 @@ def updatePlotChoice(choice):
     return choice
 
 
+                # UPDATE LAYOUT
 @app.callback(
     Output("content-layout", "children"),
     [State("df_store", "data"),       # this one might be unnecessary if figs are properly updated/initilized
@@ -854,7 +852,6 @@ def updateLayout(df, plots, page_state):
 
 # on page-load, page_state will be None. Default-layout before updateLayout is run is p_layout_landing though, so it's fine
     if page_state == "landing":
-        print("STATE: landing")
         print("updated layout to page_state: ", page_state)
         return p_layout_landing
     elif page_state == "uploaded":
@@ -862,7 +859,7 @@ def updateLayout(df, plots, page_state):
         raise dash.exceptions.PreventUpdate
 
     elif page_state == "plotting":
-        print("STATE: plotting")
+        # setting order of plots according to plot-choice
         if len(plots) > 0:
             index = 0
             for choice in plots:
@@ -915,8 +912,9 @@ def updateLayout(df, plots, page_state):
         return p_layout_plotting
 
 
+                # CAM SETTINGS STORING
 
-# (STORED) CAM SETTINGS
+
 @app.callback(
     Output("cam_store", "data"),
     [Input("default-cam", "n_clicks"),
@@ -926,7 +924,7 @@ def updateLayout(df, plots, page_state):
     Input("scatter-plot", "relayoutData")],
     prevent_initial_call=True,
 )
-def storeCamSettings(default_clicks, x_y_clicks, x_z_clicks, y_z_clicks, user_in):
+def store_Scatter_CamSettings(default_clicks, x_y_clicks, x_z_clicks, y_z_clicks, user_in):
     # user_in is the camera position set by mouse movement, it has to be updated on every mouse input on the fig
     if dash.callback_context.triggered_id is not None:
         # set stored_cam_setting according to which button was last pressed
@@ -960,7 +958,52 @@ def storeCamSettings(default_clicks, x_y_clicks, x_z_clicks, y_z_clicks, user_in
 
                 # UPDATE / INIT FIGS
 
-@app.callback(  # UPDATE SCATTER PLOT
+
+                # UPDATE SCATTER PLOT
+
+
+@app.callback(
+    Output("cam_store_v", "data"),
+    [Input("default-cam", "n_clicks"),
+    Input("x-y-cam", "n_clicks"),
+    Input("x-z-cam", "n_clicks"),
+    Input("y-z-cam", "n_clicks"),
+    Input("volume-plot", "relayoutData")],
+    prevent_initial_call=True,
+)
+def store_Volume_CamSettings(default_clicks, x_y_clicks, x_z_clicks, y_z_clicks, user_in):
+    # user_in is the camera position set by mouse movement, it has to be updated on every mouse input on the fig
+    if dash.callback_context.triggered_id is not None:
+        # set stored_cam_setting according to which button was last pressed
+
+        if dash.callback_context.triggered_id[0:-4] == "default":
+            return dict(
+                up=dict(x=0, y=0, z=1),
+                center=dict(x=0, y=0, z=0),
+                eye=dict(x=1.5, y=1.5, z=1.5)
+            )
+        elif dash.callback_context.triggered_id[0:-4] == "x-y":
+            return dict(
+                up=dict(x=0, y=0, z=1),
+                center=dict(x=0, y=0, z=0),
+                eye=dict(x=0, y=0, z=3.00)
+            )
+        elif dash.callback_context.triggered_id[0:-4] == "x-z":
+            return dict(
+                up=dict(x=0, y=0, z=1),
+                center=dict(x=0, y=0, z=0),
+                eye=dict(x=0, y=3.00, z=0)
+            )
+        elif dash.callback_context.triggered_id[0:-4] == "y-z":
+            return dict(
+                up=dict(x=0, y=0, z=1),
+                center=dict(x=0, y=0, z=0),
+                eye=dict(x=3.00, y=0, z=0))
+        # reset stored_cam_setting if user moves camera
+        elif dash.callback_context.triggered_id == "volume-plot":
+            return None
+
+@app.callback(
     Output("scatter-plot", "figure"),
     [Input("range-slider-dense", "value"),
      Input("dense-collapse", "is_open"),
@@ -980,17 +1023,25 @@ def storeCamSettings(default_clicks, x_y_clicks, x_z_clicks, y_z_clicks, user_in
     prevent_initial_call=True
     )
 def updateScatter(slider_range, dense_active, slider_range_cs_x, cs_x_active, slider_range_cs_y, cs_y_active,
-                   slider_range_cs_z, cs_z_active,
-                   size_slider, opacity_slider, outline, stored_cam_settings, f_data, atoms_enabled, relayout_data):
+                  slider_range_cs_z, cs_z_active, size_slider, opacity_slider, outline, stored_cam_settings, f_data,
+                  atoms_enabled, relayout_data):
+
+    dfu = pd.DataFrame(f_data['MALA_DF']['scatter'])
+    #mala_data = pd.DataFrame().from_dict(f_data.MALA_DATA)
+    atoms = pd.DataFrame(f_data['INPUT_DF'])
+
+    # DECIDING ON ATOM-COLOR BASEd OFF THEIR CHARGE TODO
+    atom_colors = []
+    for i in range(0, int(no_of_atoms)):
+        if atoms['charge'][i] == 4.0:
+            atom_colors.append("black")
+        else:
+            atom_colors.append("white")
 
 
-# df transmission via .to_dict() seems to be working
-# TODO: transmit the right (scaled, etc) DF)
-    df_try = pd.DataFrame.from_dict(f_data)
-    print(df)
-    print("dataframing", df_try)
+        # SETTINGS
+            # offcanvas
 
-    dfu = scatter_df.copy()
     # filter-by-density
     if slider_range is not None and dense_active:  # Any slider Input there?
         low, high = slider_range
@@ -1025,6 +1076,10 @@ def updateScatter(slider_range, dense_active, slider_range_cs_x, cs_x_active, sl
         mask = (dfu['z'] >= min(scatter_df['z'])) & (dfu['z'] <= max(scatter_df['z']))
         dfu = dfu[mask]
 
+
+        # SETTINGS
+            # plot-settings
+
     # size-slider
     if size_slider is not None:
         marker_size = size_slider
@@ -1038,6 +1093,7 @@ def updateScatter(slider_range, dense_active, slider_range_cs_x, cs_x_active, sl
     else:
         opac = 1
 
+
     # UPDATING DATASET
     fig_upd = px.scatter_3d(
         dfu[mask], x="x", y="y", z="z",
@@ -1050,6 +1106,13 @@ def updateScatter(slider_range, dense_active, slider_range_cs_x, cs_x_active, sl
         template=templ1,
     )
 
+    # Default Marker Params Scatter Plot
+    fig_upd.update_traces(default_scatter_marker)
+
+    # UPDATING FIG PROPERTIES
+    fig_upd.update_scenes(xaxis_showgrid=False, yaxis_showgrid=False, zaxis_showgrid=False)
+
+    # CAMERA
     if relayout_data is not None:  # no user input has been made
         if "scene.camera" in relayout_data:
             # custom re-layout cam settings
@@ -1068,10 +1131,10 @@ def updateScatter(slider_range, dense_active, slider_range_cs_x, cs_x_active, sl
     fig_upd.update_traces(marker=dict(size=marker_size, opacity=opac, line=outlined)
                           , selector=dict(mode='markers'))
 
-    # enable Atoms
+    # ADD ATOMS
     if True in atoms_enabled:
         fig_upd.add_trace(
-            go.Scatter3d(x=atoms[2], y=atoms[3], z=atoms[4], mode='markers',
+            go.Scatter3d(x=atoms['x'], y=atoms['y'], z=atoms['z'], mode='markers',
                          marker=dict(size=30, color=atom_colors)))
 
     return fig_upd
@@ -1079,6 +1142,85 @@ def updateScatter(slider_range, dense_active, slider_range_cs_x, cs_x_active, sl
 
 # END OF CALLBACKS FOR SCATTERPLOT
 # -------------
+
+
+# CALLBACKS FOR VOLUME PLOT
+    # TODO: still has the settings-inputs of scatter data still not sheared
+    # could also sync cam position of both scatter and volume. would save a store, but would run both "constructors" on cam movement
+@app.callback(
+    Output("volume-plot", "figure"),
+    [
+     Input("range-slider-cs-x", "value"),
+     Input("x-collapse", "is_open"),
+     Input("range-slider-cs-y", "value"),
+     Input("y-collapse", "is_open"),
+     Input("range-slider-cs-z", "value"),
+     Input("z-collapse", "is_open"),
+     Input("opacity-slider", 'value'),
+     Input("cam_store_v", "data"),
+     State("df_store", "data"),
+     Input("scatter-atoms", "value")],
+    [State("volume-plot", "relayoutData")],
+    prevent_initial_call=True
+    )
+def updateVolume(slider_range_cs_x, cs_x_active, slider_range_cs_y, cs_y_active,
+                  slider_range_cs_z, cs_z_active, opacity_slider, stored_cam_settings, f_data,
+                  atoms_enabled, relayout_data):
+    dfu = pd.DataFrame(f_data['MALA_DF']['volume'])
+    atoms = pd.DataFrame(f_data['INPUT_DF'])
+
+    # DECIDING ON ATOM-COLOR BASEd OFF THEIR CHARGE TODO
+    atom_colors = []
+    for i in range(0, int(no_of_atoms)):
+        if atoms['charge'][i] == 4.0:
+            atom_colors.append("black")
+        else:
+            atom_colors.append("white")
+
+    fig_upd = go.Figure(data=go.Volume(
+    x=dfu.x,
+    y=dfu.y,
+    z=dfu.z,
+    value=dfu.val,
+    opacity=0.3,
+    surface_count=17,
+    colorscale=px.colors.sequential.Inferno_r,
+    cauto=True
+))
+
+    # ADD ATOMS
+        # seemingly in wrong position, but they are right. Vol_fig just isn't sheared properly (yet)
+    if True in atoms_enabled:
+        fig_upd.add_trace(
+            go.Scatter3d(x=atoms['x'], y=atoms['y'], z=atoms['z'], mode='markers',
+                         marker=dict(size=30, color=atom_colors)))
+
+    # SCATTER GRID PROPERTIES
+    fig_upd.update_scenes(xaxis_showgrid=False, yaxis_showgrid=False, zaxis_showgrid=False)
+
+
+
+
+    # TODO: SETTINGS
+
+    # CAMERA
+    if relayout_data is not None:  # no user input has been made
+        if "scene.camera" in relayout_data:
+            # custom re-layout cam settings
+            fig_upd.update_layout(scene_camera=relayout_data['scene.camera'])
+    if stored_cam_settings is not None:
+        # locked cam settings
+        fig_upd.update_layout(scene_camera=stored_cam_settings)
+
+
+
+    return fig_upd
+# END OF CALLBACKS FOR VOLUME PLOT
+
+# TODO: updateDoS
+
+
+
 # CALLBACKS FOR SIDEBAR
 
 

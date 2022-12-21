@@ -89,9 +89,9 @@ WARNING: Proc sub-domain size < neighbor skin, could lead to lost atoms (../doma
 Per MPI rank memory allocation (min/avg/max) = 3.452 | 3.452 | 3.452 Mbytes
    Step          Temp          KinEng         PotEng         Volume     c_bgrid[1][1] 
          0   0              0              0              15.788244      0            
-Loop time of 1.864e-06 on 1 procs for 0 steps with 2 atoms
+Loop time of 1.391e-06 on 1 procs for 0 steps with 2 atoms
 
-214.6% CPU use with 1 MPI tasks x no OpenMP threads
+287.6% CPU use with 1 MPI tasks x no OpenMP threads
 
 MPI task timing breakdown:
 Section |  min time  |  avg time  |  max time  |%varavg| %total
@@ -101,7 +101,7 @@ Neigh   | 0          | 0          | 0          |   0.0 |  0.00
 Comm    | 0          | 0          | 0          |   0.0 |  0.00
 Output  | 0          | 0          | 0          |   0.0 |  0.00
 Modify  | 0          | 0          | 0          |   0.0 |  0.00
-Other   |            | 1.864e-06  |            |       |100.00
+Other   |            | 1.391e-06  |            |       |100.00
 
 Nlocal:              2 ave           2 max           2 min
 Histogram: 1 0 0 0 0 0 0 0 0 0
