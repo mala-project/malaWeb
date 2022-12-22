@@ -552,16 +552,31 @@ p_layout_landing = html.Div([
               html.H1([indent.join('MALA')], className='greetings', style={'text-align': 'center', 'width': '10em'}),
               html.Div('Upload a .cube-File for MALA to process', )],
              style={'text-align': 'center', 'margin-left': '1vw'}),
-                ], style={'width': 'content-min', 'margin-top': '20vh'})),  # content ROW 1
+                ], id="mc0", style={'width': 'content-min', 'margin-top': '20vh'})),  # content ROW 1
+                dbc.Col(html.Div()),  # empty settings tab
+            ],
+        ),
+        dbc.Row(
+            [
+                dbc.Col(),
+                dbc.Col(html.Div(id="mc1")),  # content ROW 1
+                dbc.Col(html.Div()),  # empty settings tab
+            ],
+        ),
+        dbc.Row(
+            [
+                dbc.Col(),
+                dbc.Col(html.Div(id="mc2")),  # content ROW 1
                 dbc.Col(html.Div()),  # empty settings tab
             ],
         )
+
     ], id="content-layout", style={'height': '100vh', 'background-color': '#023B59'})
 
     ])
 app.layout = p_layout_landing
 
-# p_layout_plotting will be redefined on plot-choice Input
+# p_layout_plotting will be redefined on page_state-change
     # parts of plotting_layout will be redefined on data-upload
 
 # FGEDF4 as contrast
@@ -811,7 +826,6 @@ def updateDF(f_data):
     # _______________________________________________________________________________________
 
     df_store = {'MALA_DF': {'default': data0.to_dict("records"), 'scatter': data_sc.to_dict("records"), 'volume': data_vol.to_dict("records")},'MALA_DATA': mala_data,'INPUT_DF': atoms_DF.to_dict("records")}
-    print(df_store)
 
 # removed .to_dict()
     return df_store
@@ -832,31 +846,28 @@ def updatePlotChoice(choice):
                 # UPDATE LAYOUT
 @app.callback(
     Output("content-layout", "children"),
-    [State("df_store", "data"),       # this one might be unnecessary if figs are properly updated/initilized
-    State("choice_store", "data"),
-    Input("page_state", "data")],
+    [State("choice_store", "data"),
+     Input("page_state", "data")],
     prevent_initial_call=True,
 )
 # so wie zuvor schon gemacht prüfen, was der letze input war (cam stored)
-def updateLayout(df, plots, page_state):
-
-    # add plots as parameter instead of defining it here
+def updateLayout(plots, page_state):
 
     lc = [sidebar, html.Div(), html.Div()]
-    mc = [html.Div(), html.Div(), html.Div()]  # main content components
+    mc = [html.Div(id="mc0"), html.Div(id="mc1"), html.Div(id="mc2")]  # main content components
     rc = [html.Div(), html.Div(), html.Div()]  # right side content
     # each element(component) of mc[] is one centered cell of content
     # rc contains settings-elements for the according mc-element
 
 
     print("Updating layout according to ", page_state, " state")
+    # TODO: for plot-choice --> update individual main-content-rows, instead of the whole content-layout
+    # new plot-choice reloads every graph right now
 
 # on page-load, page_state will be None. Default-layout before updateLayout is run is p_layout_landing though, so it's fine
     if page_state == "landing":
-        print("updated layout to page_state: ", page_state)
         return p_layout_landing
     elif page_state == "uploaded":
-        print("updated (naja) layout to page_state: ", page_state)
         raise dash.exceptions.PreventUpdate
 
     elif page_state == "plotting":
@@ -884,7 +895,7 @@ def updateLayout(df, plots, page_state):
                                     style={'position': 'fixed', 'margin-top': '40vh', 'margin-left': '0.5vw'}),
                          lc[0]],
                         width=1),
-                    dbc.Col(mc[0],
+                    dbc.Col(html.Div(id="mc0"),     # this is the way to update indiv. components
                         width=9),
                     dbc.Col(
                         [
@@ -909,11 +920,27 @@ def updateLayout(df, plots, page_state):
                 ], style={'width': '100vw'}
             )
         ]
-        print("updated layout to page_state: ", page_state)
         return p_layout_plotting
 
 
                 # CAM SETTINGS STORING
+
+
+@app.callback(
+    Output("mc0", "children"),
+    Input("choice_store", "data")
+)
+def updateMain0(plots):
+    if plots[0] == "scatter":
+        print("OMGG??!")
+        return scatter_plot
+    elif plots[0] == "volume":
+        return volume_plot
+    elif plots[0] == "dos":
+        return dos_plot
+
+
+
 
 
 @app.callback(
@@ -954,10 +981,10 @@ def store_Scatter_CamSettings(default_clicks, x_y_clicks, x_z_clicks, y_z_clicks
                 eye=dict(x=3.00, y=0, z=0))
         # user input camera:
         elif dash.callback_context.triggered_id == "scatter-plot":
-            print("cam error: ", user_in)
             if user_in is not None:
-                if 'scene-camera' in user_in.keys():
+                if 'scene.camera' in user_in.keys():
                     return user_in['scene.camera']
+                    # stops the update in case the callback is triggered by zooming/smth else
             else:
                 raise dash.exceptions.PreventUpdate
 
@@ -1022,25 +1049,24 @@ def store_Volume_CamSettings(user_in):
      State("cam_store", "data"),    # this sshould be a state; no need to run this callback on every cam input
      State("df_store", "data"),
      Input("scatter-atoms", "value"),
-     #Input("default-cam", "n_clicks"),
-     #Input("x-y-cam", "n_clicks"),
-     #Input("x-z-cam", "n_clicks"),
-     #Input("y-z-cam", "n_clicks"),
+     Input("default-cam", "n_clicks"),
+     Input("x-y-cam", "n_clicks"),
+     Input("x-z-cam", "n_clicks"),
+     Input("y-z-cam", "n_clicks"),
      ],
     [State("scatter-plot", "relayoutData"),
      State("scatter-plot", "figure")],
     prevent_initial_call=True
     )
 def updateScatter(slider_range, dense_active, slider_range_cs_x, cs_x_active, slider_range_cs_y, cs_y_active,
-                  slider_range_cs_z, cs_z_active, size_slider, opacity_slider, outline, stored_cam_settings, f_data, atoms_enabled,
+                  slider_range_cs_z, cs_z_active, size_slider, opacity_slider, outline, stored_cam_settings, f_data, atoms_enabled, cam_default, cam_xy, cam_xz, cam_yz,
                   relayout_data, fig):
-    print("??????")
     #print( def_cam, xy_cam, xz_cam, yz_cam, )
     dfu = pd.DataFrame(f_data['MALA_DF']['scatter'])
     #mala_data = pd.DataFrame().from_dict(f_data.MALA_DATA)
     atoms = pd.DataFrame(f_data['INPUT_DF'])
 
-    # TODO: DECIDING ON ATOM-COLOR BASEd OFF THEIR CHARGE
+    # TODO: COLORCODING ATOMS BASED OFF THEIR CHARGE
     atom_colors = []
     for i in range(0, int(no_of_atoms)):
         if atoms['charge'][i] == 4.0:
@@ -1051,7 +1077,6 @@ def updateScatter(slider_range, dense_active, slider_range_cs_x, cs_x_active, sl
 
         # SETTINGS
             # offcanvas
-
     # filter-by-density
     if slider_range is not None and dense_active:  # Any slider Input there?
         low, high = slider_range
@@ -1060,7 +1085,6 @@ def updateScatter(slider_range, dense_active, slider_range_cs_x, cs_x_active, sl
     else:
         mask = (dfu['val'] >= min(dfu['val'])) & (dfu['val'] <= max(dfu['val']))
         # TODO: mask could be referenced without being defined
-
     # x-Cross-section
     if slider_range_cs_x is not None and cs_x_active:  # Any slider Input there?
         low, high = slider_range_cs_x
@@ -1123,23 +1147,41 @@ def updateScatter(slider_range, dense_active, slider_range_cs_x, cs_x_active, sl
     # UPDATING FIG-SCENE- PROPERTIES
     fig_upd.update_scenes(xaxis_showgrid=False, yaxis_showgrid=False, zaxis_showgrid=False)
 
-    # TODO: fig nicht einfach überschreiben, sondern mit als Input beziehen und updaten!!
-    '''
-    smth like: if last input was 'static-cam-setting'
-    -> update the fig accordingly
-    if it was not
-    
-    if last input was not (eine der 4 static cam-positions):
-        
-    
-    -> 
-    '''
-
+    print("Triggered by: ")
+    print(dash.callback_context.triggered_id)
     # CAMERA
-    # TODO: this isn't even using the stored CAM_POS????
+    if dash.callback_context.triggered_id == "default-cam":
+        fig_upd.update_layout(scene_camera=dict(
+            up=dict(x=0, y=0, z=1),
+            center=dict(x=0, y=0, z=0),
+            eye=dict(x=1.5, y=1.5, z=1.5)
+        ))
+    elif dash.callback_context.triggered_id == "x-y-cam":
+        fig_upd.update_layout(scene_camera=dict(
+            up=dict(x=0, y=0, z=1),
+            center=dict(x=0, y=0, z=0),
+            eye=dict(x=0, y=0, z=3.00)
+        ))
+    elif dash.callback_context.triggered_id == "x-z-cam":
+        fig_upd.update_layout(scene_camera=dict(
+            up=dict(x=0, y=0, z=1),
+            center=dict(x=0, y=0, z=0),
+            eye=dict(x=0, y=3.00, z=0)
+        ))
+    elif dash.callback_context.triggered_id == "y-z-cam":
+        fig_upd.update_layout(scene_camera=dict(
+            up=dict(x=0, y=0, z=1),
+            center=dict(x=0, y=0, z=0),
+            eye=dict(x=3.00, y=0, z=0)))
 
-    fig_upd.update_layout(scene_camera=stored_cam_settings)
-
+    else:
+        fig_upd.update_layout(scene_camera=stored_cam_settings)
+        '''
+        set camera-position according to the clicked button, 
+                                    OR 
+                    - if no button has been clicked - 
+        to the most recently stored manually adjusted camera position
+        '''
 
 
 
@@ -1226,10 +1268,13 @@ def updateVolume(slider_range_cs_x, cs_x_active, slider_range_cs_y, cs_y_active,
     # TODO: SETTINGS
 
     # CAMERA
-    if relayout_data is not None:  # no user input has been made
+    '''
+    if relayout_data is not None:  # cam user input has been made
         if "scene.camera" in relayout_data:
             # custom re-layout cam settings
             fig_upd.update_layout(scene_camera=relayout_data['scene.camera'])
+            '''
+
     if stored_cam_settings is not None:
         # locked cam settings
         fig_upd.update_layout(scene_camera=stored_cam_settings)
