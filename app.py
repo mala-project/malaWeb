@@ -323,7 +323,6 @@ sidebar = html.Div(
                'box-shadow': 'rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px'},
     ),
 )
-sidebar_uploaded = sidebar
 # __________________________________________________________________________________________________
 
 # Right sidebar CONTENT        -       Options
@@ -410,7 +409,7 @@ r_canvas_sc = html.Div(dbc.Offcanvas(r_content_sc, id="offcanvas-r-sc", is_open=
                                      style={'width': '15rem', 'height': 'min-content', 'margin-top': '2.5vh',
                                             'margin-right': '0.5vw', 'border-radius': '10px',
                                             'box-shadow': 'rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px'},
-                                     scrollable=True, backdrop=False, placement='end'))
+                                     scrollable=True, backdrop=False, placement='end'), id="l_sc")
 
 # __________________________________________________________________________________________________
 
@@ -481,6 +480,9 @@ scatter_plot = html.Div(
             ],
             className="plot-section"
         ),
+        r_content_sc
+
+
     ],
     className="content"
 )
@@ -585,6 +587,15 @@ def toggle_upload(n_header, is_open):
     if n_header:
         return not is_open
 
+
+
+@app.callback(
+    Output("plot-choice", "value"),
+    Input("reset-data", "n_clicks"),
+    prevent_initial_call=True,
+)
+def resetPlotChoice(trigger_reset):
+    return []
 
 @app.callback(
     Output("collapse-plot-choice", "is_open"),
@@ -738,7 +749,7 @@ def updatePageState(trig1, trig2, trig3):
         print("State changed to: uploaded")
         return "uploaded"
 
-    if trig2 is not None and dash.callback_context.triggered_id == "choice_store":
+    if trig2 is not None and dash.callback_context.triggered_id == "choice_store" and trig2 is not []:
         print("State changed to: plotting")
         return "plotting"
 
@@ -746,7 +757,8 @@ def updatePageState(trig1, trig2, trig3):
         print("State changed to: landing")
         return "landing"
 
-        # DATA STORING
+
+# DATA STORING
 
 # dataframes
 @app.callback(
@@ -848,6 +860,7 @@ def updateDF(f_data):
     [Input('plot-choice', 'value')],
     prevent_initial_call=True)
 def updatePlotChoice(choice):
+    print("choice updated")
     return choice
 
     # UPDATE LAYOUT
@@ -878,14 +891,17 @@ def updateLayout(plots, page_state):
     Input("page_state", "data"),
     State("choice_store", "data"),
     prevent_initial_call=True)
-def updateMain0(state, plots):
+def updateMC0(state, plots):
     print("Triggered mc0 update by:", state)
+
     if state == "landing":
         return mc0_landing
     elif state == "uploaded":
         return mc0_landing      # make a mc0_uploaded
     elif state == "plotting":
-        if plots[0] == "scatter":
+        if not plots:
+            raise PreventUpdate
+        elif plots[0] == "scatter":
             print("Updated mc0 to scatter")
             return scatter_plot
         elif plots[0] == "volume":
@@ -905,18 +921,49 @@ def updateMain0(state, plots):
     State("choice_store", "data"),
     prevent_initial_call=True,
 )
-def updateMain1(state, plots):
+def updateMC1(state, plots):
     if plots is not None and len(plots) > 1:
-        if state == "scatter":
-            print("Updated mc1 to scatter")
-            return scatter_plot
-        elif state == "volume":
-            print("Updated mc1 to volume")
-            return volume_plot
-        elif state == "dos":
-            print("Updated mc1 to dos")
-            return dos_plot
+        if state == "landing":
+            return html.Div()
+        elif state == "uploaded":
+            return html.Div()
+        elif state == "plotting":
+            if plots[1] == "scatter":
+                print("Updated mc1 to scatter")
+                return scatter_plot
+            elif plots[1] == "volume":
+                print("Updated mc1 to volume")
+                return volume_plot
+            elif plots[1] == "dos":
+                print("Updated mc1 to dos")
+                return dos_plot
 
+
+
+# UPDATING CONTENT-CELL 1
+@app.callback(
+    Output("mc2", "children"),
+    #Input("content-layout", "children"),
+    Input("page_state", "data"),
+    State("choice_store", "data"),
+    prevent_initial_call=True,
+)
+def updateMC2(state, plots):
+    if plots is not None and len(plots) > 2:
+        if state == "landing":
+            return html.Div()
+        elif state == "uploaded":
+            return html.Div()
+        elif state == "plotting":
+            if plots[2] == "scatter":
+                print("Updated mc1 to scatter")
+                return scatter_plot
+            elif plots[2] == "volume":
+                print("Updated mc1 to volume")
+                return volume_plot
+            elif plots[2] == "dos":
+                print("Updated mc1 to dos")
+                return dos_plot
 
 
 
@@ -964,8 +1011,7 @@ def store_Volume_CamSettings(user_in):
             return None
 
 
-# TODO: should get triggered by CERTAIN content cells being initialized (not cells directly, but the figs inside them)
-    # or don't prevent initial call / fire callback when fig gets initialized
+
 @app.callback(
     Output("scatter-plot", "figure"),
     [Input("range-slider-dense", "value"),
@@ -1134,7 +1180,6 @@ def updateScatter(slider_range, dense_active, slider_range_cs_x, cs_x_active, sl
                          marker=dict(size=30, color=atom_colors)))
 
     return fig_upd
-
 
 
 
