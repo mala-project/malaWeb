@@ -758,14 +758,15 @@ def store_Scatter_CamSettings(default_clicks, x_y_clicks, x_z_clicks, y_z_clicks
      Input("reset-data", "n_clicks")],
     prevent_initial_call=True)
 def updatePageState(trig1, trig2, trig3):
-    if trig1 is not None and dash.callback_context.triggered_id == "df_store":
-        print("State changed to: uploaded")
-        return "uploaded"
-
-    if trig2 is not None and dash.callback_context.triggered_id == "choice_store" and len(trig2) != 0:
+    if trig1 is not None and trig2 is not None and len(trig2) != 0 and (dash.callback_context.triggered_id == "choice_store" or "df_store"):
         print(trig2)
         print("State changed to: plotting")
         return "plotting"
+
+    if (trig1 is not None and dash.callback_context.triggered_id == "df_store" or trig2 is not None and len(trig2) == 0) and dash.callback_context.triggered_id != "reset-data":
+        print("State changed to: uploaded")
+        return "uploaded"
+
 
     if trig3 is not None and dash.callback_context.triggered_id == "reset-data":
         print("State changed to: landing")
@@ -777,22 +778,24 @@ def updatePageState(trig1, trig2, trig3):
 # dataframes
 @app.callback(
     Output("df_store", "data"),
-    [Input('upload-data', 'contents')],
+    [Input('upload-data', 'contents'),
+     Input("reset-data", "n_clicks")],
     prevent_initial_call=True)
-def updateDF(f_data):
+def updateDF(f_data, reset):
     # f_data = uploaded data -> to be .npy
-    # TODO:
-    #  smth like "mala_data = mala_inference(f_data)"
-    #  --> mala takes uploaded data and returns calculations
-    #  --> waiting for Lenz
 
     # TODO: check if data is valid before updating
     #  maybe do this on upload, so this callback isn't even run
     #  --> raise preventUpdate if not
 
+    if dash.callback_context.triggered_id == "reset-data":
+        return None
+
     # (a) GET DATA FROM MALA (/ inference script)
 
     # TODO: smth like (mala_data = mala.webAPI(f_data))
+    #  --> mala takes uploaded data and returns calculations
+    #  --> waiting for Lenz
     mala_data = mala_inference.results
     bandEn = mala_data['band_energy']
     totalEn = mala_data['total_energy']
@@ -894,6 +897,7 @@ def updatePlotChoice(choice):
     prevent_initial_call=True)
 def updateLayout(plots, page_state):
 # could change size of rows/columns here
+    raise PreventUpdate
     return skel_layout
 
 
@@ -907,11 +911,12 @@ def updateLayout(plots, page_state):
     State("df_store", "data"),
     prevent_initial_call=True)
 def updateMC0(state, plots, data):
-    if data is None:
+
+    if data is None or state == "landing":
         return mc0_landing
-    elif plots is None or len(plots) == 0:
+    elif plots is None or len(plots) == 0 or state == "updated":
         return mc0_upd # updated
-    else:
+    elif state == "plotting" and data is not None:
         if plots[0] == "scatter":
             print("Updated mc0 to scatter")
             return scatter_plot
@@ -1041,9 +1046,9 @@ def store_Volume_CamSettings(user_in):
      Input("size-slider", 'value'),
      Input("opacity-slider", 'value'),
      Input("outline-check", 'value'),
+     Input("scatter-atoms", "value"),
      State("cam_store", "data"),
      State("df_store", "data"),
-     Input("scatter-atoms", "value"),
      Input("default-cam", "n_clicks"),
      Input("x-y-cam", "n_clicks"),
      Input("x-z-cam", "n_clicks"),
@@ -1054,14 +1059,13 @@ def store_Volume_CamSettings(user_in):
     prevent_initial_call=True
 )
 def updateScatter(slider_range, dense_active, slider_range_cs_x, cs_x_active, slider_range_cs_y, cs_y_active,
-                  slider_range_cs_z, cs_z_active, size_slider, opacity_slider, outline, stored_cam_settings, f_data,
-                  atoms_enabled, cam_default, cam_xy, cam_xz, cam_yz,
+                  slider_range_cs_z, cs_z_active, size_slider, opacity_slider, atoms_enabled, outline, stored_cam_settings, f_data,
+                  cam_default, cam_xy, cam_xz, cam_yz,
                   relayout_data, fig):
-    print("UPDATING SCATTER")
-    # the denisity-Dataframe  for Scatter that we're updating, taken from df_store (=f_data)
     if f_data is None:
         raise PreventUpdate
-    print("continue")
+    print("UPDATING SCATTER")
+    # the denisity-Dataframe  for Scatter that we're updating, taken from df_store (=f_data)
     dfu = pd.DataFrame(f_data['MALA_DF']['scatter'])
         # mala_data = pd.DataFrame().from_dict(f_data.MALA_DATA)    # not necessary here
     # atoms-Dataframe also taken from f_data
@@ -1208,25 +1212,27 @@ def updateScatter(slider_range, dense_active, slider_range_cs_x, cs_x_active, sl
 @app.callback(
     Output("volume-plot", "figure"),
     [
-        Input("range-slider-cs-x", "value"),
-        Input("x-collapse", "is_open"),
-        Input("range-slider-cs-y", "value"),
-        Input("y-collapse", "is_open"),
-        Input("range-slider-cs-z", "value"),
-        Input("z-collapse", "is_open"),
-        Input("opacity-slider", 'value'),
+        #Input("range-slider-cs-x", "value"),
+        #Input("x-collapse", "is_open"),
+        #Input("range-slider-cs-y", "value"),
+        #Input("y-collapse", "is_open"),
+        #Input("range-slider-cs-z", "value"),
+        #Input("z-collapse", "is_open"),
+        #Input("opacity-slider", 'value'),
+        #Input("scatter-atoms", "value")
         Input("cam_store_v", "data"),
         State("df_store", "data"),
-        Input("scatter-atoms", "value")],
+    ],
     [State("volume-plot", "relayoutData")],
     prevent_initial_call=True
 )
-def updateVolume(slider_range_cs_x, cs_x_active, slider_range_cs_y, cs_y_active,
-                 slider_range_cs_z, cs_z_active, opacity_slider, stored_cam_settings, f_data,
-                 atoms_enabled, relayout_data):
+def updateVolume(stored_cam_settings, f_data, relayout_data):
+    if f_data is None:
+        raise PreventUpdate
     dfu = pd.DataFrame(f_data['MALA_DF']['volume'])
     atoms = pd.DataFrame(f_data['INPUT_DF'])
 
+    atoms_enabled = [True]        # as long as volume doesn't have it's own settings yet
     # DECIDING ON ATOM-COLOR BASEd OFF THEIR CHARGE TODO
     atom_colors = []
     for i in range(0, int(no_of_atoms)):
@@ -1271,7 +1277,8 @@ def updateVolume(slider_range_cs_x, cs_x_active, slider_range_cs_y, cs_y_active,
         fig_upd.update_layout(scene_camera=stored_cam_settings)
 
     return fig_upd
-
+# commented params ( before stored cam settings )
+# slider_range_cs_x, cs_x_active, slider_range_cs_y, cs_y_active, slider_range_cs_z, cs_z_active, opacity_slider,
 
 # END OF CALLBACKS FOR VOLUME PLOT
 
