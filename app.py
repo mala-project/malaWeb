@@ -531,6 +531,19 @@ mc0_landing = html.Div([
                              style={'text-align': 'center', 'margin-left': '1vw'}),
                 ], style={'width': 'content-min', 'margin-top': '20vh'})
 
+
+# updated cell for mc0
+mc0_upd = html.Div([
+                    html.Div([html.H1([indent.join('Welcome')], className='greetings',
+                                      style={'text-align': 'center', 'width': '10em'}),
+                              html.H1([indent.join('To')], className='greetings',
+                                      style={'text-align': 'center', 'width': '10em'}),
+                              html.H1([indent.join('MALA')], className='greetings',
+                                      style={'text-align': 'center', 'width': '10em'}),
+                              html.Div('Please choose a plotting style', )],
+                             style={'text-align': 'center', 'margin-left': '1vw'}),
+                ], style={'width': 'content-min', 'margin-top': '20vh'})
+
 skel_layout = [
             dbc.Row([
                 dbc.Col(id="l0"),
@@ -749,7 +762,8 @@ def updatePageState(trig1, trig2, trig3):
         print("State changed to: uploaded")
         return "uploaded"
 
-    if trig2 is not None and dash.callback_context.triggered_id == "choice_store" and trig2 is not []:
+    if trig2 is not None and dash.callback_context.triggered_id == "choice_store" and len(trig2) != 0:
+        print(trig2)
         print("State changed to: plotting")
         return "plotting"
 
@@ -890,18 +904,15 @@ def updateLayout(plots, page_state):
     #Input("content-layout", "children"),
     Input("page_state", "data"),
     State("choice_store", "data"),
+    State("df_store", "data"),
     prevent_initial_call=True)
-def updateMC0(state, plots):
-    print("Triggered mc0 update by:", state)
-
-    if state == "landing":
+def updateMC0(state, plots, data):
+    if data is None:
         return mc0_landing
-    elif state == "uploaded":
-        return mc0_landing      # make a mc0_uploaded
-    elif state == "plotting":
-        if not plots:
-            raise PreventUpdate
-        elif plots[0] == "scatter":
+    elif plots is None or len(plots) == 0:
+        return mc0_upd # updated
+    else:
+        if plots[0] == "scatter":
             print("Updated mc0 to scatter")
             return scatter_plot
         elif plots[0] == "volume":
@@ -910,6 +921,7 @@ def updateMC0(state, plots):
         elif plots[0] == "dos":
             print("Updated mc0 to dos")
             return dos_plot
+
 
 
 
@@ -937,6 +949,8 @@ def updateMC1(state, plots):
             elif plots[1] == "dos":
                 print("Updated mc1 to dos")
                 return dos_plot
+        else:
+            return html.Div()
 
 
 
@@ -964,6 +978,8 @@ def updateMC2(state, plots):
             elif plots[2] == "dos":
                 print("Updated mc1 to dos")
                 return dos_plot
+    else:
+        return html.Div()
 
 
 
@@ -1043,6 +1059,9 @@ def updateScatter(slider_range, dense_active, slider_range_cs_x, cs_x_active, sl
                   relayout_data, fig):
     print("UPDATING SCATTER")
     # the denisity-Dataframe  for Scatter that we're updating, taken from df_store (=f_data)
+    if f_data is None:
+        raise PreventUpdate
+    print("continue")
     dfu = pd.DataFrame(f_data['MALA_DF']['scatter'])
         # mala_data = pd.DataFrame().from_dict(f_data.MALA_DATA)    # not necessary here
     # atoms-Dataframe also taken from f_data
