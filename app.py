@@ -139,94 +139,6 @@ print("_________________________________________________________________________
 # density- import / conversion to pandas dataframe / fig - density-visualisation params / plot-layout params
 
 
-# (a)
-coord_arr = np.column_stack(
-    list(map(np.ravel, np.meshgrid(*map(np.arange, density.shape), indexing="ij"))) + [density.ravel()])
-df = pd.DataFrame(coord_arr, columns=['x', 'y', 'z', 'val'])
-
-# (b) SCALING to right voxel-size
-df['x'] *= x_axis[1]
-df['y'] *= y_axis[2]
-df['z'] *= z_axis[3]
-
-scatter_df = df.copy()  # important to keep / save df as kartesian coordinates:
-# they are used to calculate/scale shearing "factor" (actually summand)
-# used for unsheared x-values for go.Volume
-
-# TODO: check if this scatter_df really can't be used for volume figures
-# SHEARING für scatter_3d
-scatter_df.x += y_axis[1] * (df.y / y_axis[2])
-scatter_df.x += z_axis[1] * (df.z / z_axis[3])
-
-scatter_df.y += x_axis[2] * (df.x / x_axis[1])
-scatter_df.y += z_axis[2] * (df.z / z_axis[3])
-
-scatter_df.z += y_axis[3] * (df.y / y_axis[2])
-scatter_df.z += x_axis[3] * (df.x / x_axis[1])
-
-'''
-(a) np columns coord_arr, each entry containing  a single coord
-    - f.e. [x_val, y_val, z_val, dens_val]
-    - count-order: z -> y -> x
-        --> this is the order needed for scatter_3d
-(b) SCATTER_3D-PLOT:
-- fills the Dataframe for scatter_3D-rendering with integer coordinates and according density values
-    - df['x'] / df['y'] / df['z'] / df['val']
-- scales each x-/y-/z-column according to THAT axis' unit-vector
-
-(c) VOLUME-PLOT
-
-'''
-
-# (c) DATA für Volume
-
-#   Data table and vol_fig!!!)
-# volume_DF = pd.DataFrame(data={'x': df.x, 'y': scatter_df.y, 'z': scatter_df.z, 'val': df.val})
-volume_DF = df.copy()
-# SHEAR (as volume issues are fixed -  these might be deprecated ?
-# --> one DF for all
-
-volume_DF.x += y_axis[1] * (df.y / y_axis[2])
-volume_DF.x += z_axis[1] * (df.z / z_axis[3])
-
-volume_DF.y += x_axis[2] * (df.x / x_axis[1])
-volume_DF.y += z_axis[2] * (df.z / z_axis[3])
-
-volume_DF.z += y_axis[3] * (df.y / y_axis[2])
-volume_DF.z += x_axis[3] * (df.x / x_axis[1])
-
-# DENSITY OF STATE
-dosArr = np.column_stack(list(map(np.ravel, np.meshgrid(*map(np.arange, dOs.shape), indexing="ij"))) + [dOs.ravel()])
-dosDf = pd.DataFrame(dosArr, columns=['x', 'y'])
-# _____________________________________________________________________________________________________________________
-
-
-# THEME & FIGUREs
-
-
-# VOLUME-FIG - WORK IN PROGRESS
-vol_fig = go.Figure(data=go.Volume(
-    x=volume_DF.x,
-    y=volume_DF.y,
-    z=volume_DF.z,
-    value=volume_DF.val,
-    opacity=0.3,
-    surface_count=17,
-    colorscale=px.colors.sequential.Inferno_r,
-    cauto=True
-))
-
-# TODO: Could get constant grid-size by drawing maximum vertices as invisible
-# i think there was a property for disabling auto-resize
-
-# DoS-Fig
-dos_fig = go.Figure()
-dos_fig.add_trace(
-    go.Scatter(x=dosDf['x'], y=dosDf['y'], name='densityOfstate', line=dict(color='#f15e64', width=3, dash='dot')))
-
-print("FIGURES LOADED")
-print("_________________________________________________________________________________________")
-
 app = dash.Dash(__name__, external_stylesheets=[dbc.icons.BOOTSTRAP, dbc.themes.BOOTSTRAP],
                 suppress_callback_exceptions=True)
 app.title = 'MALAweb'
@@ -274,6 +186,7 @@ sidebar = html.Div(
                             Upload atompositions via .cube! (later npy)
                             ''', style={'text-align': 'center'}),
                             # TODO: make this give dynamic promts (like "choose a plot!")
+                            # right now we're reloading the whole "welcome mala"-cell for that
                             dcc.Upload(
                                 id='upload-data',
                                 children=html.Div([
@@ -300,7 +213,9 @@ sidebar = html.Div(
                                         style={'text-align': 'center'}, width=8)
                             ])
 
-                        ], className="upload-section"), )),
+                        ], className="upload-section"
+                        ),
+                    )),
                     id="collapse-upload",
                     is_open=True,
                 ),
@@ -324,93 +239,7 @@ sidebar = html.Div(
     ),
 )
 # __________________________________________________________________________________________________
-
-# Right sidebar CONTENT        -       Options
-
-# scatter
-r_content_sc = html.Div(
-    # Idea: draw markers on coord-rangeslider where atoms are
-    dbc.Card(dbc.CardBody(
-        [
-            # Buttonrow
-            dbc.Row([
-                dbc.Col(html.Button('X', id='collapse-x', n_clicks=0, style={'width': '2em'})),
-                dbc.Col(html.Button('Y', id='collapse-y', n_clicks=0, style={'width': '2em'})),
-                dbc.Col(html.Button('Z', id='collapse-z', n_clicks=0, style={'width': '2em'})),
-                dbc.Col(
-                    html.Img(src="assets/dens.png", id='collapse-dense', style={"width": "1.8em", "height": "1.8em"},
-                             n_clicks=0))
-            ], className='g-0'),
-            # Sliderrow
-            dbc.Row([
-                dbc.Col(
-                    dbc.Collapse(
-                        [
-                            html.Img(id="reset-cs-x", src="/assets/x.svg", n_clicks=0, style={'width': '1.25em'}),
-                            dcc.RangeSlider(id='range-slider-cs-x', min=min(scatter_df['x']), max=max(scatter_df['x']),
-                                            marks=None, tooltip={"placement": "bottom", "always_visible": False},
-                                            updatemode='drag', vertical=True, verticalHeight=800, pushable=x_axis[1])
-                        ], style={'padding': '8px', 'width': '2em'}, id="x-collapse", is_open=False
-                    )
-                ),
-                dbc.Col(
-                    dbc.Collapse(
-                        [
-                            html.Img(id="reset-cs-y", src="/assets/x.svg", n_clicks=0, style={'width': '1.25em'}),
-                            dcc.RangeSlider(
-                                id='range-slider-cs-y',
-                                min=min(scatter_df['y']), max=max(scatter_df['y']),
-                                marks=None, tooltip={"placement": "bottom", "always_visible": False},
-                                updatemode='drag', vertical=True, verticalHeight=800, pushable=y_axis[2])],
-                        style={'padding': '7px', 'width': '2em'}, id="y-collapse", is_open=False
-                    )
-                ),
-                dbc.Col(
-                    dbc.Collapse(
-                        [
-                            html.Img(id="reset-cs-z", src="/assets/x.svg", n_clicks=0, style={'width': '1.25em'}),
-                            dcc.RangeSlider(
-                                id='range-slider-cs-z',
-                                min=min(scatter_df['z']), max=max(scatter_df['z']),
-                                marks=None, tooltip={"placement": "bottom", "always_visible": False},
-                                updatemode='drag', vertical=True, verticalHeight=800, pushable=z_axis[3])],
-                        style={'padding': '7px', 'width': '2em'}, id="z-collapse", is_open=False
-                    )
-                ),
-                dbc.Col(
-                    dbc.Collapse(
-                        [
-                            # density range-slider
-                            html.Img(id="reset-dense", src="/assets/x.svg", n_clicks=0, width="content-min",
-                                     style={'width': '1.25em'}),
-                            dcc.RangeSlider(
-                                id='range-slider-dense',
-                                min=min(scatter_df['val']), max=max(scatter_df['val']),
-                                step=round((max(scatter_df['val']) - min(scatter_df['val'])) / 30),
-                                marks=None, tooltip={"placement": "bottom", "always_visible": False},
-                                updatemode='drag', vertical=True, verticalHeight=800
-                            )], style={'width': '2em', 'padding': '7px'}, id="dense-collapse", is_open=False
-                    )
-                )
-            ], className='g-0')
-
-        ]
-    ))
-)
-# TODO:
-#  - ability to lock range? (difficult/rechenintensiv)
-#  - top range-marker reverse-pushable??
-#  - one card gets opened->all cards open, just without sliders
-#  - slider max value is x-/y-/z-max-value - 1
-#   - allow direct keyboard input for range sliders?
-
-# Right side-bar
-r_canvas_sc = html.Div(dbc.Offcanvas(r_content_sc, id="offcanvas-r-sc", is_open=True,
-                                     style={'width': '15rem', 'height': 'min-content', 'margin-top': '2.5vh',
-                                            'margin-right': '0.5vw', 'border-radius': '10px',
-                                            'box-shadow': 'rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px'},
-                                     scrollable=True, backdrop=False, placement='end'), id="l_sc")
-
+r_canvas_sc = html.Div(id="r_canvas_sc")        # TODO default cavas that gets updated together with scatterplot
 # __________________________________________________________________________________________________
 
 # MAIN CONTENT / PLOT
@@ -437,6 +266,9 @@ uploaded_main2 = html.Div()
 # column 2 | PLOT(S) CHOSEN
 # SCATTER
 sc_fig = go.Figure()
+vol_fig = go.Figure()
+dos_fig = go.Figure()
+# start plot with empty fig, fill on updateScatter-callback
 scatter_plot = html.Div(
     [
         # Plot Section
@@ -480,7 +312,7 @@ scatter_plot = html.Div(
             ],
             className="plot-section"
         ),
-        r_content_sc
+        r_canvas_sc
 
 
     ],
@@ -674,26 +506,34 @@ def toggle_density_rs(n_d, is_open):
 
 @app.callback(
     Output("range-slider-cs-x", "value"),
-    Input("reset-cs-x", "n_clicks"))
-def reset_cs_x(n_clicks):
+    Input("reset-cs-x", "n_clicks"),
+    Input("df_store", "data"))
+def reset_cs_x(n_clicks, data):
+    scatter_df = data['MALA_DF']['scatter']
     return [min(scatter_df['x']), max(scatter_df['x'])]
 
 @app.callback(
     Output("range-slider-cs-y", "value"),
-    Input("reset-cs-y", "n_clicks"))
-def reset_cs_y(n_clicks):
+    Input("reset-cs-y", "n_clicks"),
+    Input("df_store", "data"))
+def reset_cs_y(n_clicks, data):
+    scatter_df = data['MALA_DF']['scatter']
     return [min(scatter_df['y']), max(scatter_df['y'])]
 
 @app.callback(
     Output("range-slider-cs-z", "value"),
-    Input("reset-cs-z", "n_clicks"))
-def reset_cs_z(n_clicks):
+    Input("reset-cs-z", "n_clicks"),
+    Input("df_store", "data"))
+def reset_cs_z(n_clicks, data):
+    scatter_df = data['MALA_DF']['scatter']
     return [min(scatter_df['z']), max(scatter_df['z'])]
 
 @app.callback(
     Output("range-slider-dense", "value"),
-    Input("reset-dense", "n_clicks"))
-def reset_cs_dense(n_clicks):
+    Input("reset-dense", "n_clicks"),
+    Input("df_store", "data"))
+def reset_cs_dense(n_clicks, data):
+    scatter_df = data['MALA_DF']['scatter']
     return [min(scatter_df['val']), max(scatter_df['val'])]
 
 # end of collapsable cross-section settings
@@ -778,24 +618,28 @@ def updatePageState(trig1, trig2, trig3):
 # dataframes
 @app.callback(
     Output("df_store", "data"),
+    Output('upload-data', 'contents'),
     [Input('upload-data', 'contents'),
      Input("reset-data", "n_clicks")],
     prevent_initial_call=True)
 def updateDF(f_data, reset):
+    # GOAL:
     # f_data = uploaded data -> to be .npy
+    # TODO: smth like (mala_data = mala.webAPI(f_data)) (run a mala .getter(uploadedData))
+    #  --> mala takes uploaded data and returns calculations
+    #  --> waiting for Lenz
+
 
     # TODO: check if data is valid before updating
     #  maybe do this on upload, so this callback isn't even run
     #  --> raise preventUpdate if not
 
+    # Always returning None for the Upload-Component aswell, so that it's possible to reupload
+    # (-> gotta clear up the space)
     if dash.callback_context.triggered_id == "reset-data":
-        return None
-
+        return None, None
     # (a) GET DATA FROM MALA (/ inference script)
 
-    # TODO: smth like (mala_data = mala.webAPI(f_data))
-    #  --> mala takes uploaded data and returns calculations
-    #  --> waiting for Lenz
     mala_data = mala_inference.results
     bandEn = mala_data['band_energy']
     totalEn = mala_data['total_energy']
@@ -851,14 +695,14 @@ def updateDF(f_data, reset):
     data_vol['z'] *= z_axis[3]
 
     # SHEARING für scatter_3d
-    data_sc.x += y_axis[1] * (df.y / y_axis[2])
-    data_sc.x += z_axis[1] * (df.z / z_axis[3])
+    data_sc.x += y_axis[1] * (data0.y / y_axis[2])
+    data_sc.x += z_axis[1] * (data0.z / z_axis[3])
 
-    data_sc.y += x_axis[2] * (df.x / x_axis[1])
-    data_sc.y += z_axis[2] * (df.z / z_axis[3])
+    data_sc.y += x_axis[2] * (data0.x / x_axis[1])
+    data_sc.y += z_axis[2] * (data0.z / z_axis[3])
 
-    data_sc.z += y_axis[3] * (df.y / y_axis[2])
-    data_sc.z += x_axis[3] * (df.x / x_axis[1])
+    data_sc.z += y_axis[3] * (data0.y / y_axis[2])
+    data_sc.z += x_axis[3] * (data0.x / x_axis[1])
 
     # _______________________________________________________________________________________
 
@@ -867,7 +711,7 @@ def updateDF(f_data, reset):
                 'INPUT_DF': atoms_DF.to_dict("records")}
 
     # removed .to_dict()
-    return df_store
+    return df_store, None
 
     # PLOT-CHOICE STORING
 
@@ -1031,7 +875,103 @@ def store_Volume_CamSettings(user_in):
         elif dash.callback_context.triggered_id == "volume-plot":
             return None
 
+@app.callback(
+    Output("r_canvas_rc", "children"),
+    Input("df_store", "data")
+)
+def updateRightSideSC(data):
+    # Right sidebar CONTENT        -       Options
+    scatter_df = pd.DataFrame(data['MALA_DF']['scatter'])
+    # scatter
+    # TODO: give default-values instead of the dfs-values and update these values in updateScatter-callback
+    r_content_sc = html.Div(
+        # Idea: draw markers on coord-rangeslider where atoms are
+        dbc.Card(dbc.CardBody(
+            [
+                # Buttonrow
+                dbc.Row([
+                    dbc.Col(html.Button('X', id='collapse-x', n_clicks=0, style={'width': '2em'})),
+                    dbc.Col(html.Button('Y', id='collapse-y', n_clicks=0, style={'width': '2em'})),
+                    dbc.Col(html.Button('Z', id='collapse-z', n_clicks=0, style={'width': '2em'})),
+                    dbc.Col(
+                        html.Img(src="assets/dens.png", id='collapse-dense',
+                                 style={"width": "1.8em", "height": "1.8em"},
+                                 n_clicks=0))
+                ], className='g-0'),
+                # Sliderrow
+                dbc.Row([
+                    dbc.Col(
+                        dbc.Collapse(
+                            [
+                                html.Img(id="reset-cs-x", src="/assets/x.svg", n_clicks=0, style={'width': '1.25em'}),
+                                dcc.RangeSlider(id='range-slider-cs-x', min=min(scatter_df['x']),
+                                                max=max(scatter_df['x']),
+                                                marks=None, tooltip={"placement": "bottom", "always_visible": False},
+                                                updatemode='drag', vertical=True, verticalHeight=800,
+                                                pushable=x_axis[1])
+                            ], style={'padding': '8px', 'width': '2em'}, id="x-collapse", is_open=False
+                        )
+                    ),
+                    dbc.Col(
+                        dbc.Collapse(
+                            [
+                                html.Img(id="reset-cs-y", src="/assets/x.svg", n_clicks=0, style={'width': '1.25em'}),
+                                dcc.RangeSlider(
+                                    id='range-slider-cs-y',
+                                    min=min(scatter_df['y']), max=max(scatter_df['y']),
+                                    marks=None, tooltip={"placement": "bottom", "always_visible": False},
+                                    updatemode='drag', vertical=True, verticalHeight=800, pushable=y_axis[2])],
+                            style={'padding': '7px', 'width': '2em'}, id="y-collapse", is_open=False
+                        )
+                    ),
+                    dbc.Col(
+                        dbc.Collapse(
+                            [
+                                html.Img(id="reset-cs-z", src="/assets/x.svg", n_clicks=0, style={'width': '1.25em'}),
+                                dcc.RangeSlider(
+                                    id='range-slider-cs-z',
+                                    min=min(scatter_df['z']), max=max(scatter_df['z']),
+                                    marks=None, tooltip={"placement": "bottom", "always_visible": False},
+                                    updatemode='drag', vertical=True, verticalHeight=800, pushable=z_axis[3])],
+                            style={'padding': '7px', 'width': '2em'}, id="z-collapse", is_open=False
+                        )
+                    ),
+                    dbc.Col(
+                        dbc.Collapse(
+                            [
+                                # density range-slider
+                                html.Img(id="reset-dense", src="/assets/x.svg", n_clicks=0, width="content-min",
+                                         style={'width': '1.25em'}),
+                                dcc.RangeSlider(
+                                    id='range-slider-dense',
+                                    min=min(scatter_df['val']), max=max(scatter_df['val']),
+                                    step=round((max(scatter_df['val']) - min(scatter_df['val'])) / 30),
+                                    marks=None, tooltip={"placement": "bottom", "always_visible": False},
+                                    updatemode='drag', vertical=True, verticalHeight=800
+                                )], style={'width': '2em', 'padding': '7px'}, id="dense-collapse", is_open=False
+                        )
+                    )
+                ], className='g-0')
 
+            ]
+        ))
+    )
+
+    # TODO:
+    #  - ability to lock range? (difficult/rechenintensiv)
+    #  - top range-marker reverse-pushable??
+    #  - one card gets opened->all cards open, just without sliders
+    #  - slider max value is x-/y-/z-max-value - 1
+    #   - allow direct keyboard input for range sliders?
+
+    # Right side-bar
+    r_canvas_sc = html.Div(dbc.Offcanvas(r_content_sc, id="offcanvas-r-sc", is_open=True,
+                                         style={'width': '15rem', 'height': 'min-content', 'margin-top': '2.5vh',
+                                                'margin-right': '0.5vw', 'border-radius': '10px',
+                                                'box-shadow': 'rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px'},
+                                         scrollable=True, backdrop=False, placement='end'), id="l_sc")
+    print("????????")
+    return r_canvas_sc
 
 @app.callback(
     Output("scatter-plot", "figure"),
@@ -1056,16 +996,15 @@ def store_Volume_CamSettings(user_in):
      ],
     [State("scatter-plot", "relayoutData"),
      State("scatter-plot", "figure")],
-    prevent_initial_call=True
 )
 def updateScatter(slider_range, dense_active, slider_range_cs_x, cs_x_active, slider_range_cs_y, cs_y_active,
-                  slider_range_cs_z, cs_z_active, size_slider, opacity_slider, atoms_enabled, outline, stored_cam_settings, f_data,
-                  cam_default, cam_xy, cam_xz, cam_yz,
-                  relayout_data, fig):
+                  slider_range_cs_z, cs_z_active, size_slider, opacity_slider, outline, atoms_enabled, stored_cam_settings, f_data,
+                  cam_default, cam_xy, cam_xz, cam_yz, relayout_data, fig):
     if f_data is None:
         raise PreventUpdate
     print("UPDATING SCATTER")
     # the denisity-Dataframe  for Scatter that we're updating, taken from df_store (=f_data)
+    df = pd.DataFrame(f_data['MALA_DF']['scatter'])
     dfu = pd.DataFrame(f_data['MALA_DF']['scatter'])
         # mala_data = pd.DataFrame().from_dict(f_data.MALA_DATA)    # not necessary here
     # atoms-Dataframe also taken from f_data
@@ -1090,7 +1029,7 @@ def updateScatter(slider_range, dense_active, slider_range_cs_x, cs_x_active, sl
         mask = (dfu['x'] >= low) & (dfu['x'] <= high)
         dfu = dfu[mask]
     else:
-        mask = (dfu['x'] >= min(scatter_df['x'])) & (dfu['x'] <= max(scatter_df['x']))
+        mask = (dfu['x'] >= min(dfu['x'])) & (dfu['x'] <= max(dfu['x']))
         dfu = dfu[mask]
     # Y-Cross-section
     if slider_range_cs_y is not None and cs_y_active:  # Any slider Input there?
@@ -1098,7 +1037,7 @@ def updateScatter(slider_range, dense_active, slider_range_cs_x, cs_x_active, sl
         mask = (dfu['y'] >= low) & (dfu['y'] <= high)
         dfu = dfu[mask]
     else:
-        mask = (dfu['y'] >= min(scatter_df['y'])) & (dfu['y'] <= max(scatter_df['y']))
+        mask = (dfu['y'] >= min(dfu['y'])) & (dfu['y'] <= max(dfu['y']))
         dfu = dfu[mask]
     # Z-Cross-section
     if slider_range_cs_z is not None and cs_z_active:  # Any slider Input there?
@@ -1106,7 +1045,7 @@ def updateScatter(slider_range, dense_active, slider_range_cs_x, cs_x_active, sl
         mask = (dfu['z'] >= low) & (dfu['z'] <= high)
         dfu = dfu[mask]
     else:
-        mask = (dfu['z'] >= min(scatter_df['z'])) & (dfu['z'] <= max(scatter_df['z']))
+        mask = (dfu['z'] >= min(dfu['z'])) & (dfu['z'] <= max(dfu['z']))
         dfu = dfu[mask]
 
         # SETTINGS
@@ -1171,12 +1110,12 @@ def updateScatter(slider_range, dense_active, slider_range_cs_x, cs_x_active, sl
 
     else:
         fig_upd.update_layout(scene_camera=stored_cam_settings)
-        '''
-        set camera-position according to the clicked button, 
-                                    OR 
-                    - if no button has been clicked - 
-        to the most recently stored manually adjusted camera position
-        '''
+    '''
+    set camera-position according to the clicked button, 
+                                OR 
+                - if no button has been clicked - 
+    to the most recently stored manually adjusted camera position
+    '''
 
     # Outline settings
     if outline:
@@ -1265,21 +1204,10 @@ def updateVolume(stored_cam_settings, f_data, relayout_data):
     # TODO: SETTINGS
 
     # CAMERA
-    '''
-    if relayout_data is not None:  # cam user input has been made
-        if "scene.camera" in relayout_data:
-            # custom re-layout cam settings
-            fig_upd.update_layout(scene_camera=relayout_data['scene.camera'])
-            '''
-
-    if stored_cam_settings is not None:
-        # locked cam settings
-        fig_upd.update_layout(scene_camera=stored_cam_settings)
+    # HIER CAMERA VON SCRATCH.PY ODER SCATTER_UPDATE EINFÜGEN
+    # <----------------------------------------------------->
 
     return fig_upd
-# commented params ( before stored cam settings )
-# slider_range_cs_x, cs_x_active, slider_range_cs_y, cs_y_active, slider_range_cs_z, cs_z_active, opacity_slider,
-
 # END OF CALLBACKS FOR VOLUME PLOT
 
 # TODO: updateDoS
@@ -1287,7 +1215,7 @@ def updateVolume(stored_cam_settings, f_data, relayout_data):
 
 # CALLBACKS FOR SIDEBAR
 
-
+# toggle canvas
 @app.callback(  # sidebar_l canvas
     Output("offcanvas-l", "is_open"),
     Input("open-offcanvas-l", "n_clicks"),
@@ -1310,19 +1238,23 @@ def toggle_offcanvas_r(n1, is_open):
     return is_open
 
 
-# part of this is more relevant to updateDF
-@app.callback(  # FILE-UPLOAD-STATUS
+# FILE-UPLOAD-STATUS
+@app.callback(
     Output('output-upload-state', 'children'),
     [Input('upload-data', 'filename'),
-     Input('upload-data', 'contents'), ],
+     Input('upload-data', 'contents'),
+     Input('df_store', 'data')],
     prevent_initial_call=True,
 )
-def uploadInput(filename, contents):
+def uploadStatus(filename, contents, data):
     # checks for .cubes for now, as long as im working on visuals
     # will check for .npy when mala is ready to give .cube output from
     # is this enough input-sanitization or proper type-check needed?
     # upload component also has accept property to allow only certain types - might be better
-    if filename is not None:
+    print(dash.callback_context.triggered_id)
+    if data is None:
+        return "Awaiting Upload.."
+    elif filename is not None and data is not None:
         if filename.endswith('.cube'):
 
             # USER INPUT ATOM POSITIONS - .cube File Upload
