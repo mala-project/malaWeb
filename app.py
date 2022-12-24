@@ -239,7 +239,7 @@ sidebar = html.Div(
     ),
 )
 # __________________________________________________________________________________________________
-r_canvas_sc = html.Div(id="r_canvas_sc")        # TODO default cavas that gets updated together with scatterplot
+     # TODO default cavas that gets updated together with scatterplot
 # __________________________________________________________________________________________________
 
 # MAIN CONTENT / PLOT
@@ -312,7 +312,7 @@ scatter_plot = html.Div(
             ],
             className="plot-section"
         ),
-        r_canvas_sc
+        dbc.Button(">", id="open-offcanvas-r", n_clicks=0, style={'position': 'fixed', 'margin-top': '40vh'}),
 
 
     ],
@@ -459,6 +459,17 @@ def toggle_plot_choice(n_header, page_state, is_open):
 
 # end of sidebar_l collapses
 
+# sidebar-sc collapse
+@app.callback(
+    Output("r_canvas_sc", "is_open"),
+    Input("open-canvas-r", "n_clicks"),
+    State("r_canvas_sc", "is_open"),
+    prevent_initial_call=True,
+)
+def openScatterSettings(n_clicks, is_open):
+    print("lol")
+    return not is_open
+
 
 
 # CALLBACKS FOR SCATTERPLOT
@@ -467,7 +478,8 @@ def toggle_plot_choice(n_header, page_state, is_open):
 @app.callback(
     Output("sc-settings-collapse", "is_open"),
     Input("open-sc-settings", "n_clicks"),
-    Input("sc-settings-collapse", "is_open"))
+    Input("sc-settings-collapse", "is_open"),
+    prevent_initial_call=True)
 def toggle_sc_settings(n_sc_s, is_open):
     if n_sc_s:
         return not is_open
@@ -475,7 +487,8 @@ def toggle_sc_settings(n_sc_s, is_open):
 @app.callback(
     Output("x-collapse", "is_open"),
     Input("collapse-x", "n_clicks"),
-    Input("x-collapse", "is_open"))
+    Input("x-collapse", "is_open"),
+    prevent_initial_call=True)
 def toggle_x_cs(n_x, is_open):
     if n_x:
         return not is_open
@@ -483,7 +496,8 @@ def toggle_x_cs(n_x, is_open):
 @app.callback(
     Output("y-collapse", "is_open"),
     Input("collapse-y", "n_clicks"),
-    Input("y-collapse", "is_open"))
+    Input("y-collapse", "is_open"),
+    prevent_initial_call=True)
 def toggle_y_cs(n_y, is_open):
     if n_y:
         return not is_open
@@ -491,7 +505,8 @@ def toggle_y_cs(n_y, is_open):
 @app.callback(
     Output("z-collapse", "is_open"),
     Input("collapse-z", "n_clicks"),
-    Input("z-collapse", "is_open"))
+    Input("z-collapse", "is_open"),
+    prevent_initial_call=True)
 def toggle_z_cs(n_z, is_open):
     if n_z:
         return not is_open
@@ -499,7 +514,8 @@ def toggle_z_cs(n_z, is_open):
 @app.callback(
     Output("dense-collapse", "is_open"),
     Input("collapse-dense", "n_clicks"),
-    Input("dense-collapse", "is_open"))
+    Input("dense-collapse", "is_open"),
+    prevent_initial_call=True)
 def toggle_density_rs(n_d, is_open):
     if n_d:
         return not is_open
@@ -507,33 +523,37 @@ def toggle_density_rs(n_d, is_open):
 @app.callback(
     Output("range-slider-cs-x", "value"),
     Input("reset-cs-x", "n_clicks"),
-    Input("df_store", "data"))
+    Input("df_store", "data"),
+    prevent_initial_call=True)
 def reset_cs_x(n_clicks, data):
-    scatter_df = data['MALA_DF']['scatter']
+    scatter_df = pd.DataFrame(data['MALA_DF']['scatter'])
     return [min(scatter_df['x']), max(scatter_df['x'])]
 
 @app.callback(
     Output("range-slider-cs-y", "value"),
     Input("reset-cs-y", "n_clicks"),
-    Input("df_store", "data"))
+    Input("df_store", "data"),
+    prevent_initial_call=True)
 def reset_cs_y(n_clicks, data):
-    scatter_df = data['MALA_DF']['scatter']
+    scatter_df = pd.DataFrame(data['MALA_DF']['scatter'])
     return [min(scatter_df['y']), max(scatter_df['y'])]
 
 @app.callback(
     Output("range-slider-cs-z", "value"),
     Input("reset-cs-z", "n_clicks"),
-    Input("df_store", "data"))
+    Input("df_store", "data"),
+    prevent_initial_call=True)
 def reset_cs_z(n_clicks, data):
-    scatter_df = data['MALA_DF']['scatter']
+    scatter_df = pd.DataFrame(data['MALA_DF']['scatter'])
     return [min(scatter_df['z']), max(scatter_df['z'])]
 
 @app.callback(
     Output("range-slider-dense", "value"),
     Input("reset-dense", "n_clicks"),
-    Input("df_store", "data"))
+    Input("df_store", "data"),
+    prevent_initial_call=True)
 def reset_cs_dense(n_clicks, data):
-    scatter_df = data['MALA_DF']['scatter']
+    scatter_df = pd.DataFrame(data['MALA_DF']['scatter'])
     return [min(scatter_df['val']), max(scatter_df['val'])]
 
 # end of collapsable cross-section settings
@@ -612,8 +632,6 @@ def updatePageState(trig1, trig2, trig3):
         print("State changed to: landing")
         return "landing"
 
-
-# DATA STORING
 
 # dataframes
 @app.callback(
@@ -708,7 +726,7 @@ def updateDF(f_data, reset):
 
     df_store = {'MALA_DF': {'default': data0.to_dict("records"), 'scatter': data_sc.to_dict("records"),
                             'volume': data_vol.to_dict("records")}, 'MALA_DATA': mala_data,
-                'INPUT_DF': atoms_DF.to_dict("records")}
+                'INPUT_DF': atoms_DF.to_dict("records"), 'SCALE': {'x_axis': x_axis, 'y_axis': y_axis, 'z_axis': z_axis}}
 
     # removed .to_dict()
     return df_store, None
@@ -734,42 +752,151 @@ def updatePlotChoice(choice):
 
 # LAYOUT CALLBACKS
 # UPDATE BASE LAYOUT
+    # unused right now
 @app.callback(
     Output("content-layout", "children"),
     [State("choice_store", "data"),
-     Input("page_state", "data")],
+     Input("df_store", "data")],
     prevent_initial_call=True)
 def updateLayout(plots, page_state):
 # could change size of rows/columns here
+    print("base-layout updated")
     raise PreventUpdate
-    return skel_layout
+    #return skel_layout
 
 
 # UPDATING CONTENT-CELL 0
 # this should include the settings tab
 @app.callback(
     Output("mc0", "children"),
+    Output("r0", "children"),
     #Input("content-layout", "children"),
     Input("page_state", "data"),
     State("choice_store", "data"),
     State("df_store", "data"),
     prevent_initial_call=True)
 def updateMC0(state, plots, data):
-
     if data is None or state == "landing":
-        return mc0_landing
+        return mc0_landing, html.Div()
     elif plots is None or len(plots) == 0 or state == "updated":
-        return mc0_upd # updated
+        return mc0_upd, html.Div()
+
     elif state == "plotting" and data is not None:
+        r_canvas_sc = html.Div()
+        scale = pd.DataFrame(data['SCALE'])
+            # scale['x_axis'][0] = x_axis Voxels // [1] = X-scaling on x // [2] = X-scaling on y // [3] = X-scaling on z
         if plots[0] == "scatter":
-            print("Updated mc0 to scatter")
-            return scatter_plot
+            scatter_df = pd.DataFrame(data['MALA_DF']['scatter'])
+            # scatter
+            r_content_sc = html.Div(
+                # Idea: draw markers on coord-rangeslider where atoms are
+                dbc.Card(dbc.CardBody(
+                    [
+                        # Buttonrow
+                        dbc.Row([
+                            dbc.Col(html.Button('X', id='collapse-x', n_clicks=0, style={'width': '2em'})),
+                            dbc.Col(html.Button('Y', id='collapse-y', n_clicks=0, style={'width': '2em'})),
+                            dbc.Col(html.Button('Z', id='collapse-z', n_clicks=0, style={'width': '2em'})),
+                            dbc.Col(
+                                html.Img(src="assets/dens.png", id='collapse-dense',
+                                         style={"width": "1.8em", "height": "1.8em"},
+                                         n_clicks=0))
+                        ], className='g-0'),
+                        # Sliderrow
+                        dbc.Row([
+                            dbc.Col(
+                                dbc.Collapse(
+                                    [
+                                        html.Img(id="reset-cs-x", src="/assets/x.svg", n_clicks=0,
+                                                 style={'width': '1.25em'}),
+                                        dcc.RangeSlider(id='range-slider-cs-x', min=min(scatter_df['x']),
+                                                        max=max(scatter_df['x']),
+                                                        marks=None,
+                                                        tooltip={"placement": "bottom", "always_visible": False},
+                                                        updatemode='drag', vertical=True, verticalHeight=800,
+                                                        pushable=scale['x_axis'][1])
+                                    ], style={'padding': '8px', 'width': '2em'}, id="x-collapse", is_open=False
+                                )
+                            ),
+                            dbc.Col(
+                                dbc.Collapse(
+                                    [
+                                        html.Img(id="reset-cs-y", src="/assets/x.svg", n_clicks=0,
+                                                 style={'width': '1.25em'}),
+                                        dcc.RangeSlider(
+                                            id='range-slider-cs-y',
+                                            min=min(scatter_df['y']), max=max(scatter_df['y']),
+                                            marks=None, tooltip={"placement": "bottom", "always_visible": False},
+                                            updatemode='drag', vertical=True, verticalHeight=800, pushable=scale['y_axis'][2])],
+                                    style={'padding': '7px', 'width': '2em'}, id="y-collapse", is_open=False
+                                )
+                            ),
+                            dbc.Col(
+                                dbc.Collapse(
+                                    [
+                                        html.Img(id="reset-cs-z", src="/assets/x.svg", n_clicks=0,
+                                                 style={'width': '1.25em'}),
+                                        dcc.RangeSlider(
+                                            id='range-slider-cs-z',
+                                            min=min(scatter_df['z']), max=max(scatter_df['z']),
+                                            marks=None, tooltip={"placement": "bottom", "always_visible": False},
+                                            updatemode='drag', vertical=True, verticalHeight=800, pushable=scale['z_axis'][3])],
+                                    style={'padding': '7px', 'width': '2em'}, id="z-collapse", is_open=False
+                                )
+                            ),
+                            dbc.Col(
+                                dbc.Collapse(
+                                    [
+                                        # density range-slider
+                                        html.Img(id="reset-dense", src="/assets/x.svg", n_clicks=0, width="content-min",
+                                                 style={'width': '1.25em'}),
+                                        dcc.RangeSlider(
+                                            id='range-slider-dense',
+                                            min=min(scatter_df['val']), max=max(scatter_df['val']),
+                                            step=round((max(scatter_df['val']) - min(scatter_df['val'])) / 30),
+                                            marks=None, tooltip={"placement": "bottom", "always_visible": False},
+                                            updatemode='drag', vertical=True, verticalHeight=800
+                                        )], style={'width': '2em', 'padding': '7px'}, id="dense-collapse", is_open=False
+                                )
+                            )
+                        ], className='g-0')
+
+                    ]
+                ))
+            )
+
+            # TODO:
+            #  - ability to lock range? (difficult/rechenintensiv)
+            #  - top range-marker reverse-pushable??
+            #  - one card gets opened->all cards open, just without sliders
+            #  - slider max value is x-/y-/z-max-value - 1
+            #   - allow direct keyboard input for range sliders?
+
+            # Right side-bar
+            r_canvas_sc = html.Div(dbc.Offcanvas(r_content_sc, id="offcanvas-r-sc", is_open=True,
+                                                 style={'width': '15rem', 'height': 'min-content',
+                                                        'margin-top': '2.5vh',
+                                                        'margin-right': '0.5vw', 'border-radius': '10px',
+                                                        'box-shadow': 'rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px'},
+                                                 scrollable=True, backdrop=False, placement='end'), id="r_sc")
+
+
+
+# THIS ONE:
+            '''
+            Update sidebar together with c0 in updateScatter
+            '''
+
+
+            # update c0
+            print("Updated mc0 to scatter-cell and r0 to scatter-settings")
+            return scatter_plot, r_canvas_sc
         elif plots[0] == "volume":
-            print("Updated mc0 to volume")
-            return volume_plot
+            print("Updated mc0 to volume-cell")
+            return volume_plot, r_canvas_sc
         elif plots[0] == "dos":
-            print("Updated mc0 to dos")
-            return dos_plot
+            print("Updated mc0 to dos-cell")
+            return dos_plot, r_canvas_sc
 
 
 
@@ -881,6 +1008,7 @@ def store_Volume_CamSettings(user_in):
 )
 def updateRightSideSC(data):
     # Right sidebar CONTENT        -       Options
+    print("Updating right side canvas")
     scatter_df = pd.DataFrame(data['MALA_DF']['scatter'])
     # scatter
     # TODO: give default-values instead of the dfs-values and update these values in updateScatter-callback
@@ -965,13 +1093,13 @@ def updateRightSideSC(data):
     #   - allow direct keyboard input for range sliders?
 
     # Right side-bar
-    r_canvas_sc = html.Div(dbc.Offcanvas(r_content_sc, id="offcanvas-r-sc", is_open=True,
+    sc_canv_upd = html.Div(dbc.Offcanvas(r_content_sc, id="offcanvas-r-sc", is_open=True,
                                          style={'width': '15rem', 'height': 'min-content', 'margin-top': '2.5vh',
                                                 'margin-right': '0.5vw', 'border-radius': '10px',
                                                 'box-shadow': 'rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px'},
                                          scrollable=True, backdrop=False, placement='end'), id="l_sc")
     print("????????")
-    return r_canvas_sc
+    return sc_canv_upd
 
 @app.callback(
     Output("scatter-plot", "figure"),
@@ -996,6 +1124,7 @@ def updateRightSideSC(data):
      ],
     [State("scatter-plot", "relayoutData"),
      State("scatter-plot", "figure")],
+    prevent_initial_call=True,
 )
 def updateScatter(slider_range, dense_active, slider_range_cs_x, cs_x_active, slider_range_cs_y, cs_y_active,
                   slider_range_cs_z, cs_z_active, size_slider, opacity_slider, outline, atoms_enabled, stored_cam_settings, f_data,
