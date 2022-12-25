@@ -83,54 +83,7 @@ print("STARTING UP...")
 # TODO: (optional) ability to en-/disable individual Atoms (that are in the uploaded file) and let MALA recalculate
 #  -> helps see each Atoms' impact in the grid
 
-# (a) GET (most) DATA FROM MALA (/ inference script)
-mala_data = mala_inference.results
-bandEn = mala_data['band_energy']
-totalEn = mala_data['total_energy']
-density = mala_data['density']
-dOs = mala_data['density_of_states']
-enGrid = mala_data['energy_grid']
 
-# (b) GET ATOMPOSITION & AXIS SCALING FROM .cube CREATED BY MALA (located where 'mala-inference-script' is located
-atomData = '/home/maxyyy/PycharmProjects/mala/app/Be2_density.cube'
-
-# 0-1 = Comment, Energy, broadening     //      2 = number of atoms, coord origin
-# 3-5 = number of voxels per Axis (x/y/z), lentgh of axis-vector -> info on cell-warping
-# 6-x = atompositions
-
-
-# TODO: this has to be received from the uploaded .npy
-with open(atomData, 'r') as f:
-    lines = f.read().splitlines()
-    no_of_atoms, _, _, _ = lines[2].split()
-
-    # AXIS-SCALING-FACTOR
-    # axis-List-Format: voxelcount[0]   X-Scale[1]     Y-Scale[2]     Z-Scale[3]
-    x_axis = [float(i) for i in lines[3].split()]
-    y_axis = [float(i) for i in lines[4].split()]
-    z_axis = [float(i) for i in lines[5].split()]
-
-    '''
-    Importing Data 
-        Parameters imported from:
-        (a) inference script:
-            - bandEn
-            - totalEn
-            - density
-            - density of states - dOs
-            - energy Grid - enGrid
-            
-        (b) .cube file created by running inference script
-            =   axis-data -> x_, y_ and z_axis
-            - voxel"resolution"
-                - f.e. x_axis[0]
-            - unit-vector
-                - f.e. ( x_axis[1] / x_axis[2] / x_axis[3] ) is x-axis unit-vector
-        TODO: find a GOOD way to transform our data from kartesian grid to the according (in example data sheared) one
-            - so far only doing that in a complicated way for dataframe in scatter_3d format
-            - need to to this for volume too
-            --> good way would be a matrix multiplication of some sort
-    '''
 
 print("DATA IMPORT COMPLETE")
 print("_________________________________________________________________________________________")
@@ -526,8 +479,9 @@ def toggle_density_rs(n_d, is_open):
     Input("df_store", "data"),
     prevent_initial_call=True)
 def reset_cs_x(n_clicks, data):
-    scatter_df = pd.DataFrame(data['MALA_DF']['scatter'])
-    return [min(scatter_df['x']), max(scatter_df['x'])]
+    if data is not None:
+        scatter_df = pd.DataFrame(data['MALA_DF']['scatter'])
+        return [min(scatter_df['x']), max(scatter_df['x'])]
 
 @app.callback(
     Output("range-slider-cs-y", "value"),
@@ -535,8 +489,9 @@ def reset_cs_x(n_clicks, data):
     Input("df_store", "data"),
     prevent_initial_call=True)
 def reset_cs_y(n_clicks, data):
-    scatter_df = pd.DataFrame(data['MALA_DF']['scatter'])
-    return [min(scatter_df['y']), max(scatter_df['y'])]
+    if data is not None:
+        scatter_df = pd.DataFrame(data['MALA_DF']['scatter'])
+        return [min(scatter_df['y']), max(scatter_df['y'])]
 
 @app.callback(
     Output("range-slider-cs-z", "value"),
@@ -544,8 +499,9 @@ def reset_cs_y(n_clicks, data):
     Input("df_store", "data"),
     prevent_initial_call=True)
 def reset_cs_z(n_clicks, data):
-    scatter_df = pd.DataFrame(data['MALA_DF']['scatter'])
-    return [min(scatter_df['z']), max(scatter_df['z'])]
+    if data is not None:
+        scatter_df = pd.DataFrame(data['MALA_DF']['scatter'])
+        return [min(scatter_df['z']), max(scatter_df['z'])]
 
 @app.callback(
     Output("range-slider-dense", "value"),
@@ -553,8 +509,9 @@ def reset_cs_z(n_clicks, data):
     Input("df_store", "data"),
     prevent_initial_call=True)
 def reset_cs_dense(n_clicks, data):
-    scatter_df = pd.DataFrame(data['MALA_DF']['scatter'])
-    return [min(scatter_df['val']), max(scatter_df['val'])]
+    if data is not None:
+        scatter_df = pd.DataFrame(data['MALA_DF']['scatter'])
+        return [min(scatter_df['val']), max(scatter_df['val'])]
 
 # end of collapsable cross-section settings
 
@@ -623,7 +580,7 @@ def updatePageState(trig1, trig2, trig3):
         print("State changed to: plotting")
         return "plotting"
 
-    if (trig1 is not None and dash.callback_context.triggered_id == "df_store" or trig2 is not None and len(trig2) == 0) and dash.callback_context.triggered_id != "reset-data":
+    if ((trig1 is not None) and trig2 is not None and len(trig2) == 0) and dash.callback_context.triggered_id != "reset-data":
         print("State changed to: uploaded")
         return "uploaded"
 
@@ -652,12 +609,13 @@ def updateDF(f_data, reset):
     #  maybe do this on upload, so this callback isn't even run
     #  --> raise preventUpdate if not
 
+
     # Always returning None for the Upload-Component aswell, so that it's possible to reupload
     # (-> gotta clear up the space)
+    print("DF_update")
     if dash.callback_context.triggered_id == "reset-data":
         return None, None
     # (a) GET DATA FROM MALA (/ inference script)
-
     mala_data = mala_inference.results
     bandEn = mala_data['band_energy']
     totalEn = mala_data['total_energy']
@@ -668,8 +626,6 @@ def updateDF(f_data, reset):
     coord_arr = np.column_stack(
         list(map(np.ravel, np.meshgrid(*map(np.arange, density.shape), indexing="ij"))) + [density.ravel()])
     data0 = pd.DataFrame(coord_arr, columns=['x', 'y', 'z', 'val'])  # untransformed Dataset
-    data_sc = data0.copy()
-    data_vol = data0.copy()
 
     # (b) GET ATOMPOSITION & AXIS SCALING FROM .cube CREATED BY MALA (located where 'mala-inference-script' is located
     atomData = '/home/maxyyy/PycharmProjects/mala/app/Be2_density.cube'
@@ -679,7 +635,33 @@ def updateDF(f_data, reset):
     # 6-x = atompositions
     atoms = [[], [], [], [], []]
 
+    '''
+        Importing Data 
+            Parameters imported from:
+            (a) inference script:
+                - bandEn
+                - totalEn
+                - density
+                - density of states - dOs
+                - energy Grid - enGrid
+
+            (b) .cube file created by running inference script
+                =   axis-data -> x_, y_ and z_axis
+                - voxel"resolution"
+                    - f.e. x_axis[0]
+                - unit-vector
+                    - f.e. ( x_axis[1] / x_axis[2] / x_axis[3] ) is x-axis unit-vector
+            TODO: find a GOOD way to transform our data from kartesian grid to the according (in example data sheared) one
+                - so far only doing that in a complicated way for dataframe in scatter_3d format
+                - need to to this for volume too
+                --> good way would be a matrix multiplication of some sort
+        '''
+
+
+
     # TODO: this has to be done with uploaded .npy
+
+
     with open(atomData, 'r') as f:
         lines = f.read().splitlines()
         no_of_atoms, _, _, _ = lines[2].split()
@@ -702,27 +684,32 @@ def updateDF(f_data, reset):
     atoms_DF = pd.DataFrame(data={'x': atoms[2], 'y': atoms[3], 'z': atoms[4], 'ordinal': atoms[0], 'charge': atoms[1]})
 
     # SCALING AND SHEARING SCATTER DF
-
+    data_sc = data0.copy()
     # (b) SCALING to right voxel-size
     data_sc['x'] *= x_axis[1]
     data_sc['y'] *= y_axis[2]
     data_sc['z'] *= z_axis[3]
 
+    data_vol = data0.copy()
     data_vol['x'] *= x_axis[1]
     data_vol['y'] *= y_axis[2]
     data_vol['z'] *= z_axis[3]
 
+# TODO THE SHEARING IS SHEARING TOO HARD!!! TWICE??
     # SHEARING für scatter_3d
-    data_sc.x += y_axis[1] * (data0.y / y_axis[2])
-    data_sc.x += z_axis[1] * (data0.z / z_axis[3])
+    #data_sc.x += y_axis[1] * (data0.y / y_axis[2])
+    #data_sc.x += z_axis[1] * (data0.z / z_axis[3])
 
-    data_sc.y += x_axis[2] * (data0.x / x_axis[1])
-    data_sc.y += z_axis[2] * (data0.z / z_axis[3])
+    #data_sc.y += x_axis[2] * (data0.x / x_axis[1])
+    #data_sc.y += z_axis[2] * (data0.z / z_axis[3])
 
-    data_sc.z += y_axis[3] * (data0.y / y_axis[2])
-    data_sc.z += x_axis[3] * (data0.x / x_axis[1])
+    #data_sc.z += y_axis[3] * (data0.y / y_axis[2])
+    #data_sc.z += x_axis[3] * (data0.x / x_axis[1])
 
     # _______________________________________________________________________________________
+
+
+
 
     df_store = {'MALA_DF': {'default': data0.to_dict("records"), 'scatter': data_sc.to_dict("records"),
                             'volume': data_vol.to_dict("records")}, 'MALA_DATA': mala_data,
@@ -786,6 +773,7 @@ def updateMC0(state, plots, data):
         scale = pd.DataFrame(data['SCALE'])
             # scale['x_axis'][0] = x_axis Voxels // [1] = X-scaling on x // [2] = X-scaling on y // [3] = X-scaling on z
         if plots[0] == "scatter":
+            # TODO: extract this into a function which can be called by all three update_mc callbacks
             scatter_df = pd.DataFrame(data['MALA_DF']['scatter'])
             # scatter
             r_content_sc = html.Div(
@@ -1010,6 +998,11 @@ def updateRightSideSC(data):
     # Right sidebar CONTENT        -       Options
     print("Updating right side canvas")
     scatter_df = pd.DataFrame(data['MALA_DF']['scatter'])
+    scale = pd.DataFrame(data['SCALE'])
+    x_axis = scale['x_axis']
+    y_axis = scale['y_axis']
+    z_axis = scale['z_axis']
+
     # scatter
     # TODO: give default-values instead of the dfs-values and update these values in updateScatter-callback
     r_content_sc = html.Div(
@@ -1134,11 +1127,11 @@ def updateScatter(slider_range, dense_active, slider_range_cs_x, cs_x_active, sl
     print("UPDATING SCATTER")
     # the denisity-Dataframe  for Scatter that we're updating, taken from df_store (=f_data)
     df = pd.DataFrame(f_data['MALA_DF']['scatter'])
-    dfu = pd.DataFrame(f_data['MALA_DF']['scatter'])
+    dfu = df.copy()
         # mala_data = pd.DataFrame().from_dict(f_data.MALA_DATA)    # not necessary here
     # atoms-Dataframe also taken from f_data
     atoms = pd.DataFrame(f_data['INPUT_DF'])
-
+    no_of_atoms = len(atoms)
     # Dataframes are ready
 
     # SETTINGS
@@ -1196,7 +1189,7 @@ def updateScatter(slider_range, dense_active, slider_range_cs_x, cs_x_active, sl
     # UPDATING DATASET
 
     fig_upd = px.scatter_3d(
-        dfu[mask], x="x", y="y", z="z",
+        dfu, x="x", y="y", z="z",
         color="val",
         hover_data=['val'],
         opacity=opac,
@@ -1299,6 +1292,7 @@ def updateVolume(stored_cam_settings, f_data, relayout_data):
         raise PreventUpdate
     dfu = pd.DataFrame(f_data['MALA_DF']['volume'])
     atoms = pd.DataFrame(f_data['INPUT_DF'])
+    no_of_atoms = len(atoms)
 
     atoms_enabled = [True]        # as long as volume doesn't have it's own settings yet
     # DECIDING ON ATOM-COLOR BASEd OFF THEIR CHARGE TODO
