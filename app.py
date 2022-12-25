@@ -71,22 +71,13 @@ dos_plot_layout = {
     'background': '#f8f9fa',
 }
 
-# TODO: run the following, IF page_state = uploaded; triggered page_state update
-#  ----------------------------------------------------------
-#                       UPLOADED STATE
-#  ----------------------------------------------------------
-
-
-print("_________________________________________________________________________________________")
-print("STARTING UP...")
-
 # TODO: (optional) ability to en-/disable individual Atoms (that are in the uploaded file) and let MALA recalculate
 #  -> helps see each Atoms' impact in the grid
 
 
 
-print("DATA IMPORT COMPLETE")
 print("_________________________________________________________________________________________")
+print("STARTING UP...")
 
 # Formatting + shearing Data
 # density- import / conversion to pandas dataframe / fig - density-visualisation params / plot-layout params
@@ -191,37 +182,11 @@ sidebar = html.Div(
                'box-shadow': 'rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px'},
     ),
 )
-# __________________________________________________________________________________________________
-     # TODO default cavas that gets updated together with scatterplot
-# __________________________________________________________________________________________________
 
-# MAIN CONTENT / PLOT
-
-# column 2 | PRE UPLOAD
-default_main = html.Div([
-    html.Div([html.H1([indent.join('Welcome')], className='greetings', style={'text-align': 'center', 'width': '10em'}),
-              html.H1([indent.join('To')], className='greetings', style={'text-align': 'center', 'width': '10em'}),
-              html.H1([indent.join('MALA')], className='greetings', style={'text-align': 'center', 'width': '10em'}),
-              html.Div('Upload a .cube-File for MALA to process', )],
-             style={'text-align': 'center', 'margin-left': '1vw'}),
-], style={'width': 'content-min', 'margin-top': '20vh'})
-default_main2 = html.Div(html.Div(), style={'width': '200px', 'height': '200px', 'color': '#fff'})
-
-# column 2 | UPLOAD SUCCESS
-uploaded_main = html.Div([
-    html.H1("Upload Successful", style={'margin-top': '30vh', 'margin-left': '15vw', 'color': '#3da839'}),
-    html.Div(children=['''
-                     Choose the Type of plot
-                    '''], style={'margin-top': '5vh', 'margin-left': '5vw'}),
-], style={"width": "66vw"})
-uploaded_main2 = html.Div()
-
-# column 2 | PLOT(S) CHOSEN
-# SCATTER
 sc_fig = go.Figure()
 vol_fig = go.Figure()
 dos_fig = go.Figure()
-# start plot with empty fig, fill on updateScatter-callback
+# start plot with empty fig, fill on updateScatter-/...-callback
 scatter_plot = html.Div(
     [
         # Plot Section
@@ -265,7 +230,6 @@ scatter_plot = html.Div(
             ],
             className="plot-section"
         ),
-        dbc.Button(">", id="open-offcanvas-r", n_clicks=0, style={'position': 'fixed', 'margin-top': '40vh'}),
 
 
     ],
@@ -307,26 +271,26 @@ dos_plot = html.Div(
 # landing-cell for mc0
 mc0_landing = html.Div([
                     html.Div([html.H1([indent.join('Welcome')], className='greetings',
-                                      style={'text-align': 'center', 'width': '10em'}),
+                                      style={'text-align': 'center'}),
                               html.H1([indent.join('To')], className='greetings',
-                                      style={'text-align': 'center', 'width': '10em'}),
+                                      style={'text-align': 'center'}),
                               html.H1([indent.join('MALA')], className='greetings',
-                                      style={'text-align': 'center', 'width': '10em'}),
+                                      style={'text-align': 'center'}),
                               html.Div('Upload a .cube-File for MALA to process', )],
-                             style={'text-align': 'center', 'margin-left': '1vw'}),
+                             style={'text-align': 'center'}),
                 ], style={'width': 'content-min', 'margin-top': '20vh'})
 
 
 # updated cell for mc0
 mc0_upd = html.Div([
                     html.Div([html.H1([indent.join('Welcome')], className='greetings',
-                                      style={'text-align': 'center', 'width': '10em'}),
+                                      style={'text-align': 'center'}),
                               html.H1([indent.join('To')], className='greetings',
-                                      style={'text-align': 'center', 'width': '10em'}),
+                                      style={'text-align': 'center'}),
                               html.H1([indent.join('MALA')], className='greetings',
-                                      style={'text-align': 'center', 'width': '10em'}),
+                                      style={'text-align': 'center'}),
                               html.Div('Please choose a plotting style', )],
-                             style={'text-align': 'center', 'margin-left': '1vw'}),
+                             style={'text-align': 'center'}),
                 ], style={'width': 'content-min', 'margin-top': '20vh'})
 
 skel_layout = [
@@ -366,10 +330,7 @@ app.layout = p_layout_landing
 # p_layout_plotting will be redefined on page_state-change
 # parts of plotting_layout will be redefined on data-upload
 
-# FGEDF4 as contrast
-
-print("COMPONENTS LOADED")
-print("_________________________________________________________________________________________")
+# FGEDF4 as contrast ??
 
 
 # CALLBACKS & FUNCTIONS
@@ -386,13 +347,15 @@ def toggle_upload(n_header, is_open):
         return not is_open
 
 
-
+# this callback is totally optional and only decides if the reset-button should also reset plot-choice
+# turned off by PreventingUpdate for now
 @app.callback(
     Output("plot-choice", "value"),
     Input("reset-data", "n_clicks"),
     prevent_initial_call=True,
 )
 def resetPlotChoice(trigger_reset):
+    raise PreventUpdate
     return []
 
 @app.callback(
@@ -526,6 +489,7 @@ def reset_cs_dense(n_clicks, data):
      Input("scatter-plot", "relayoutData")],
     prevent_initial_call=True)
 def store_Scatter_CamSettings(default_clicks, x_y_clicks, x_z_clicks, y_z_clicks, user_in):
+    print("stored scattercam")
     # user_in is the camera position set by mouse movement, it has to be updated on every mouse input on the fig
     if dash.callback_context.triggered_id is not None:
         # set stored_cam_setting according to which button was last pressed
@@ -610,9 +574,9 @@ def updateDF(f_data, reset):
     #  --> raise preventUpdate if not
 
 
-    # Always returning None for the Upload-Component aswell, so that it's possible to reupload
+    # Always returning None for the Upload-Component as well, so that it's possible to reupload
     # (-> gotta clear up the space)
-    print("DF_update")
+
     if dash.callback_context.triggered_id == "reset-data":
         return None, None
     # (a) GET DATA FROM MALA (/ inference script)
@@ -627,42 +591,21 @@ def updateDF(f_data, reset):
         list(map(np.ravel, np.meshgrid(*map(np.arange, density.shape), indexing="ij"))) + [density.ravel()])
     data0 = pd.DataFrame(coord_arr, columns=['x', 'y', 'z', 'val'])  # untransformed Dataset
 
+
+    atoms = [[], [], [], [], []]
+
+    # Reding .cube-File
+    # TODO: this has to be done with uploaded .npy
+
+
     # (b) GET ATOMPOSITION & AXIS SCALING FROM .cube CREATED BY MALA (located where 'mala-inference-script' is located
-    atomData = '/home/maxyyy/PycharmProjects/mala/app/Be2_density.cube'
+    atom_data = '/home/maxyyy/PycharmProjects/mala/app/Be2_density.cube'
 
     # 0-1 = Comment, Energy, broadening     //      2 = number of atoms, coord origin
     # 3-5 = number of voxels per Axis (x/y/z), lentgh of axis-vector -> info on cell-warping
     # 6-x = atompositions
-    atoms = [[], [], [], [], []]
 
-    '''
-        Importing Data 
-            Parameters imported from:
-            (a) inference script:
-                - bandEn
-                - totalEn
-                - density
-                - density of states - dOs
-                - energy Grid - enGrid
-
-            (b) .cube file created by running inference script
-                =   axis-data -> x_, y_ and z_axis
-                - voxel"resolution"
-                    - f.e. x_axis[0]
-                - unit-vector
-                    - f.e. ( x_axis[1] / x_axis[2] / x_axis[3] ) is x-axis unit-vector
-            TODO: find a GOOD way to transform our data from kartesian grid to the according (in example data sheared) one
-                - so far only doing that in a complicated way for dataframe in scatter_3d format
-                - need to to this for volume too
-                --> good way would be a matrix multiplication of some sort
-        '''
-
-
-
-    # TODO: this has to be done with uploaded .npy
-
-
-    with open(atomData, 'r') as f:
+    with open(atom_data, 'r') as f:
         lines = f.read().splitlines()
         no_of_atoms, _, _, _ = lines[2].split()
 
@@ -681,30 +624,49 @@ def updateDF(f_data, reset):
         atoms[2].append(float(x))
         atoms[3].append(float(y))
         atoms[4].append(float(z))
-    atoms_DF = pd.DataFrame(data={'x': atoms[2], 'y': atoms[3], 'z': atoms[4], 'ordinal': atoms[0], 'charge': atoms[1]})
+    atoms_data = pd.DataFrame(data={'x': atoms[2], 'y': atoms[3], 'z': atoms[4], 'ordinal': atoms[0], 'charge': atoms[1]})
 
     # SCALING AND SHEARING SCATTER DF
-    data_sc = data0.copy()
     # (b) SCALING to right voxel-size
-    data_sc['x'] *= x_axis[1]
-    data_sc['y'] *= y_axis[2]
-    data_sc['z'] *= z_axis[3]
-
+        # need to bring atompositions and density-voxels to the same scaling
+    data0['x'] *= x_axis[1]
+    data0['y'] *= y_axis[2]
+    data0['z'] *= z_axis[3]
+    data_sc = data0.copy()
     data_vol = data0.copy()
-    data_vol['x'] *= x_axis[1]
-    data_vol['y'] *= y_axis[2]
-    data_vol['z'] *= z_axis[3]
 
-# TODO THE SHEARING IS SHEARING TOO HARD!!! TWICE??
+
     # SHEARING für scatter_3d
-    #data_sc.x += y_axis[1] * (data0.y / y_axis[2])
-    #data_sc.x += z_axis[1] * (data0.z / z_axis[3])
+    data_sc.x += y_axis[1] * (data0.y / y_axis[2])
+    data_sc.x += z_axis[1] * (data0.z / z_axis[3])
 
-    #data_sc.y += x_axis[2] * (data0.x / x_axis[1])
-    #data_sc.y += z_axis[2] * (data0.z / z_axis[3])
+    data_sc.y += x_axis[2] * (data0.x / x_axis[1])
+    data_sc.y += z_axis[2] * (data0.z / z_axis[3])
 
-    #data_sc.z += y_axis[3] * (data0.y / y_axis[2])
-    #data_sc.z += x_axis[3] * (data0.x / x_axis[1])
+    data_sc.z += y_axis[3] * (data0.y / y_axis[2])
+    data_sc.z += x_axis[3] * (data0.x / x_axis[1])
+
+    '''
+           Importing Data 
+               Parameters imported from:
+               (a) inference script:
+                   - bandEn
+                   - totalEn
+                   - density
+                   - density of states - dOs
+                   - energy Grid - enGrid
+
+               (b) .cube file created by running inference script
+                   =   axis-data -> x_, y_ and z_axis
+                   - voxel"resolution"
+                       - f.e. x_axis[0]
+                   - unit-vector
+                       - f.e. ( x_axis[1] / x_axis[2] / x_axis[3] ) is x-axis unit-vector
+               TODO: find a GOOD way to transform our data from kartesian grid to the according (in example data sheared) one
+                   - so far only doing that in a complicated way for dataframe in scatter_3d format
+                   - need to to this for volume too
+                   --> good way would be a matrix multiplication of some sort
+    '''
 
     # _______________________________________________________________________________________
 
@@ -713,14 +675,16 @@ def updateDF(f_data, reset):
 
     df_store = {'MALA_DF': {'default': data0.to_dict("records"), 'scatter': data_sc.to_dict("records"),
                             'volume': data_vol.to_dict("records")}, 'MALA_DATA': mala_data,
-                'INPUT_DF': atoms_DF.to_dict("records"), 'SCALE': {'x_axis': x_axis, 'y_axis': y_axis, 'z_axis': z_axis}}
+                'INPUT_DF': atoms_data.to_dict("records"), 'SCALE': {'x_axis': x_axis, 'y_axis': y_axis, 'z_axis': z_axis}}
 
-    # removed .to_dict()
+    print("DATA IMPORT COMPLETE")
+    print("_________________________________________________________________________________________")
     return df_store, None
 
-    # PLOT-CHOICE STORING
 
-# plot choice
+
+# PLOT-CHOICE STORING
+
 @app.callback(
     Output("choice_store", "data"),
     [Input('plot-choice', 'value')],
@@ -729,11 +693,7 @@ def updatePlotChoice(choice):
     print("choice updated")
     return choice
 
-    # UPDATE LAYOUT
-
-
-    # END UPDATE FOR STORED DATA
-
+# END UPDATE FOR STORED DATA
 
 
 
@@ -747,17 +707,17 @@ def updatePlotChoice(choice):
     prevent_initial_call=True)
 def updateLayout(plots, page_state):
 # could change size of rows/columns here
-    print("base-layout updated")
     raise PreventUpdate
     #return skel_layout
 
 
 # UPDATING CONTENT-CELL 0
-# this should include the settings tab
+
+# maybe work with relayout to figure out if cells needs update in plot-choice-change
+# -> can we ID what figure is displayed when the cells needs updating?
 @app.callback(
     Output("mc0", "children"),
     Output("r0", "children"),
-    #Input("content-layout", "children"),
     Input("page_state", "data"),
     State("choice_store", "data"),
     State("df_store", "data"),
@@ -861,12 +821,15 @@ def updateMC0(state, plots, data):
             #   - allow direct keyboard input for range sliders?
 
             # Right side-bar
-            r_canvas_sc = html.Div(dbc.Offcanvas(r_content_sc, id="offcanvas-r-sc", is_open=True,
+            r_canvas_sc = html.Div([
+                dbc.Offcanvas(r_content_sc, id="offcanvas-r-sc", is_open=True,
                                                  style={'width': '15rem', 'height': 'min-content',
                                                         'margin-top': '2.5vh',
                                                         'margin-right': '0.5vw', 'border-radius': '10px',
                                                         'box-shadow': 'rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px'},
-                                                 scrollable=True, backdrop=False, placement='end'), id="r_sc")
+                                                 scrollable=True, backdrop=False, placement='end'),
+                dbc.Button("<", id="open-settings-sc", n_clicks=0, style={'margin-top': '40vh', 'margin-left': '0px'})
+                                   ], style={'align': 'right'}, id="r_sc")
 
 
 
@@ -877,13 +840,10 @@ def updateMC0(state, plots, data):
 
 
             # update c0
-            print("Updated mc0 to scatter-cell and r0 to scatter-settings")
             return scatter_plot, r_canvas_sc
         elif plots[0] == "volume":
-            print("Updated mc0 to volume-cell")
             return volume_plot, r_canvas_sc
         elif plots[0] == "dos":
-            print("Updated mc0 to dos-cell")
             return dos_plot, r_canvas_sc
 
 
@@ -892,7 +852,6 @@ def updateMC0(state, plots, data):
 # UPDATING CONTENT-CELL 1
 @app.callback(
     Output("mc1", "children"),
-    #Input("content-layout", "children"),
     Input("page_state", "data"),
     State("choice_store", "data"),
     prevent_initial_call=True,
@@ -905,13 +864,10 @@ def updateMC1(state, plots):
             return html.Div()
         elif state == "plotting":
             if plots[1] == "scatter":
-                print("Updated mc1 to scatter")
                 return scatter_plot
             elif plots[1] == "volume":
-                print("Updated mc1 to volume")
                 return volume_plot
             elif plots[1] == "dos":
-                print("Updated mc1 to dos")
                 return dos_plot
         else:
             return html.Div()
@@ -921,7 +877,6 @@ def updateMC1(state, plots):
 # UPDATING CONTENT-CELL 1
 @app.callback(
     Output("mc2", "children"),
-    #Input("content-layout", "children"),
     Input("page_state", "data"),
     State("choice_store", "data"),
     prevent_initial_call=True,
@@ -934,13 +889,10 @@ def updateMC2(state, plots):
             return html.Div()
         elif state == "plotting":
             if plots[2] == "scatter":
-                print("Updated mc1 to scatter")
                 return scatter_plot
             elif plots[2] == "volume":
-                print("Updated mc1 to volume")
                 return volume_plot
             elif plots[2] == "dos":
-                print("Updated mc1 to dos")
                 return dos_plot
     else:
         return html.Div()
@@ -990,9 +942,11 @@ def store_Volume_CamSettings(user_in):
         elif dash.callback_context.triggered_id == "volume-plot":
             return None
 
+# pretty sure this is never triggered
 @app.callback(
     Output("r_canvas_rc", "children"),
-    Input("df_store", "data")
+    Input("df_store", "data"),
+    prevent_initial_call=True,
 )
 def updateRightSideSC(data):
     # Right sidebar CONTENT        -       Options
@@ -1352,10 +1306,11 @@ def toggle_offcanvas_l(n1, is_open):
 
 @app.callback(  # sidebar_r canvas (1/?)
     Output("offcanvas-r-sc", "is_open"),
-    Input("open-offcanvas-r0", "n_clicks"),
+    Input("open-settings-sc", "n_clicks"),
     [State("offcanvas-r-sc", "is_open")],
 )
 def toggle_offcanvas_r(n1, is_open):
+    print("toggle")
     if n1:
         return not is_open
     return is_open
