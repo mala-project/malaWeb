@@ -371,17 +371,6 @@ def toggle_plot_choice(n_header, page_state, is_open):
 
 # end of sidebar_l collapses
 
-# sidebar-sc collapse
-@app.callback(
-    Output("r_canvas_sc", "is_open"),
-    Input("open-canvas-r", "n_clicks"),
-    State("r_canvas_sc", "is_open"),
-    prevent_initial_call=True,
-)
-def openScatterSettings(n_clicks, is_open):
-    print("lol")
-    return not is_open
-
 
 
 # CALLBACKS FOR SCATTERPLOT
@@ -486,6 +475,7 @@ def reset_cs_dense(n_clicks, data):
     prevent_initial_call=True)
 def store_Scatter_CamSettings(default_clicks, x_y_clicks, x_z_clicks, y_z_clicks, user_in):
     print("stored scattercam")
+    print("triggered by:", dash.callback_context.triggered_id)
     # user_in is the camera position set by mouse movement, it has to be updated on every mouse input on the fig
     if dash.callback_context.triggered_id is not None:
         # set stored_cam_setting according to which button was last pressed
@@ -520,6 +510,8 @@ def store_Scatter_CamSettings(default_clicks, x_y_clicks, x_z_clicks, y_z_clicks
                     # stops the update in case the callback is triggered by zooming/smth else
             else:
                 raise dash.exceptions.PreventUpdate
+    else:
+        raise dash.exceptions.PreventUpdate
 
 
     # END OF SCATTER CALLBACKS
@@ -709,8 +701,6 @@ def updateLayout(plots, page_state):
 
 # UPDATING CONTENT-CELL 0
 
-# maybe work with relayout to figure out if cells needs update in plot-choice-change
-# -> can we ID what figure is displayed when the cells needs updating?
 @app.callback(
     Output("mc0", "children"),
     Output("r0", "children"),
@@ -854,12 +844,10 @@ def updateMC0(state, plots, data):
     prevent_initial_call=True,
 )
 def updateMC1(state, plots, data):
-
-
     if data is None or state == "landing":
-        raise PreventUpdate
+        return html.Div(), html.Div()
     elif state == "updated":
-        raise PreventUpdate
+        return html.Div(), html.Div()
 
     elif state == "plotting" and data is not None:
         if len(plots)>1:
@@ -970,10 +958,6 @@ def updateMC1(state, plots, data):
                                style={'margin-top': '40vh', 'margin-left': '0px'})
                 ], style={'align': 'right'}, id="r_sc")
 
-                # THIS ONE:
-                '''
-                Update sidebar together with c0 in updateScatter
-                '''
 
                 # update c0
                 return scatter_plot, r_canvas_sc
@@ -1024,7 +1008,6 @@ def store_Volume_CamSettings(user_in):
     # user_in is the camera position set by mouse movement, it has to be updated on every mouse input on the fig
     if dash.callback_context.triggered_id is not None:
         # set stored_cam_setting according to which button was last pressed
-
         if dash.callback_context.triggered_id[0:-4] == "default":
             return dict(
                 up=dict(x=0, y=0, z=1),
@@ -1050,113 +1033,17 @@ def store_Volume_CamSettings(user_in):
                 eye=dict(x=3.00, y=0, z=0))
         # reset stored_cam_setting if user moves camera
         elif dash.callback_context.triggered_id == "volume-plot":
-            return None
+            if user_in is not None:
+                if 'scene.camera' in user_in.keys():
+                    print("stored vol cam")
+                    return user_in['scene.camera']
+                    # stops the update in case the callback is triggered by zooming/smth else
+            else:
+                raise dash.exceptions.PreventUpdate
+        else:
+            raise dash.exceptions.PreventUpdate
 
-# pretty sure this is never triggered
-@app.callback(
-    Output("r_canvas_rc", "children"),
-    Input("df_store", "data"),
-    prevent_initial_call=True,
-)
-def updateRightSideSC(data):
-    # Right sidebar CONTENT        -       Options
-    print("Updating right side canvas")
-    scatter_df = pd.DataFrame(data['MALA_DF']['scatter'])
-    scale = pd.DataFrame(data['SCALE'])
-    x_axis = scale['x_axis']
-    y_axis = scale['y_axis']
-    z_axis = scale['z_axis']
 
-    # scatter
-    # TODO: give default-values instead of the dfs-values and update these values in updateScatter-callback
-    r_content_sc = html.Div(
-        # Idea: draw markers on coord-rangeslider where atoms are
-        dbc.Card(dbc.CardBody(
-            [
-                # Buttonrow
-                dbc.Row([
-                    dbc.Col(html.Button('X', id='collapse-x', n_clicks=0, style={'width': '2em'})),
-                    dbc.Col(html.Button('Y', id='collapse-y', n_clicks=0, style={'width': '2em'})),
-                    dbc.Col(html.Button('Z', id='collapse-z', n_clicks=0, style={'width': '2em'})),
-                    dbc.Col(
-                        html.Img(src="assets/dens.png", id='collapse-dense',
-                                 style={"width": "1.8em", "height": "1.8em"},
-                                 n_clicks=0))
-                ], className='g-0'),
-                # Sliderrow
-                dbc.Row([
-                    dbc.Col(
-                        dbc.Collapse(
-                            [
-                                html.Img(id="reset-cs-x", src="/assets/x.svg", n_clicks=0, style={'width': '1.25em'}),
-                                dcc.RangeSlider(id='range-slider-cs-x', min=min(scatter_df['x']),
-                                                max=max(scatter_df['x']),
-                                                marks=None, tooltip={"placement": "bottom", "always_visible": False},
-                                                updatemode='drag', vertical=True, verticalHeight=800,
-                                                pushable=x_axis[1])
-                            ], style={'padding': '8px', 'width': '2em'}, id="x-collapse", is_open=False
-                        )
-                    ),
-                    dbc.Col(
-                        dbc.Collapse(
-                            [
-                                html.Img(id="reset-cs-y", src="/assets/x.svg", n_clicks=0, style={'width': '1.25em'}),
-                                dcc.RangeSlider(
-                                    id='range-slider-cs-y',
-                                    min=min(scatter_df['y']), max=max(scatter_df['y']),
-                                    marks=None, tooltip={"placement": "bottom", "always_visible": False},
-                                    updatemode='drag', vertical=True, verticalHeight=800, pushable=y_axis[2])],
-                            style={'padding': '7px', 'width': '2em'}, id="y-collapse", is_open=False
-                        )
-                    ),
-                    dbc.Col(
-                        dbc.Collapse(
-                            [
-                                html.Img(id="reset-cs-z", src="/assets/x.svg", n_clicks=0, style={'width': '1.25em'}),
-                                dcc.RangeSlider(
-                                    id='range-slider-cs-z',
-                                    min=min(scatter_df['z']), max=max(scatter_df['z']),
-                                    marks=None, tooltip={"placement": "bottom", "always_visible": False},
-                                    updatemode='drag', vertical=True, verticalHeight=800, pushable=z_axis[3])],
-                            style={'padding': '7px', 'width': '2em'}, id="z-collapse", is_open=False
-                        )
-                    ),
-                    dbc.Col(
-                        dbc.Collapse(
-                            [
-                                # density range-slider
-                                html.Img(id="reset-dense", src="/assets/x.svg", n_clicks=0, width="content-min",
-                                         style={'width': '1.25em'}),
-                                dcc.RangeSlider(
-                                    id='range-slider-dense',
-                                    min=min(scatter_df['val']), max=max(scatter_df['val']),
-                                    step=round((max(scatter_df['val']) - min(scatter_df['val'])) / 30),
-                                    marks=None, tooltip={"placement": "bottom", "always_visible": False},
-                                    updatemode='drag', vertical=True, verticalHeight=800
-                                )], style={'width': '2em', 'padding': '7px'}, id="dense-collapse", is_open=False
-                        )
-                    )
-                ], className='g-0')
-
-            ]
-        ))
-    )
-
-    # TODO:
-    #  - ability to lock range? (difficult/rechenintensiv)
-    #  - top range-marker reverse-pushable??
-    #  - one card gets opened->all cards open, just without sliders
-    #  - slider max value is x-/y-/z-max-value - 1
-    #   - allow direct keyboard input for range sliders?
-
-    # Right side-bar
-    sc_canv_upd = html.Div(dbc.Offcanvas(r_content_sc, id="offcanvas-r-sc", is_open=True,
-                                         style={'width': '15rem', 'height': 'min-content', 'margin-top': '2.5vh',
-                                                'margin-right': '0.5vw', 'border-radius': '10px',
-                                                'box-shadow': 'rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px'},
-                                         scrollable=True, backdrop=False, placement='end'), id="l_sc")
-    print("????????")
-    return sc_canv_upd
 
 @app.callback(
     Output("scatter-plot", "figure"),
@@ -1172,20 +1059,21 @@ def updateRightSideSC(data):
      Input("opacity-slider", 'value'),
      Input("outline-check", 'value'),
      Input("scatter-atoms", "value"),
-     State("cam_store", "data"),
-     State("df_store", "data"),
+
      Input("default-cam", "n_clicks"),
      Input("x-y-cam", "n_clicks"),
      Input("x-z-cam", "n_clicks"),
      Input("y-z-cam", "n_clicks"),
+     Input("choice_store", "data")
      ],
     [State("scatter-plot", "relayoutData"),
-     State("scatter-plot", "figure")],
-    prevent_initial_call=True,
+     State("cam_store", "data"),
+     State("df_store", "data"),
+     ],
 )
 def updateScatter(slider_range, dense_active, slider_range_cs_x, cs_x_active, slider_range_cs_y, cs_y_active,
-                  slider_range_cs_z, cs_z_active, size_slider, opacity_slider, outline, atoms_enabled, stored_cam_settings, f_data,
-                  cam_default, cam_xy, cam_xz, cam_yz, relayout_data, fig):
+                  slider_range_cs_z, cs_z_active, size_slider, opacity_slider, outline, atoms_enabled,
+                  cam_default, cam_xy, cam_xz, cam_yz, plots, relayout_data, stored_cam_settings, f_data,):
     if f_data is None:
         raise PreventUpdate
     print("UPDATING SCATTER")
@@ -1345,13 +1233,15 @@ def updateScatter(slider_range, dense_active, slider_range_cs_x, cs_x_active, sl
         #Input("z-collapse", "is_open"),
         #Input("opacity-slider", 'value'),
         #Input("scatter-atoms", "value")
-        Input("cam_store_v", "data"),
-        State("df_store", "data"),
+        Input("choice_store", "data")
     ],
-    [State("volume-plot", "relayoutData")],
-    prevent_initial_call=True
+    [
+        State("volume-plot", "relayoutData"),
+        State("df_store", "data"),
+        State("cam_store_v", "data")
+    ]
 )
-def updateVolume(stored_cam_settings, f_data, relayout_data):
+def updateVolume(plot_choice, relayout_data, f_data, stored_cam_settings):
     if f_data is None:
         raise PreventUpdate
     dfu = pd.DataFrame(f_data['MALA_DF']['volume'])
@@ -1391,7 +1281,41 @@ def updateVolume(stored_cam_settings, f_data, relayout_data):
     # TODO: SETTINGS
 
     # CAMERA
-    # HIER CAMERA VON SCRATCH.PY ODER SCATTER_UPDATE EINFÜGEN
+    if dash.callback_context.triggered_id == "default-cam":
+        fig_upd.update_layout(scene_camera=dict(
+            up=dict(x=0, y=0, z=1),
+            center=dict(x=0, y=0, z=0),
+            eye=dict(x=1.5, y=1.5, z=1.5)
+        ))
+    elif dash.callback_context.triggered_id == "x-y-cam":
+        fig_upd.update_layout(scene_camera=dict(
+            up=dict(x=0, y=0, z=1),
+            center=dict(x=0, y=0, z=0),
+            eye=dict(x=0, y=0, z=3.00)
+        ))
+    elif dash.callback_context.triggered_id == "x-z-cam":
+        fig_upd.update_layout(scene_camera=dict(
+            up=dict(x=0, y=0, z=1),
+            center=dict(x=0, y=0, z=0),
+            eye=dict(x=0, y=3.00, z=0)
+        ))
+    elif dash.callback_context.triggered_id == "y-z-cam":
+        fig_upd.update_layout(scene_camera=dict(
+            up=dict(x=0, y=0, z=1),
+            center=dict(x=0, y=0, z=0),
+            eye=dict(x=3.00, y=0, z=0)))
+
+    else:
+        fig_upd.update_layout(scene_camera=stored_cam_settings)
+    '''
+    set camera-position according to the clicked button, 
+                                OR 
+                - if no button has been clicked - 
+    to the most recently stored manually adjusted camera position
+    '''
+
+
+
     # <----------------------------------------------------->
 
     return fig_upd
@@ -1419,7 +1343,7 @@ def toggle_offcanvas_l(n1, is_open):
     Input("open-settings-sc", "n_clicks"),
     [State("offcanvas-r-sc", "is_open")],
 )
-def toggle_offcanvas_r(n1, is_open):
+def toggle_scatter_settings(n1, is_open):
     print("toggle")
     if n1:
         return not is_open
