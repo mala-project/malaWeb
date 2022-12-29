@@ -185,6 +185,16 @@ r_content_sc = html.Div(
         [
             html.H5("Size"),
             dcc.Slider(6, 18, 2, value=12, id='size-slider'),
+            dbc.DropdownMenu(label="Size", size="sm",
+                             children=[
+                dbc.DropdownMenuItem("6"),
+                dbc.DropdownMenuItem("8"),
+                dbc.DropdownMenuItem("10"),
+                dbc.DropdownMenuItem("12"),
+                dbc.DropdownMenuItem("14"),
+                dbc.DropdownMenuItem("16"),
+                dbc.DropdownMenuItem("18")
+            ]),
             html.H5("Opacity"),
             dcc.Slider(0.1, 1, 0.1, value=1, id='opacity-slider'),
 
@@ -234,10 +244,10 @@ scatter_plot = [
                                             dbc.Col(
                                                 dbc.ButtonGroup(
                                                     [
-                                                        dbc.Button('X', id='sc-collapse-x', active=True, outline=True, color="primary", n_clicks=0),
-                                                        dbc.Button('Y', id='sc-collapse-y', active=True, outline=True, color="primary", n_clicks=0),
-                                                        dbc.Button('Z', id='sc-collapse-z', active=True, outline=True, color="primary", n_clicks=0),
-                                                        dbc.Button("Density", id='dense-collapse', active=True, outline=True, color="primary", n_clicks=0)
+                                                        dbc.Button('X', id='sc-active-x', active=False, outline=True, color="primary", n_clicks=0),
+                                                        dbc.Button('Y', id='sc-active-y', active=False, outline=True, color="primary", n_clicks=0),
+                                                        dbc.Button('Z', id='sc-active-z', active=False, outline=True, color="primary", n_clicks=0),
+                                                        dbc.Button("Density", id='active-dense', active=False, outline=True, color="primary", n_clicks=0)
 
                                                     ],
                                                     vertical=True,
@@ -246,55 +256,65 @@ scatter_plot = [
                                             #Sliders
                                             dbc.Col([
                                                 dbc.Row([
-                                                    dcc.RangeSlider(id='range-slider-cs-x',
+                                                    dbc.Col(dcc.RangeSlider(id='range-slider-cs-x',
+                                                                        disabled=True,
                                                                         min=0,
                                                                         max=1,
                                                                         marks=None,
+                                                                        pushable=True,
                                                                         tooltip={"placement": "bottom",
                                                                                  "always_visible": False},
-                                                                        updatemode='drag'),
-                                                    html.Img(id="reset-cs-x", src="/assets/x.svg", n_clicks=0,
-                                                        style={'width': '1.25em'})
+                                                                        updatemode='drag')),
+                                                    dbc.Col(html.Img(id="reset-cs-x", src="/assets/x.svg", n_clicks=0,
+                                                        style={'width': '1.25em'}), width=1)
                                                 ], style={"margin-top": "7px"}),     # X-Axis
                                                 dbc.Row([
-
-                                                    html.Img(id="reset-cs-y", src="/assets/x.svg", n_clicks=0,
-                                                             style={'width': '1.25em'}),
-                                                    dcc.RangeSlider(
+                                                    dbc.Col(dcc.RangeSlider(
                                                         id='range-slider-cs-y',
+                                                        disabled=True,
+                                                        pushable=True,
                                                         min=0, max=1,
                                                         marks=None,
                                                         tooltip={"placement": "bottom", "always_visible": False},
-                                                        updatemode='drag')
+                                                        updatemode='drag')),
+                                                    dbc.Col(html.Img(id="reset-cs-y", src="/assets/x.svg", n_clicks=0,
+                                                             style={'width': '1.25em'}), width=1)
                                                 ]),     # Y-Axis
                                                 dbc.Row([
-                                                        dcc.RangeSlider(
+                                                    dbc.Col(dcc.RangeSlider(
                                                             id='range-slider-cs-z',
+                                                            disabled=True,
+                                                            pushable=True,
                                                             min=0, max=1,
                                                             marks=None,
                                                             tooltip={"placement": "bottom", "always_visible": False},
-                                                            updatemode='drag'),
-                                                        html.Img(id="reset-cs-z", src="/assets/x.svg", n_clicks=0,
-                                                                 style={'width': '1.25em'}),
+                                                            updatemode='drag')),
+                                                    dbc.Col(html.Img(id="reset-cs-z", src="/assets/x.svg", n_clicks=0,
+                                                                 style={'width': '1.25em'}), width=1)
+
+
                                                         ]),     # Z-Axis
                                                 dbc.Row([
-                                                        html.Img(id="reset-dense", src="/assets/x.svg", n_clicks=0,
-                                                                 width="content-min",
-                                                                 style={'width': '1.25em'}),
-                                                        dcc.RangeSlider(
+
+                                                    dbc.Col(dcc.RangeSlider(
                                                             id='range-slider-dense',
+                                                            disabled=True,
+                                                            pushable=True,
                                                             min=0, max=1,
-                                                            step=0.5,
                                                             marks=None,
                                                             tooltip={"placement": "bottom", "always_visible": False},
-                                                            updatemode='drag'
-                                                        )
+                                                            updatemode='drag'), width=11),
+                                                    dbc.Col(html.Img(id="reset-dense", src="/assets/x.svg", n_clicks=0,
+                                                         style={'width': '1.25em', 'position': 'float'}), width=1),
+
+
+
                                                 ]),     # Density
                                             ], width=11),
                                         ]),
                                     ]
                                 )),
-                                id="sc-settings-collapse",
+                                id="sc-tools-collapse",
                                 is_open=False)
                         ]
                     ), style={'background-color': 'rgba(248, 249, 250, 1)', 'width': 'min-content',
@@ -366,7 +386,7 @@ mc0_landing = html.Div([
              style={'text-align': 'center'}),
 ], style={'width': 'content-min', 'margin-top': '20vh'})
 
-# updated cell for mc0
+# updated ,6, 8, 10, 12, 14, 16, 18cell for mc0
 mc0_upd = html.Div([
     html.Div([html.H1([indent.join('Welcome')], className='greetings',
                       style={'text-align': 'center'}),
@@ -403,6 +423,7 @@ p_layout_landing = html.Div([
     dcc.Store(id="cam_store_v"),
     dcc.Store(id="df_store"),
     dcc.Store(id="choice_store"),
+    dcc.Store(id="sc_settings"),
     sidebar,
     dbc.Button(">", id="open-offcanvas-l", n_clicks=0, style={'position': 'fixed', 'margin-top': '40vh',
                                                               'margin-left': '0.5vw'}),
@@ -465,61 +486,69 @@ def toggle_plot_choice(n_header, page_state, is_open):
 
 # CALLBACKS FOR SCATTERPLOT
 
-# collapsable cross-section settings
+# collapsable cross-section and density tools
 @app.callback(
-    Output("sc-settings-collapse", "is_open"),
+    Output("sc-tools-collapse", "is_open"),
     Input("open-sc-tools", "n_clicks"),
-    Input("sc-settings-collapse", "is_open"),
+    Input("sc-tools-collapse", "is_open"),
     prevent_initial_call=True)
-def toggle_sc_settings(n_sc_s, is_open):
+def toggle_sc_tools(n_sc_s, is_open):
     if n_sc_s:
         return not is_open
 
 
-# OLD SC CS X
+# toggle rangesliders
 @app.callback(
-    Output("sc-x-collapse", "is_open"),
-    Input("sc-collapse-x", "n_clicks"),
-    Input("sc-x-collapse", "is_open"),
+    Output("range-slider-cs-x", "disabled"),
+    Output("sc-active-x", "active"),
+    Input("sc-active-x", "n_clicks"),
+    Input("range-slider-cs-x", "disabled"),
+    State("sc-active-x", "active"),
     prevent_initial_call=True)
-def toggle_x_cs(n_x, is_open):
+def toggle_x_cs(n_x, active, bc):
     if n_x:
-        return not is_open
+        return not active, not bc
 # END OLD SC CS X
 
 
 # OLD SC CS Y
 @app.callback(
-    Output("sc-y-collapse", "is_open"),
-    Input("sc-collapse-y", "n_clicks"),
-    Input("sc-y-collapse", "is_open"),
+    Output("range-slider-cs-y", "disabled"),
+    Output("sc-active-y", "active"),
+    Input("sc-active-y", "n_clicks"),
+    Input("range-slider-cs-y", "disabled"),
+    State("sc-active-y", "active"),
     prevent_initial_call=True)
-def toggle_y_cs(n_y, is_open):
-    if n_y:
-        return not is_open
+def toggle_y_cs(n_x, active, bc):
+    if n_x:
+        return not active, not bc
 # END OLD SC CS Y
 
 # OLD SC CS Z
 @app.callback(
-    Output("sc-z-collapse", "is_open"),
-    Input("sc-collapse-z", "n_clicks"),
-    Input("sc-z-collapse", "is_open"),
+    Output("range-slider-cs-z", "disabled"),
+    Output("sc-active-z", "active"),
+    Input("sc-active-z", "n_clicks"),
+    Input("range-slider-cs-z", "disabled"),
+    State("sc-active-z", "active"),
     prevent_initial_call=True)
-def toggle_z_cs(n_z, is_open):
-    if n_z:
-        return not is_open
+def toggle_z_cs(n_x, active, bc):
+    if n_x:
+        return not active, not bc
 # END OLD SC CS Z
 
 
 # OLD SC DENS
 @app.callback(
-    Output("dense-collapse", "is_open"),
-    Input("collapse-dense", "n_clicks"),
-    Input("dense-collapse", "is_open"),
+    Output("range-slider-dense", "disabled"),
+    Output("active-dense", "active"),
+    Input("active-dense", "n_clicks"),
+    Input("range-slider-dense", "disabled"),
+    State("active-dense", "active"),
     prevent_initial_call=True)
-def toggle_density_rs(n_d, is_open):
+def toggle_density_rs(n_d, active, bc):
     if n_d:
-        return not is_open
+        return not active, not bc
 # END OLD SC DENS
 
 
@@ -781,6 +810,42 @@ def updatePlotChoice(choice):
     return choice
 
 
+# SC SETTINGS STORING
+# TODO: fix Inputs
+@app.callback(
+    Output("sc_settings", "data"),
+    [Input('sc-size', 'value'),
+     Input("sc-opac", "value"),
+     Input("sc-outline", "value"),
+     Input("sc-atoms", "value"),
+    ],
+    State("sc_settings", "data"))
+def updateSCsettings(size, opac, outline, atoms, saved):
+    print("sc settings updated")
+
+    if saved is None:
+        settings = {
+            "size": 12,
+            "opac": 1,
+            "outline": True,
+            "atoms": True,
+        }
+    else:
+        settings = saved
+    print(settings)
+    if dash.callback_context.triggered_id == "sc-size":
+        settings["size"] = size
+    elif dash.callback_context.triggered_id == "sc-opac":
+        settings["opac"] = opac
+    elif dash.callback_context.triggered_id == "sc-outline":
+        settings["outline"] = outline
+    elif dash.callback_context.triggered_id == "sc-atoms":
+        settings["atoms"] = atoms
+    print("returnung: ", settings)
+    return settings
+
+
+
 # END UPDATE FOR STORED DATA
 
 
@@ -802,7 +867,7 @@ def updateLayout(plots, page_state):
 
 @app.callback(
     Output("mc0", "children"),
-    Output("r0", "children"),
+    #Output("r0", "children"),
     Input("page_state", "data"),
     State("choice_store", "data"),
     State("df_store", "data"),
@@ -814,44 +879,14 @@ def updateMC0(state, plots, data):
         return mc0_upd, html.Div()
 
     elif state == "plotting" and data is not None:
-        r_canvas_sc = html.Div()
-        scale = pd.DataFrame(data['SCALE'])
-        # scale['x_axis'][0] = x_axis Voxels // [1] = X-scaling on x // [2] = X-scaling on y // [3] = X-scaling on z
         if plots[0] == "scatter":
             # TODO: extract this into a function which can be called by all three update_mc callbacks
-            scatter_df = pd.DataFrame(data['MALA_DF']['scatter'])
-            # scatter
-            r_content_sc = html.Div()
-
-            # TODO:
-            #  - ability to lock range? (difficult/rechenintensiv)
-            #  - top range-marker reverse-pushable??
-            #  - one card gets opened->all cards open, just without sliders
-            #  - slider max value is x-/y-/z-max-value - 1
-            #   - allow direct keyboard input for range sliders?
-
-            # Right side-bar
-            r_canvas_sc = html.Div([
-                dbc.Offcanvas(r_content_sc, id="offcanvas-r-sc", is_open=True,
-                              style={'width': '15rem', 'height': 'min-content',
-                                     'margin-top': '2.5vh',
-                                     'margin-right': '0.5vw', 'border-radius': '10px',
-                                     'box-shadow': 'rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px'},
-                              scrollable=True, backdrop=False, placement='end'),
-                dbc.Button("<", id="open-settings-sc", n_clicks=0, style={'margin-top': '40vh', 'margin-left': '0px'})
-            ], style={'align': 'right'}, id="r_sc")
-
-            # THIS ONE:
-            '''
-            Update sidebar together with c0 in updateScatter
-            '''
-
             # update c0
-            return scatter_plot, r_canvas_sc
+            return scatter_plot
         elif plots[0] == "volume":
-            return volume_plot, r_canvas_sc
+            return volume_plot
         elif plots[0] == "dos":
-            return dos_plot, r_canvas_sc
+            return dos_plot
 
 
 # UPDATING CONTENT-CELL 1
@@ -870,115 +905,10 @@ def updateMC1(state, plots, data):
 
     elif state == "plotting" and data is not None:
         if len(plots) > 1:
-            r_canvas_sc = html.Div()
-            scale = pd.DataFrame(data['SCALE'])
-            # scale['x_axis'][0] = x_axis Voxels // [1] = X-scaling on x // [2] = X-scaling on y // [3] = X-scaling on z
             if plots[1] == "scatter":
                 # TODO: extract this into a function which can be called by all three update_mc callbacks
-                scatter_df = pd.DataFrame(data['MALA_DF']['scatter'])
-                # scatter
-                r_content_sc = html.Div(
-                    # Idea: draw markers on coord-rangeslider where atoms are
-                    dbc.Card(dbc.CardBody(
-                        [
-                            # Buttonrow
-                            dbc.Row([
-                                dbc.Col(html.Button('X', id='sc-collapse-x', n_clicks=0, style={'width': '2em'})),
-                                dbc.Col(html.Button('Y', id='sc-collapse-y', n_clicks=0, style={'width': '2em'})),
-                                dbc.Col(html.Button('Z', id='sc-collapse-z', n_clicks=0, style={'width': '2em'})),
-                                dbc.Col(
-                                    html.Img(src="assets/dens.png", id='collapse-dense',
-                                             style={"width": "1.8em", "height": "1.8em"},
-                                             n_clicks=0))
-                            ], className='g-0'),
-                            # Sliderrow
-                            dbc.Row([
-                                dbc.Col(
-                                    dbc.Collapse(
-                                        [
-                                            html.Img(id="reset-cs-x", src="/assets/x.svg", n_clicks=0,
-                                                     style={'width': '1.25em'}),
-                                            dcc.RangeSlider(id='range-slider-cs-x', min=min(scatter_df['x']),
-                                                            max=max(scatter_df['x']),
-                                                            marks=None,
-                                                            tooltip={"placement": "bottom", "always_visible": False},
-                                                            updatemode='drag', vertical=True, verticalHeight=800,
-                                                            pushable=scale['x_axis'][1])
-                                        ], style={'padding': '8px', 'width': '2em'}, id="sc-x-collapse", is_open=False
-                                    )
-                                ),
-                                dbc.Col(
-                                    dbc.Collapse(
-                                        [
-                                            html.Img(id="reset-cs-y", src="/assets/x.svg", n_clicks=0,
-                                                     style={'width': '1.25em'}),
-                                            dcc.RangeSlider(
-                                                id='range-slider-cs-y',
-                                                min=min(scatter_df['y']), max=max(scatter_df['y']),
-                                                marks=None, tooltip={"placement": "bottom", "always_visible": False},
-                                                updatemode='drag', vertical=True, verticalHeight=800,
-                                                pushable=scale['y_axis'][2])],
-                                        style={'padding': '7px', 'width': '2em'}, id="sc-y-collapse", is_open=False
-                                    )
-                                ),
-                                dbc.Col(
-                                    dbc.Collapse(
-                                        [
-                                            html.Img(id="reset-cs-z", src="/assets/x.svg", n_clicks=0,
-                                                     style={'width': '1.25em'}),
-                                            dcc.RangeSlider(
-                                                id='range-slider-cs-z',
-                                                min=min(scatter_df['z']), max=max(scatter_df['z']),
-                                                marks=None, tooltip={"placement": "bottom", "always_visible": False},
-                                                updatemode='drag', vertical=True, verticalHeight=800,
-                                                pushable=scale['z_axis'][3])],
-                                        style={'padding': '7px', 'width': '2em'}, id="sc-z-collapse", is_open=False
-                                    )
-                                ),
-                                dbc.Col(
-                                    dbc.Collapse(
-                                        [
-                                            # density range-slider
-                                            html.Img(id="reset-dense", src="/assets/x.svg", n_clicks=0,
-                                                     width="content-min",
-                                                     style={'width': '1.25em'}),
-                                            dcc.RangeSlider(
-                                                id='range-slider-dense',
-                                                min=min(scatter_df['val']), max=max(scatter_df['val']),
-                                                step=round((max(scatter_df['val']) - min(scatter_df['val'])) / 30),
-                                                marks=None, tooltip={"placement": "bottom", "always_visible": False},
-                                                updatemode='drag', vertical=True, verticalHeight=800
-                                            )], style={'width': '2em', 'padding': '7px'}, id="dense-collapse",
-                                        is_open=False
-                                    )
-                                )
-                            ], className='g-0')
-
-                        ]
-                    ))
-                )
-
-                # TODO:
-                #  - ability to lock range? (difficult/rechenintensiv)
-                #  - top range-marker reverse-pushable??
-                #  - one card gets opened->all cards open, just without sliders
-                #  - slider max value is x-/y-/z-max-value - 1
-                #   - allow direct keyboard input for range sliders?
-
-                # Right side-bar
-                r_canvas_sc = html.Div([
-                    dbc.Offcanvas(r_content_sc, id="offcanvas-r-sc", is_open=True,
-                                  style={'width': '15rem', 'height': 'min-content',
-                                         'margin-top': '2.5vh',
-                                         'margin-right': '0.5vw', 'border-radius': '10px',
-                                         'box-shadow': 'rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px'},
-                                  scrollable=True, backdrop=False, placement='end'),
-                    dbc.Button("<", id="open-settings-sc", n_clicks=0,
-                               style={'margin-top': '40vh', 'margin-left': '0px'})
-                ], style={'align': 'right'}, id="r_sc")
-
-                # update c0
-                return scatter_plot, r_canvas_sc
+                # update c1
+                return scatter_plot
             elif plots[1] == "volume":
                 return volume_plot
             elif plots[1] == "dos":
@@ -1001,115 +931,10 @@ def updateMC2(state, plots, data):
 
     elif state == "plotting" and data is not None:
         if len(plots) > 2:
-            r_canvas_sc = html.Div()
-            scale = pd.DataFrame(data['SCALE'])
-            # scale['x_axis'][0] = x_axis Voxels // [1] = X-scaling on x // [2] = X-scaling on y // [3] = X-scaling on z
             if plots[2] == "scatter":
                 # TODO: extract this into a function which can be called by all three update_mc callbacks
-                scatter_df = pd.DataFrame(data['MALA_DF']['scatter'])
-                # scatter
-                r_content_sc = html.Div(
-                    # Idea: draw markers on coord-rangeslider where atoms are
-                    dbc.Card(dbc.CardBody(
-                        [
-                            # Buttonrow
-                            dbc.Row([
-                                dbc.Col(html.Button('X', id='collapse-x', n_clicks=0, style={'width': '2em'})),
-                                dbc.Col(html.Button('Y', id='sc-collapse-y', n_clicks=0, style={'width': '2em'})),
-                                dbc.Col(html.Button('Z', id='sc-collapse-z', n_clicks=0, style={'width': '2em'})),
-                                dbc.Col(
-                                    html.Img(src="assets/dens.png", id='collapse-dense',
-                                             style={"width": "1.8em", "height": "1.8em"},
-                                             n_clicks=0))
-                            ], className='g-0'),
-                            # Sliderrow
-                            dbc.Row([
-                                dbc.Col(
-                                    dbc.Collapse(
-                                        [
-                                            html.Img(id="reset-cs-x", src="/assets/x.svg", n_clicks=0,
-                                                     style={'width': '1.25em'}),
-                                            dcc.RangeSlider(id='range-slider-cs-x', min=min(scatter_df['x']),
-                                                            max=max(scatter_df['x']),
-                                                            marks=None,
-                                                            tooltip={"placement": "bottom", "always_visible": False},
-                                                            updatemode='drag', vertical=True, verticalHeight=800,
-                                                            pushable=scale['x_axis'][1])
-                                        ], style={'padding': '8px', 'width': '2em'}, id="sc-x-collapse", is_open=False
-                                    )
-                                ),
-                                dbc.Col(
-                                    dbc.Collapse(
-                                        [
-                                            html.Img(id="reset-cs-y", src="/assets/x.svg", n_clicks=0,
-                                                     style={'width': '1.25em'}),
-                                            dcc.RangeSlider(
-                                                id='range-slider-cs-y',
-                                                min=min(scatter_df['y']), max=max(scatter_df['y']),
-                                                marks=None, tooltip={"placement": "bottom", "always_visible": False},
-                                                updatemode='drag', vertical=True, verticalHeight=800,
-                                                pushable=scale['y_axis'][2])],
-                                        style={'padding': '7px', 'width': '2em'}, id="sc-y-collapse", is_open=False
-                                    )
-                                ),
-                                dbc.Col(
-                                    dbc.Collapse(
-                                        [
-                                            html.Img(id="reset-cs-z", src="/assets/x.svg", n_clicks=0,
-                                                     style={'width': '1.25em'}),
-                                            dcc.RangeSlider(
-                                                id='range-slider-cs-z',
-                                                min=min(scatter_df['z']), max=max(scatter_df['z']),
-                                                marks=None, tooltip={"placement": "bottom", "always_visible": False},
-                                                updatemode='drag', vertical=True, verticalHeight=800,
-                                                pushable=scale['z_axis'][3])],
-                                        style={'padding': '7px', 'width': '2em'}, id="sc-z-collapse", is_open=False
-                                    )
-                                ),
-                                dbc.Col(
-                                    dbc.Collapse(
-                                        [
-                                            # density range-slider
-                                            html.Img(id="reset-dense", src="/assets/x.svg", n_clicks=0,
-                                                     width="content-min",
-                                                     style={'width': '1.25em'}),
-                                            dcc.RangeSlider(
-                                                id='range-slider-dense',
-                                                min=min(scatter_df['val']), max=max(scatter_df['val']),
-                                                step=round((max(scatter_df['val']) - min(scatter_df['val'])) / 30),
-                                                marks=None, tooltip={"placement": "bottom", "always_visible": False},
-                                                updatemode='drag', vertical=True, verticalHeight=800
-                                            )], style={'width': '2em', 'padding': '7px'}, id="dense-collapse",
-                                        is_open=False
-                                    )
-                                )
-                            ], className='g-0')
-
-                        ]
-                    ))
-                )
-
-                # TODO:
-                #  - ability to lock range? (difficult/rechenintensiv)
-                #  - top range-marker reverse-pushable??
-                #  - one card gets opened->all cards open, just without sliders
-                #  - slider max value is x-/y-/z-max-value - 1
-                #   - allow direct keyboard input for range sliders?
-
-                # Right side-bar
-                r_canvas_sc = html.Div([
-                    dbc.Offcanvas(r_content_sc, id="offcanvas-r-sc", is_open=True,
-                                  style={'width': '15rem', 'height': 'min-content',
-                                         'margin-top': '2.5vh',
-                                         'margin-right': '0.5vw', 'border-radius': '10px',
-                                         'box-shadow': 'rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px'},
-                                  scrollable=True, backdrop=False, placement='end'),
-                    dbc.Button("<", id="open-settings-sc", n_clicks=0,
-                               style={'margin-top': '40vh', 'margin-left': '0px'})
-                ], style={'align': 'right'}, id="r_sc")
-
                 # update c0
-                return scatter_plot, r_canvas_sc
+                return scatter_plot
             elif plots[2] == "volume":
                 return volume_plot
             elif plots[2] == "dos":
@@ -1165,36 +990,82 @@ def store_Volume_CamSettings(user_in):
         else:
             raise dash.exceptions.PreventUpdate
 
-# TODO: update Tool-Sliders
+# TODO: update Tool-Sliders - DENSITY!!
+@app.callback(
+    [
+
+        Output("range-slider-cs-x", "min"),
+        Output("range-slider-cs-x", "max"),
+        Output("range-slider-cs-x", "step"),
+
+        Output("range-slider-cs-y", "min"),
+        Output("range-slider-cs-y", "max"),
+        Output("range-slider-cs-y", "step"),
+
+        Output("range-slider-cs-z", "min"),
+        Output("range-slider-cs-z", "max"),
+        Output("range-slider-cs-z", "step"),
+
+        Output("range-slider-dense", "min"),
+        Output("range-slider-dense", "max"),
+        Output("range-slider-dense", "step"),
+    ],
+    [
+        Input("df_store", "data"),
+    ],
+)
+def update_scatter_tools(data):
+    df = pd.DataFrame(data['MALA_DF']['scatter'])
+    scale = pd.DataFrame(data['SCALE'])
+    x_step = scale["x_axis"][1]
+
+    y_step = scale["y_axis"][2]
+    z_step = scale["z_axis"][3]
+    dense_step = round((max(df['val']) - min(df['val'])) / 30, ndigits=5)
+    print(dense_step + min(df["val"]))
+    print(min(df["val"]), max(df["val"]))
+    return min(df["x"]), max(df["x"]), x_step, \
+           min(df["y"]), max(df["y"]), y_step, \
+           min(df["z"]), max(df["z"]), z_step, \
+           min(df["val"]), max(df["val"]), dense_step
+
+
 @app.callback(
     Output("scatter-plot", "figure"),
-    [Input("range-slider-dense", "value"),
-     Input("dense-collapse", "is_open"),
-     Input("range-slider-cs-x", "value"),
-     Input("sc-x-collapse", "is_open"),
-     Input("range-slider-cs-y", "value"),
-     Input("sc-y-collapse", "is_open"),
-     Input("range-slider-cs-z", "value"),
-     Input("sc-z-collapse", "is_open"),
-     Input("size-slider", 'value'),
-     Input("opacity-slider", 'value'),
-     Input("outline-check", 'value'),
-     Input("scatter-atoms", "value"),
-
-     Input("default-cam", "n_clicks"),
-     Input("x-y-cam", "n_clicks"),
-     Input("x-z-cam", "n_clicks"),
-     Input("y-z-cam", "n_clicks"),
-     Input("choice_store", "data")
+    [
+         # Tools
+         Input("range-slider-dense", "value"),
+         Input("active-dense", "active"),
+         Input("range-slider-cs-x", "value"),
+         Input("sc-active-x", "active"),
+         Input("range-slider-cs-y", "value"),
+         Input("sc-active-y", "active"),
+         Input("range-slider-cs-z", "value"),
+         Input("sc-active-z", "active"),
+         # Settings
+         Input("sc_settings", "data"),
+         Input("size-slider", 'value'),
+         Input("opacity-slider", 'value'),
+         Input("outline-check", 'value'),
+         Input("scatter-atoms", "value"),
+         Input("default-cam", "n_clicks"),
+         Input("x-y-cam", "n_clicks"),
+         Input("x-z-cam", "n_clicks"),
+         Input("y-z-cam", "n_clicks"),
+         Input("choice_store", "data")
      ],
     [State("scatter-plot", "relayoutData"),
      State("cam_store", "data"),
      State("df_store", "data"),
      ],
 )
-def updateScatter(slider_range, dense_active, slider_range_cs_x, cs_x_active, slider_range_cs_y, cs_y_active,
-                  slider_range_cs_z, cs_z_active, size_slider, opacity_slider, outline, atoms_enabled,
+def updateScatter(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, slider_range_cs_y, cs_y_inactive,
+                  slider_range_cs_z, cs_z_inactive,
+                  settings,
+                  size_slider, opacity_slider, outline, atoms_enabled,
                   cam_default, cam_xy, cam_xz, cam_yz, plots, relayout_data, stored_cam_settings, f_data, ):
+    print(settings)
+    # DATA
     if f_data is None:
         raise PreventUpdate
     print("UPDATING SCATTER")
@@ -1207,11 +1078,13 @@ def updateScatter(slider_range, dense_active, slider_range_cs_x, cs_x_active, sl
     no_of_atoms = len(atoms)
     # Dataframes are ready
 
-    # SETTINGS
-    # offcanvas
 
+    # TOOLS
+        # (inside Collapsable)
+    # TODO: slider functionality
     # filter-by-density
-    if slider_range is not None and dense_active:  # Any slider Input there?
+    if slider_range is not None and dense_inactive:  # Any slider Input there?
+        print("triggered")
         low, high = slider_range
         mask = (dfu['val'] >= low) & (dfu['val'] <= high)
         dfu = dfu[mask]
@@ -1219,7 +1092,8 @@ def updateScatter(slider_range, dense_active, slider_range_cs_x, cs_x_active, sl
         mask = (dfu['val'] >= min(dfu['val'])) & (dfu['val'] <= max(dfu['val']))
         # TODO: mask could be referenced without being defined
     # x-Cross-section
-    if slider_range_cs_x is not None and cs_x_active:  # Any slider Input there?
+    if slider_range_cs_x is not None and cs_x_inactive:  # Any slider Input there?
+        print("testing x input")
         low, high = slider_range_cs_x
         mask = (dfu['x'] >= low) & (dfu['x'] <= high)
         dfu = dfu[mask]
@@ -1227,7 +1101,7 @@ def updateScatter(slider_range, dense_active, slider_range_cs_x, cs_x_active, sl
         mask = (dfu['x'] >= min(dfu['x'])) & (dfu['x'] <= max(dfu['x']))
         dfu = dfu[mask]
     # Y-Cross-section
-    if slider_range_cs_y is not None and cs_y_active:  # Any slider Input there?
+    if slider_range_cs_y is not None and cs_y_inactive:  # Any slider Input there?
         low, high = slider_range_cs_y
         mask = (dfu['y'] >= low) & (dfu['y'] <= high)
         dfu = dfu[mask]
@@ -1235,7 +1109,7 @@ def updateScatter(slider_range, dense_active, slider_range_cs_x, cs_x_active, sl
         mask = (dfu['y'] >= min(dfu['y'])) & (dfu['y'] <= max(dfu['y']))
         dfu = dfu[mask]
     # Z-Cross-section
-    if slider_range_cs_z is not None and cs_z_active:  # Any slider Input there?
+    if slider_range_cs_z is not None and cs_z_inactive:  # Any slider Input there?
         low, high = slider_range_cs_z
         mask = (dfu['z'] >= low) & (dfu['z'] <= high)
         dfu = dfu[mask]
@@ -1246,26 +1120,22 @@ def updateScatter(slider_range, dense_active, slider_range_cs_x, cs_x_active, sl
         # SETTINGS
         # plot-settings
 
+
+    # SETTINGS
+
     # size-slider
     if size_slider is not None:
         marker_size = size_slider
     else:
         marker_size = 12
 
-    # opacity-slider
-    # it would be great if we could each point an opacity-value according to it's density-value - seems to be impossible (to do smoothly)
-    if opacity_slider is not None:
-        opac = opacity_slider
-    else:
-        opac = 1
 
-    # UPDATING DATASET
-
+    # updating fig according to (cs'd) DF
     fig_upd = px.scatter_3d(
         dfu, x="x", y="y", z="z",
         color="val",
         hover_data=['val'],
-        opacity=opac,
+        opacity=settings["opac"],
         color_continuous_scale=px.colors.sequential.Inferno_r,
         range_color=[df.min()['val'], df.max()['val']],
         # takes color range from original dataset, so colors don't change
@@ -1319,8 +1189,8 @@ def updateScatter(slider_range, dense_active, slider_range_cs_x, cs_x_active, sl
         outlined = dict(width=0, color='DarkSlateGrey')
 
     # WAY TO CHANGE SIZE, OPACITY, OUTLINE
-    fig_upd.update_traces(marker=dict(size=marker_size, opacity=opac, line=outlined)
-                          , selector=dict(mode='markers'))
+    #fig_upd.update_traces(marker=dict(size=marker_size, opacity=opac, line=outlined)
+    #                      , selector=dict(mode='markers'))
 
     # ADD ATOMS
 
