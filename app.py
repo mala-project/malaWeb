@@ -56,8 +56,8 @@ default_scatter_marker = dict(marker=dict(
 
 plot_layout = {
     'title': 'Test',
-    'height': '55vh',
-    'width': '72vw',
+    'height': '80vh',
+    'width': '90vw',
     'background': '#000',  # not working
 }
 dos_plot_layout = {
@@ -168,7 +168,7 @@ sidebar = html.Div(
 
             ], className="sidebar"
         ), id="offcanvas-l", is_open=True, scrollable=True, backdrop=False,
-        style={'width': '15rem', 'margin-top': '1.5rem', 'margin-left': '0.5vw', 'border-radius': '10px',
+        style={'width': '15rem', 'margin-top': '3rem', 'margin-left': '0.5vw', 'border-radius': '10px',
                'height': 'min-content',
                'box-shadow': 'rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px'},
     ),
@@ -183,31 +183,27 @@ dos_fig = go.Figure()
 r_content_sc = html.Div(
     dbc.Card(dbc.CardBody(
         [
-            html.H5("Size"),
-            dcc.Slider(6, 18, 2, value=12, id='size-slider'),
-            dbc.DropdownMenu(label="Size", size="sm",
-                             children=[
-                dbc.DropdownMenuItem("6"),
-                dbc.DropdownMenuItem("8"),
-                dbc.DropdownMenuItem("10"),
-                dbc.DropdownMenuItem("12"),
-                dbc.DropdownMenuItem("14"),
-                dbc.DropdownMenuItem("16"),
-                dbc.DropdownMenuItem("18")
-            ]),
-            html.H5("Opacity"),
-            dcc.Slider(0.1, 1, 0.1, value=1, id='opacity-slider'),
 
-            dcc.Checklist(options=[{'label': '  Outline', 'value': True}], value=[True],
-                          id='outline-check'),
-            dcc.Checklist(options=[{'label': '  Atoms', 'value': True}], value=[True],
-                          id='scatter-atoms'),
-            html.Div([
-                html.Button('Default', id='default-cam', n_clicks=0),
-                html.Button('X-Y', id='x-y-cam', n_clicks=0),
-                html.Button('X-Z', id='x-z-cam', n_clicks=0),
-                html.Button('Y-Z', id='y-z-cam', n_clicks=0)],
-            ),
+            html.H5("Camera"),
+            dbc.ButtonGroup(
+            [
+                dbc.Button('Def.', id='default-cam', n_clicks=0),
+                dbc.Button('X-Y', id='x-y-cam', n_clicks=0),
+                dbc.Button('X-Z', id='x-z-cam', n_clicks=0),
+                dbc.Button('Y-Z', id='y-z-cam', n_clicks=0)
+            ],
+            size="sm",
+        ),
+
+            html.H5("Size"),
+            dcc.Slider(6, 18, 2, value=12, id='sc-size'),
+
+            html.H5("Opacity"),
+            dbc.Input(type="number", min=0.1, max=1, step=0.1, id="sc-opac", placeholder="0.1 - 1", size="sm"),
+
+            dbc.Checkbox(label='Outline', value= True, id='sc-outline'),
+            dbc.Checkbox(label='Atoms', value= True, id='sc-atoms'),
+
         ], style={"display": "inline"}
     )))
 # TODO: This has to become the settings tab
@@ -221,10 +217,6 @@ scatter_plot = [
         # Plot section
         dbc.Col(
             [
-                html.H3([indent.join('3D-Density-Plot'), ' (scatter)'],
-                        style={'color': 'white', 'margin-top': '1.5rem'}),
-
-
                 dbc.Card(dbc.CardBody(
                         [
 
@@ -232,8 +224,6 @@ scatter_plot = [
                                 dcc.Graph(id="scatter-plot", figure=sc_fig, style=plot_layout),
                                 className="density-scatter-plot"
                             ),
-                            html.Hr(style={'margin-bottom': '2rem', 'margin-top': '2rem'}),
-
                             # Tools
                             dbc.Button("Tools", id="open-sc-tools", n_clicks=0),
                             dbc.Collapse(
@@ -318,7 +308,7 @@ scatter_plot = [
                                 is_open=False)
                         ]
                     ), style={'background-color': 'rgba(248, 249, 250, 1)', 'width': 'min-content',
-                              'align-content': 'center'}),
+                              'align-content': 'center', 'margin-top': '1.5rem'}),
             ],
             className="plot-section"),
 
@@ -815,12 +805,12 @@ def updatePlotChoice(choice):
 @app.callback(
     Output("sc_settings", "data"),
     [Input('sc-size', 'value'),
-     Input("sc-opac", "value"),
      Input("sc-outline", "value"),
      Input("sc-atoms", "value"),
+     Input("sc-opac", "value")
     ],
     State("sc_settings", "data"))
-def updateSCsettings(size, opac, outline, atoms, saved):
+def updateSCsettings(size, outline, atoms, opac, saved):
     print("sc settings updated")
 
     if saved is None:
@@ -832,16 +822,19 @@ def updateSCsettings(size, opac, outline, atoms, saved):
         }
     else:
         settings = saved
-    print(settings)
     if dash.callback_context.triggered_id == "sc-size":
         settings["size"] = size
     elif dash.callback_context.triggered_id == "sc-opac":
+        if opac is None:
+            raise PreventUpdate
         settings["opac"] = opac
+        if opac < 1:
+            settings["outline"] = False
+        print(settings["opac"])
     elif dash.callback_context.triggered_id == "sc-outline":
         settings["outline"] = outline
     elif dash.callback_context.triggered_id == "sc-atoms":
         settings["atoms"] = atoms
-    print("returnung: ", settings)
     return settings
 
 
@@ -1030,6 +1023,11 @@ def update_scatter_tools(data):
            min(df["val"]), max(df["val"]), dense_step
 
 
+
+'''
+# cam-position buttons have to stay as parameters, so they trigger an update. 
+cam_store can't be an input or else it triggers an update everytime the cam is moved
+'''
 @app.callback(
     Output("scatter-plot", "figure"),
     [
@@ -1044,10 +1042,6 @@ def update_scatter_tools(data):
          Input("sc-active-z", "active"),
          # Settings
          Input("sc_settings", "data"),
-         Input("size-slider", 'value'),
-         Input("opacity-slider", 'value'),
-         Input("outline-check", 'value'),
-         Input("scatter-atoms", "value"),
          Input("default-cam", "n_clicks"),
          Input("x-y-cam", "n_clicks"),
          Input("x-z-cam", "n_clicks"),
@@ -1062,9 +1056,7 @@ def update_scatter_tools(data):
 def updateScatter(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, slider_range_cs_y, cs_y_inactive,
                   slider_range_cs_z, cs_z_inactive,
                   settings,
-                  size_slider, opacity_slider, outline, atoms_enabled,
                   cam_default, cam_xy, cam_xz, cam_yz, plots, relayout_data, stored_cam_settings, f_data, ):
-    print(settings)
     # DATA
     if f_data is None:
         raise PreventUpdate
@@ -1084,7 +1076,7 @@ def updateScatter(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive
     # TODO: slider functionality
     # filter-by-density
     if slider_range is not None and dense_inactive:  # Any slider Input there?
-        print("triggered")
+        print("dense")
         low, high = slider_range
         mask = (dfu['val'] >= low) & (dfu['val'] <= high)
         dfu = dfu[mask]
@@ -1093,7 +1085,6 @@ def updateScatter(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive
         # TODO: mask could be referenced without being defined
     # x-Cross-section
     if slider_range_cs_x is not None and cs_x_inactive:  # Any slider Input there?
-        print("testing x input")
         low, high = slider_range_cs_x
         mask = (dfu['x'] >= low) & (dfu['x'] <= high)
         dfu = dfu[mask]
@@ -1123,11 +1114,6 @@ def updateScatter(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive
 
     # SETTINGS
 
-    # size-slider
-    if size_slider is not None:
-        marker_size = size_slider
-    else:
-        marker_size = 12
 
 
     # updating fig according to (cs'd) DF
@@ -1141,9 +1127,6 @@ def updateScatter(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive
         # takes color range from original dataset, so colors don't change
         template=templ1,
     )
-
-    # Default Marker Params Scatter Plot
-    fig_upd.update_traces(default_scatter_marker)
 
     # UPDATING FIG-SCENE- PROPERTIES
     fig_upd.update_scenes(xaxis_showgrid=False, yaxis_showgrid=False, zaxis_showgrid=False)
@@ -1182,20 +1165,22 @@ def updateScatter(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive
     to the most recently stored manually adjusted camera position
     '''
 
+    # WAY TO CHANGE SIZE, OPACITY, OUTLINE
+
+
     # Outline settings
-    if outline:
+    if settings["outline"]:
         outlined = dict(width=1, color='DarkSlateGrey')
     else:
         outlined = dict(width=0, color='DarkSlateGrey')
 
-    # WAY TO CHANGE SIZE, OPACITY, OUTLINE
-    #fig_upd.update_traces(marker=dict(size=marker_size, opacity=opac, line=outlined)
-    #                      , selector=dict(mode='markers'))
+
+    fig_upd.update_traces(marker=dict(size=settings["size"], line=outlined), selector=dict(mode='markers'))
 
     # ADD ATOMS
 
     # TODO: COLOR-CODING ATOMS BASED OFF THEIR CHARGE
-    if True in atoms_enabled:
+    if settings["atoms"]:
         atom_colors = []
         for i in range(0, int(no_of_atoms)):
             if atoms['charge'][i] == 4.0:
