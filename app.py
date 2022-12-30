@@ -204,7 +204,7 @@ r_content_sc = html.Div(
             dbc.Checkbox(label='Outline', value= True, id='sc-outline'),
             dbc.Checkbox(label='Atoms', value= True, id='sc-atoms'),
 
-        ], style={"display": "inline"}
+        ]
     )))
 # TODO: This has to become the settings tab
 # ---------------------
@@ -320,9 +320,10 @@ scatter_plot = [
             [
                 dbc.Offcanvas(r_content_sc, id="offcanvas-r-sc", is_open=True,
                               style={'width': '15rem', 'height': 'min-content',
-                                     'margin-top': '2.5vh',
+                                     'margin-top': '1.5vh',
                                      'margin-right': '0.5vw', 'border-radius': '10px',
-                                     'box-shadow': 'rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px'},
+                                     'box-shadow': 'rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px',
+                                     'position': 'relative', 'left': '80vw'},
                               scrollable=True, backdrop=False, placement='end'),
                 dbc.Button("<", id="open-settings-sc", n_clicks=0, style={'margin-top': '40vh', 'margin-left': '0px'})
             ], style={'align': 'right'}, id="r_sc")
