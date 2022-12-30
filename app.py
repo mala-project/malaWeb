@@ -180,7 +180,8 @@ dos_fig = go.Figure()
 # start plot with empty fig, fill on updateScatter-/...-callback
 
 # --------------------------
-r_content_sc = html.Div(
+r_content_sc = html.Div([
+    html.H5("Scatter"),
     dbc.Card(dbc.CardBody(
         [
 
@@ -205,8 +206,31 @@ r_content_sc = html.Div(
             dbc.Checkbox(label='Atoms', value= True, id='sc-atoms'),
 
         ]
-    )))
-# TODO: This has to become the settings tab
+    ))])
+# ---------------------
+# --------------------------
+r_content_vol = html.Div([
+    html.H5("Volume"),
+    dbc.Card(dbc.CardBody(
+        [
+
+            html.H5("Camera"),
+            dbc.ButtonGroup(
+            [
+                dbc.Button('Def.', id='default-cam-vol', n_clicks=0),
+                dbc.Button('X-Y', id='x-y-cam-vol', n_clicks=0),
+                dbc.Button('X-Z', id='x-z-cam-vol', n_clicks=0),
+                dbc.Button('Y-Z', id='y-z-cam-vol', n_clicks=0)
+            ],
+            size="sm",
+        ),
+
+            html.H5("Opacity"),
+            dbc.Input(type="number", min=0.1, max=1, step=0.1, id="sc-opac", placeholder="0.1 - 1", size="sm"),
+            dbc.Checkbox(label='Atoms', value= True, id='sc-atoms'),
+
+        ]
+    ))])
 # ---------------------
 
 
@@ -323,21 +347,20 @@ scatter_plot = [
                                      'margin-top': '1.5vh',
                                      'margin-right': '0.5vw', 'border-radius': '10px',
                                      'box-shadow': 'rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px',
-                                     'position': 'relative', 'left': '80vw'},
+                                     'position': 'absolute', },
                               scrollable=True, backdrop=False, placement='end'),
-                dbc.Button("<", id="open-settings-sc", n_clicks=0, style={'margin-top': '40vh', 'margin-left': '0px'})
-            ], style={'align': 'right'}, id="r_sc")
+                dbc.Button("<", id="open-settings-sc", n_clicks=0, style={'position': 'absoulte', 'margin-top': '40vh'})
+            ], style={}, id="r_sc")
 
     ]),
 
 ]
 
 # VOLUME
-volume_plot = html.Div(
+volume_plot = dbc.Row(
     [
-        html.Div(
+        dbc.Col(
             [
-                html.H5([indent.join('3D-Density-Plot (volume)')], style={'color': 'white', 'margin-top': '1.5rem'}),
                 dbc.Card(dbc.CardBody(html.Div(
                     dcc.Graph(id="volume-plot", figure=vol_fig, style=plot_layout),
                     className="density-vol-plot"
@@ -345,9 +368,12 @@ volume_plot = html.Div(
             ],
             className="plot-section"
         ),
+        dbc.Col()
     ],
     className="content"
 )
+
+
 # DOS
 dos_plot = html.Div(
     [
@@ -377,7 +403,7 @@ mc0_landing = html.Div([
              style={'text-align': 'center'}),
 ], style={'width': 'content-min', 'margin-top': '20vh'})
 
-# updated ,6, 8, 10, 12, 14, 16, 18cell for mc0
+# updated cell for mc0
 mc0_upd = html.Div([
     html.Div([html.H1([indent.join('Welcome')], className='greetings',
                       style={'text-align': 'center'}),
@@ -388,22 +414,25 @@ mc0_upd = html.Div([
               html.Div('Please choose a plotting style', )],
              style={'text-align': 'center'}),
 ], style={'width': 'content-min', 'margin-top': '20vh'})
-
+# , style={'background-color': 'red'}
 skel_layout = [
     dbc.Row([
         dbc.Col(id="l0"),
         dbc.Col(mc0_landing, id="mc0"),
-        dbc.Col(id="r0"),
+        dbc.Col(id="r0")
+
     ]),
     dbc.Row([
         dbc.Col(id="l1"),
         dbc.Col(id="mc1"),
-        dbc.Col(id="r1"),
+        dbc.Col(id="r1")
+
     ]),
     dbc.Row([
         dbc.Col(id="l2"),
         dbc.Col(id="mc2"),
-        dbc.Col(id="r2"),
+        dbc.Col(id="r2")
+
     ])
 ]
 
@@ -419,7 +448,8 @@ p_layout_landing = html.Div([
     dbc.Button(">", id="open-offcanvas-l", n_clicks=0, style={'position': 'fixed', 'margin-top': '40vh',
                                                               'margin-left': '0.5vw'}),
 
-    html.Div(skel_layout, id="content-layout", style={'height': '100vh', 'background-color': '#023B59'})
+
+    html.Div(skel_layout, id="content-layout", style={'height': '100vh','background-color': '#023B59'})
 
 ])
 app.layout = p_layout_landing
