@@ -181,9 +181,6 @@ sidebar = html.Div(
     ),
 )
 
-sc_fig = go.Figure()
-vol_fig = go.Figure()
-dos_fig = go.Figure()
 # start plot with empty fig, fill on updateScatter-/...-callback
 
 # --------------------------
@@ -254,19 +251,19 @@ side_r = html.Div([
 
 
 
+def_fig = go.Figure(px.scatter(x=[0, 1], y= [2,3]))
+def_fig.update_scenes(xaxis_visible = False, yaxis_visible = False, zaxis_visible = False, xaxis_showgrid=False, yaxis_showgrid=False, zaxis_showgrid=False)
 
 scatter_plot = [
     # Center
     dbc.Row([
-
         # Plot section
         dbc.Col(
             [
                 dbc.Card(dbc.CardBody(
                     [
-
                         html.Div(
-                            dcc.Graph(id="scatter-plot", responsive=True, figure=sc_fig, style=plot_layout),
+                            dcc.Graph(id="scatter-plot", responsive=True, figure=def_fig, style=plot_layout),
                             className="density-scatter-plot"
                         ),
                         # Tools
@@ -287,7 +284,6 @@ scatter_plot = [
                                                                color="primary", n_clicks=0),
                                                     dbc.Button("Density", id='active-dense', active=False, outline=True,
                                                                color="primary", n_clicks=0)
-
                                                 ],
                                                 vertical=True,
                                             ), width=1),
@@ -372,12 +368,6 @@ scatter_plot = [
 
 ]
 
-# VOLUME
-volume_plot = dbc.Card(dbc.CardBody(html.Div(
-                    dcc.Graph(id="volume-plot", figure=vol_fig, style=plot_layout),
-                    className="density-vol-plot"
-                )), style={'background-color': 'rgba(248, 249, 250, 1)', 'width': 'min-content', 'margin-top': '1rem'})
-
 
 # DOS
 dos_plot = html.Div(
@@ -385,7 +375,7 @@ dos_plot = html.Div(
         # Density of State Section
         html.H4(indent.join('2D-Density-of-State-Plot'), style={'color': 'white', 'margin-top': '1.5rem'}),
         dbc.Card(dbc.CardBody(html.Div(
-            dcc.Graph(id="dos-plot", figure=dos_fig, style=dos_plot_layout),
+            dcc.Graph(id="dos-plot", figure=go.Figure(), style=dos_plot_layout),
             className='dos-plot',
         )),
             style={'background-color': 'rgba(248, 249, 250, 1)', 'width': 'min-content',
@@ -404,21 +394,11 @@ mc0_landing = html.Div([
                       style={'text-align': 'center'}),
               html.H1([indent.join('MALA')], className='greetings',
                       style={'text-align': 'center'}),
-              html.Div('Upload a .cube-File for MALA to process', )],
+              html.Div('Upload a .cube-File for MALA to process'),
+              html.Div('Then choose a style for plotting')],
              style={'text-align': 'center'}),
 ], style={'width': 'content-min', 'margin-top': '20vh'})
 
-# updated cell for mc0
-mc0_upd = html.Div([
-    html.Div([html.H1([indent.join('Welcome')], className='greetings',
-                      style={'text-align': 'center'}),
-              html.H1([indent.join('To')], className='greetings',
-                      style={'text-align': 'center'}),
-              html.H1([indent.join('MALA')], className='greetings',
-                      style={'text-align': 'center'}),
-              html.Div('Please choose a plotting style', )],
-             style={'text-align': 'center'}),
-], style={'width': 'content-min', 'margin-top': '20vh'})
 skel_layout = [
     dbc.Row([
         dbc.Col(
@@ -445,16 +425,15 @@ p_layout_landing = html.Div([
 
     dcc.Store(id="page_state", data="landing"),
     dcc.Store(id="cam_store"),
-    dcc.Store(id="cam_store_v"),
     dcc.Store(id="df_store", storage_type="session"),
     dcc.Store(id="choice_store"),
     dcc.Store(id="sc_settings"),
 
 
-    html.Div(skel_layout, id="content-layout", style={'height': '100vh', 'background-color': '#023B59'}),
+    html.Div(skel_layout, id="content-layout"),
 
 
-])
+], style={'height': '100vh', 'width': '100vw', 'background-color': '#023B59'})
 app.layout = p_layout_landing
 
 
@@ -494,16 +473,19 @@ def resetPlotChoice(trigger_reset):
     Output("collapse-plot-choice", "is_open"),
     [Input("open-plot-choice", "n_clicks"),
      Input("page_state", "data"),
+     Input("df_store", "data"),
      Input("collapse-plot-choice", "is_open")],
     prevent_initial_call=True,
 )
-def toggle_plot_choice(n_header, page_state, is_open):
+def toggle_plot_choice(n_header, page_state, data, is_open):
     # open plot-style-chooser when state is uploaded
-    if dash.callback_context.triggered_id == "page_state" and page_state == "uploaded" or "plotting":
-        return True
-    elif n_header:
+    if dash.callback_context.triggered_id == "open-plot-choice":
         return not is_open
-
+    elif dash.callback_context.triggered_id == "page_state" or "df_store":
+        if data is not None:
+            return True
+        else:
+            return False
 
 # end of sidebar_l collapses
 
@@ -646,12 +628,8 @@ def reset_cs_dense(n_clicks, data):
      Input("y-z-cam", "n_clicks"),
      Input("scatter-plot", "relayoutData")],
     prevent_initial_call=True)
-def store_Scatter_CamSettings(default_clicks, x_y_clicks, x_z_clicks, y_z_clicks, user_in):
-    print("stored scattercam")
-    print("triggered by:", dash.callback_context.triggered_id)
-    print(user_in)
+def store_cam(default_clicks, x_y_clicks, x_z_clicks, y_z_clicks, user_in):
     # user_in is the camera position set by mouse movement, it has to be updated on every mouse input on the fig
-
 
     # set stored_cam_setting according to which button was last pressed
     if dash.callback_context.triggered_id[0:-4] == "default":
@@ -679,14 +657,18 @@ def store_Scatter_CamSettings(default_clicks, x_y_clicks, x_z_clicks, y_z_clicks
             eye=dict(x=3.00, y=0, z=0))
     # set to plot cam when user input is camera-movement:
     elif dash.callback_context.triggered_id == "scatter-plot":
-        if user_in is None:
+
+        # stops the update in case the callback is triggered by zooming/initializing/smth else
+        if user_in is None or "scene.camera" not in user_in.keys():
             raise PreventUpdate
         else:
             if 'scene.camera' in user_in.keys():
                 return user_in['scene.camera']
-                # stops the update in case the callback is triggered by zooming/smth else
-            else:
-                raise dash.exceptions.PreventUpdate
+        # stops the update in case the callback is triggered by zooming/smth else
+    else:
+        print("unknown trigger caused cam_pos_update")
+        raise PreventUpdate
+
     # Feels very unelegant -> this is always run twice when switching to scatter for example
     # END OF SCATTER CALLBACKS
 
@@ -699,23 +681,22 @@ def store_Scatter_CamSettings(default_clicks, x_y_clicks, x_z_clicks, y_z_clicks
     Output("page_state", "data"),
     [Input("df_store", "data"),
      Input("choice_store", "data"),
-     Input("reset-data", "n_clicks")],
+     Input("reset-data", "n_clicks"),
+     State("page_state", "data")],
     prevent_initial_call=True)
-def updatePageState(trig1, trig2, trig3):
-    if trig1 is not None and trig2 is not None and (
-            dash.callback_context.triggered_id == "choice_store" or "df_store"):
-        print(trig2)
-        print("State changed to: plotting")
-        return "plotting"
+def updatePageState(trig1, trig2, trig3, state):
+    new_state = "landing"
+    if dash.callback_context.triggered_id == "df_store" or "choice_store":
+        if trig1 is not None and trig2 is not None:
+            new_state="plotting"
+    elif dash.callback_context.triggered_id == "reset-data":
+        new_state = "landing"
 
-    if ((trig1 is not None) and trig2 is not None) and dash.callback_context.triggered_id != "reset-data":
-        print("State changed to: uploaded")
-        # TODO: maybe green border around upload section?
-        return "uploaded"
-
-    if trig3 is not None and dash.callback_context.triggered_id == "reset-data":
-        print("State changed to: landing")
-        return "landing"
+    # prevent unnecessary updates
+    if state == new_state:
+        raise PreventUpdate
+    else:
+        return new_state
 
 
 # dataframes
@@ -724,9 +705,10 @@ def updatePageState(trig1, trig2, trig3):
     Output("df_store", "data"),
     Output('upload-data', 'contents'),
     [Input('upload-data', 'contents'),
+     Input('upload-data', 'filename'),
      Input("reset-data", "n_clicks")],
     prevent_initial_call=True)
-def updateDF(f_data, reset):
+def updateDF(f_data, file, reset):
     # GOAL:
     # f_data = uploaded data -> to be .npy
     # TODO: smth like (mala_data = mala.webAPI(f_data)) (run a mala .getter(uploadedData))
@@ -739,6 +721,9 @@ def updateDF(f_data, reset):
 
     # Always returning None for the Upload-Component as well, so that it's possible to reupload
     # (-> gotta clear up the space first)
+    # reset on wrong filetype
+    if file is not None and not file.endswith('.cube'):
+        return None, f_data
 
     if dash.callback_context.triggered_id == "reset-data":
         return None, None
@@ -849,8 +834,8 @@ def updateDF(f_data, reset):
     [Input('plot-choice', 'value')],
     prevent_initial_call=True)
 def updatePlotChoice(choice):
+    print("NEW CHOICE: ", choice)
     return choice
-
 
 # SC SETTINGS STORING
 # TODO: fix Opacity/Outline (Double Binding?)
@@ -861,11 +846,13 @@ def updatePlotChoice(choice):
      Input("sc-atoms", "value"),
      Input("sc-opac", "value")
      ],
-    State("sc_settings", "data"))
-def updateSCsettings(size, outline, atoms, opac, saved):
+    State("sc_settings", "data"),
+)
+def update_settings_store(size, outline, atoms, opac, saved):
     print("sc settings updated")
 
     if saved is None:
+        # default settings
         settings = {
             "size": 12,
             "opac": 1,
@@ -882,35 +869,15 @@ def updateSCsettings(size, outline, atoms, opac, saved):
         settings["opac"] = opac
         if opac < 1:
             settings["outline"] = False
-        print(settings["opac"])
     elif dash.callback_context.triggered_id == "sc-outline":
         settings["outline"] = outline
     elif dash.callback_context.triggered_id == "sc-atoms":
         settings["atoms"] = atoms
+    print(settings)
     return settings
 
 
 # END UPDATE FOR STORED DATA
-
-
-# LAYOUT CALLBACKS
-# UPDATING CONTENT-CELL 0
-
-@app.callback(
-    Output("mc0", "children"),
-    Input("page_state", "data"),
-    State("choice_store", "data"),
-    State("df_store", "data"),
-    prevent_initial_call=True)
-def updateMC0(state, plots, data):
-    if data is None or state == "landing":
-        return mc0_landing
-    elif plots is None or state == "updated":
-        return mc0_upd
-
-    elif state == "plotting" and data is not None:
-        return scatter_plot
-
 
 
 # TODO: update Tool-Sliders - DENSITY BUG!!
@@ -936,24 +903,52 @@ def updateMC0(state, plots, data):
     [
         Input("df_store", "data"),
     ],
+    [
+        State("choice_store", "data")
+    ],
 )
-def update_scatter_tools(data):
+def update_tools(data, plot_choice):
     if data is None:    # in case of reset:
         raise PreventUpdate
     else:
-        df = pd.DataFrame(data['MALA_DF']['scatter'])
+        print("updating tools")
+        if plot_choice == "scatter":
+            df = pd.DataFrame(data['MALA_DF']['scatter'])
+        elif plot_choice == "volume":
+            df = pd.DataFrame(data['MALA_DF']['volume'])
+        else:
+            # return these default values if we don#t have a plot-choice for some reason
+            return min(0, 1, 1), \
+                   min(0, 1, 1), \
+                   min(0, 1, 1), \
+                   min(0, 1, 1),
         scale = pd.DataFrame(data['SCALE'])
         x_step = scale["x_axis"][1]
-
         y_step = scale["y_axis"][2]
         z_step = scale["z_axis"][3]
         dense_step = round((max(df['val']) - min(df['val'])) / 30, ndigits=5)
-        print(dense_step + min(df["val"]))
-        print(min(df["val"]), max(df["val"]))
         return min(df["x"]), max(df["x"]), x_step, \
                min(df["y"]), max(df["y"]), y_step, \
                min(df["z"]), max(df["z"]), z_step, \
                min(df["val"]), max(df["val"]), dense_step
+
+
+# LAYOUT CALLBACKS
+# UPDATING CONTENT-CELL 0
+
+@app.callback(
+    Output("mc0", "children"),
+    Input("page_state", "data"),
+    State("choice_store", "data"),
+    State("df_store", "data"),
+    prevent_initial_call=True)
+def updateMC0(state, plots, data):
+    print("updating mc0")
+    if data is None or state == "landing":
+        return mc0_landing
+
+    elif state == "plotting":
+        return scatter_plot
 
 
 '''
@@ -987,24 +982,44 @@ cam_store can't be an input or else it triggers an update everytime the cam is m
      State("df_store", "data"),
      State("scatter-plot", "figure")
      ],
-    prevent_initial_call=True,
 )
-def updateScatter(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, slider_range_cs_y, cs_y_inactive,
+def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, slider_range_cs_y, cs_y_inactive,
                   slider_range_cs_z, cs_z_inactive,
                   settings,
                   cam_default, cam_xy, cam_xz, cam_yz, plots, relayout_data, stored_cam_settings, f_data, fig):
+
+   # TODO: make this function more efficient
+   #  - for example on settings-change, only update the settings and take the fig from relayout data instead of redefining it
+
+    # new structure
+
+    # IF LAST INPUT ID == sc_settings
+
+    # IF LAST INPUT ID contains "slider
+
+    # IF LAST INPUT ID == "df_store" or "choice_store" or "
+
+
+
+    print("-------------")
+    print("Plot getting updated")
+    print(dash.callback_context.triggered_id)
     # DATA
     if f_data is None:
+        # "no f_data -> cancel"
         raise PreventUpdate
-    print("UPDATING SCATTER" "from:")
-    print(fig)
-    # the denisity-Dataframe  for Scatter that we're updating, taken from df_store (=f_data)
 
+    # the density-Dataframe that we're updating, taken from df_store (=f_data)
     if plots == "scatter":
         df = pd.DataFrame(f_data['MALA_DF']['scatter'])
-    else:
+    elif plots == "volume":
         df = pd.DataFrame(f_data['MALA_DF']['volume'])
+    else:
+        # "no plot-choice -> cancel"
+        raise PreventUpdate
     dfu = df.copy()
+
+    print("UPDATING PLOT")
 
     # atoms-Dataframe also taken from f_data
     atoms = pd.DataFrame(f_data['INPUT_DF'])
@@ -1012,11 +1027,8 @@ def updateScatter(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive
     # Dataframes are ready
 
     # TOOLS
-    # (inside Collapsable)
-    # TODO: slider functionality
     # filter-by-density
     if slider_range is not None and dense_inactive:  # Any slider Input there?
-        print("dense")
         low, high = slider_range
         mask = (dfu['val'] >= low) & (dfu['val'] <= high)
         dfu = dfu[mask]
@@ -1051,8 +1063,7 @@ def updateScatter(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive
         # SETTINGS
         # plot-settings
 
-    # SETTINGS
-
+    # creating the figure
     if plots == "scatter":
         # updating fig according to (cs'd) DF
         fig_upd = px.scatter_3d(
@@ -1061,10 +1072,18 @@ def updateScatter(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive
             hover_data=['val'],
             opacity=settings["opac"],
             color_continuous_scale=px.colors.sequential.Inferno_r,
-            range_color=[df.min()['val'], df.max()['val']],
+            range_color=[min(df['val']), max(df['val'])],
             # takes color range from original dataset, so colors don't change
             template=templ1,
         )
+        # Outline settings
+        if settings["outline"]:
+            outlined = dict(width=1, color='DarkSlateGrey')
+        else:
+            outlined = dict(width=0, color='DarkSlateGrey')
+        # applying marker settings
+        fig_upd.update_traces(marker=dict(size=settings["size"], line=outlined), selector=dict(mode='markers'))
+
 
     elif plots == "volume":
         fig_upd = go.Figure(data=go.Volume(
@@ -1073,16 +1092,16 @@ def updateScatter(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive
             z=dfu.z,
             value=dfu.val,
             opacity=0.3,
-            surface_count=17,
+            surface_count=settings["size"],
             colorscale=px.colors.sequential.Inferno_r,
             cauto=True
         ))
 
 
 
-
     # UPDATING FIG-SCENE- PROPERTIES
-    fig_upd.update_scenes(xaxis_showgrid=False, yaxis_showgrid=False, zaxis_showgrid=False)
+    fig_upd.update_scenes(xaxis_visible = False, yaxis_visible = False, zaxis_visible = False, xaxis_showgrid=False, yaxis_showgrid=False, zaxis_showgrid=False)
+   # TODO why not working for volume?
 
     # CAMERA
     if dash.callback_context.triggered_id == "default-cam":
@@ -1108,7 +1127,6 @@ def updateScatter(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive
             up=dict(x=0, y=0, z=1),
             center=dict(x=0, y=0, z=0),
             eye=dict(x=3.00, y=0, z=0)))
-
     else:
         fig_upd.update_layout(scene_camera=stored_cam_settings)
     '''
@@ -1120,16 +1138,8 @@ def updateScatter(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive
 
     # WAY TO CHANGE SIZE, OPACITY, OUTLINE
 
-    # Outline settings
-    if settings["outline"]:
-        outlined = dict(width=1, color='DarkSlateGrey')
-    else:
-        outlined = dict(width=0, color='DarkSlateGrey')
-
-    fig_upd.update_traces(marker=dict(size=settings["size"], line=outlined), selector=dict(mode='markers'))
 
     # ADD ATOMS
-
     # TODO: COLOR-CODING ATOMS BASED OFF THEIR CHARGE
     if settings["atoms"]:
         atom_colors = []
@@ -1141,7 +1151,7 @@ def updateScatter(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive
         fig_upd.add_trace(
             go.Scatter3d(name="Atoms", x=atoms['x'], y=atoms['y'], z=atoms['z'], mode='markers',
                          marker=dict(size=30, color=atom_colors)))
-
+    #print(fig_upd)
     return fig_upd
 
 
@@ -1184,7 +1194,6 @@ def toggle_offcanvas_l(n1, is_open):
     [State("offcanvas-r-sc", "is_open")],
 )
 def toggle_scatter_settings(n1, is_open):
-    print("toggle")
     if n1:
         return not is_open
     return is_open
@@ -1195,18 +1204,18 @@ def toggle_scatter_settings(n1, is_open):
     Output('output-upload-state', 'children'),
     [Input('upload-data', 'filename'),
      Input('upload-data', 'contents'),
-     Input('df_store', 'data')],
+     Input('df_store', 'data'),
+     Input('reset-data', 'n_clicks')],
     prevent_initial_call=True,
 )
-def uploadStatus(filename, contents, data):
+def uploadStatus(filename, contents, data, reset):
     # checks for .cubes for now, as long as im working on visuals
     # will check for .npy when mala is ready to give .cube output from
     # is this enough input-sanitization or proper type-check needed?
     # upload component also has accept property to allow only certain types - might be better
-    print(dash.callback_context.triggered_id)
-    if data is None:
-        return "Awaiting Upload.."
-    elif filename is not None and data is not None:
+    if dash.callback_context.triggered_id == "reset-data":
+        status = "Awaiting upload.."
+    elif filename is not None:
         if filename.endswith('.cube'):
 
             # USER INPUT ATOM POSITIONS - .cube File Upload
@@ -1218,14 +1227,17 @@ def uploadStatus(filename, contents, data):
             # receiving MALA Input (from script for now)
             # 4. contents
 
-            return 'Upload successful'
+            status = 'Upload successful'
         else:
-            return 'Wrong file-type. .cube required'
+            status = 'Wrong file-type. .cube required'
+
     else:
-        return ''
+        status = 'Awaiting upload..'
+
+    return status
 
 
 # END OF CALLBACKS FOR SIDEBAR
 
 if __name__ == '__main__':
-    app.run_server(debug=True, port=8051)
+    app.run_server(debug=True, port=8050)
