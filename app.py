@@ -94,8 +94,8 @@ table_body = [html.Tbody([row1, row2, row3, row4, row5, row6])]
 radioItems = dbc.RadioItems(
             options=[
                 {"label": "Scatter", "value": "scatter"},
-                {"label": "Isosurfae", "value": "volume"},
-            ],
+                {"label": "Isosurface", "value": "volume"},
+            ], style={"font-size": "0.85em"},
             inline=True,
             id="plot-choice",
         )
@@ -130,6 +130,7 @@ sidebar = html.Div(
                             ''', style={'text-align': 'center'}),
                             # TODO: make this give dynamic promts (like "choose a plot!")
                             # right now we're reloading the whole "welcome mala"-cell for that
+
                             dcc.Upload(
                                 id='upload-data',
                                 children=html.Div([
@@ -139,12 +140,13 @@ sidebar = html.Div(
                                 style={
                                     'width': '90%',
                                     'height': 'auto',
-                                    'lineHeight': '20px',
+                                    'lineHeight': '15px',
                                     'borderWidth': '1px',
                                     'borderStyle': 'dashed',
                                     'borderRadius': '5px',
                                     'textAlign': 'center',
                                     'margin': '1rem',
+                                    "font-size": "0.85em",
                                 },
                                 # don't allow multiple files to be uploaded
                                 multiple=False
@@ -152,7 +154,7 @@ sidebar = html.Div(
 
                             dbc.Row([
                                 dbc.Col(dbc.Button("reset", id="reset-data"), width=4),
-                                dbc.Col(html.Div(id='output-upload-state', style={'margin': '2px'}),
+                                dbc.Col(html.Div("Awaiting upload..", id='output-upload-state', style={'margin': '2px', "font-size": "0.85em"}),
                                         style={'text-align': 'center'}, width=8)
                             ])
 
@@ -267,7 +269,11 @@ scatter_plot = [
                             className="density-scatter-plot"
                         ),
                         # Tools
-                        dbc.Button("Tools", id="open-sc-tools", n_clicks=0),
+                        html.Hr(),
+                        dbc.Row([
+
+                        dbc.Button(html.P("Tools", style={"line-height": "0.65em", "font-size": "0.65em"}), id="open-sc-tools", style={"width": "5em", "height": "1em"}, n_clicks=0)
+                        ], justify="center", style={"text-align": "center"}),
                         dbc.Collapse(
                             dbc.Card(dbc.CardBody(
                                 [
@@ -554,17 +560,23 @@ def toggle_z_cs(n_x, active, bc):
 @app.callback(
     Output("range-slider-dense", "disabled"),
     Output("active-dense", "active"),
+    Output("active-dense", "disabled"),
     Input("active-dense", "n_clicks"),
-    Input("range-slider-dense", "disabled"),
-    Input("active-dense", "active"),
-    State("choice_store", "data"),
+    State("range-slider-dense", "disabled"),
+    State("active-dense", "active"),
+    Input("choice_store", "data"),
     prevent_initial_call=True)
 def toggle_density_sc(n_d, active, bc, plot_choice):
         # Disabling density-slider for volume-plots
-    if plot_choice == "volume":
-        return True, False
-    if n_d and active:
-        return not active, not bc
+    if dash.callback_context.triggered_id == "choice_store":
+        if plot_choice == "scatter":
+            return True, False, False
+        else:
+            return True, False, True
+    elif dash.callback_context.triggered_id == "active-dense":
+        return not active, not bc, False
+    else:
+        return True, False, True
     # active actually is the disabled parameter!
 
 
