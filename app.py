@@ -55,9 +55,15 @@ default_scatter_marker = dict(marker=dict(
 # not tested
 
 plot_layout = {
-    'title': 'Test',
+    'title': 'Plot',
     'height': '80vh',
     'width': '80vw',
+    'background': '#000',  # not working
+}
+orientation_style = {
+    'title': 'x-y-z',
+    'height': '50em',
+    'width': '50em',
     'background': '#000',  # not working
 }
 dos_plot_layout = {
@@ -92,13 +98,13 @@ row6 = html.Tr([html.Td("placeholder", style={'text-align': 'right'})])
 table_body = [html.Tbody([row1, row2, row3, row4, row5, row6])]
 
 radioItems = dbc.RadioItems(
-            options=[
-                {"label": "Scatter", "value": "scatter"},
-                {"label": "Isosurface", "value": "volume"},
-            ], style={"font-size": "0.85em"},
-            inline=True,
-            id="plot-choice",
-        )
+    options=[
+        {"label": "Scatter", "value": "scatter"},
+        {"label": "Isosurface", "value": "volume"},
+    ], style={"font-size": "0.85em"},
+    inline=True,
+    id="plot-choice",
+)
 
 # ----------------
 # Left SIDEBAR
@@ -154,7 +160,8 @@ sidebar = html.Div(
 
                             dbc.Row([
                                 dbc.Col(dbc.Button("reset", id="reset-data"), width=4),
-                                dbc.Col(html.Div("Awaiting upload..", id='output-upload-state', style={'margin': '2px', "font-size": "0.85em"}),
+                                dbc.Col(html.Div("Awaiting upload..", id='output-upload-state',
+                                                 style={'margin': '2px', "font-size": "0.85em"}),
                                         style={'text-align': 'center'}, width=8)
                             ])
 
@@ -222,17 +229,22 @@ r_content_vol = html.Div([
             html.H5("Camera"),
             dbc.ButtonGroup(
                 [
-                    dbc.Button('Def.', id='default-cam-vol', n_clicks=0),
-                    dbc.Button('X-Y', id='x-y-cam-vol', n_clicks=0),
-                    dbc.Button('X-Z', id='x-z-cam-vol', n_clicks=0),
-                    dbc.Button('Y-Z', id='y-z-cam-vol', n_clicks=0)
+                    dbc.Button('Def.', id='default-cam', n_clicks=0),
+                    dbc.Button('X-Y', id='x-y-cam', n_clicks=0),
+                    dbc.Button('X-Z', id='x-z-cam', n_clicks=0),
+                    dbc.Button('Y-Z', id='y-z-cam', n_clicks=0)
                 ],
                 size="sm",
             ),
 
+            html.H5("Isosurfaces"),
+            dcc.Slider(6, 18, 2, value=12, id='sc-size'),
+
             html.H5("Opacity"),
-            dbc.Input(type="number", min=0.1, max=1, step=0.1, id="vol-opac", placeholder="0.1 - 1", size="sm"),
-            dbc.Checkbox(label='Atoms', value=True, id='vol-atoms'),
+            dbc.Input(type="number", min=0.1, max=1, step=0.1, id="sc-opac", placeholder="0.1 - 1", size="sm"),
+
+            dbc.Checkbox(label='Outline', value=True, id='sc-outline'),
+            dbc.Checkbox(label='Atoms', value=True, id='sc-atoms'),
 
         ]
     ))])
@@ -241,23 +253,27 @@ r_content_vol = html.Div([
 
 # Right SIDEBAR
 side_r = html.Div([
-            dbc.Offcanvas(r_content_sc, id="offcanvas-r-sc", is_open=False,
-                              style={'width': '15rem', 'height': 'min-content',
-                                     'margin-top': '1.5vh',
-                                     'margin-right': '0.5vw', 'border-radius': '10px',
-                                     'box-shadow': 'rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px',
-                                     'position': 'absolute', },
-                              scrollable=True, backdrop=False, placement='end'),
+    dbc.Offcanvas(html.Div(), id="offcanvas-r-sc", is_open=False,
+                  style={'width': '15rem', 'height': 'min-content',
+                         'margin-top': '1.5vh',
+                         'margin-right': '0.5vw', 'border-radius': '10px',
+                         'box-shadow': 'rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px',
+                         'position': 'absolute', },
+                  scrollable=True, backdrop=False, placement='end'),
 ]
 )
 
-
-
-def_fig = go.Figure(px.scatter(x=[0, 1], y= [2,3]))
-def_fig.update_scenes(xaxis_visible = False, yaxis_visible = False, zaxis_visible = False, xaxis_showgrid=False, yaxis_showgrid=False, zaxis_showgrid=False)
+# -------------------------------
+# Figs
+def_fig = go.Figure(px.scatter(x=[0, 1], y=[2, 3]))
+orient_fig = go.Figure(px.scatter(x=[0, 1], y=[2, 3]))
+def_fig.update_scenes(xaxis_visible=False, yaxis_visible=False, zaxis_visible=False, xaxis_showgrid=False,
+                      yaxis_showgrid=False, zaxis_showgrid=False)
+# TODO: Orientation fig & bottom offcanvas (table+dos)
 
 scatter_plot = [
     # Center
+    dcc.Store(id="cam_store"),
     dbc.Row([
         # Plot section
         dbc.Col(
@@ -268,11 +284,15 @@ scatter_plot = [
                             dcc.Graph(id="scatter-plot", responsive=True, figure=def_fig, style=plot_layout),
                             className="density-scatter-plot"
                         ),
+                        html.Div(
+                            dcc.Graph(id="orientation", responsive=True, figure=orient_fig, style=orientation_style)
+                        ),
                         # Tools
                         html.Hr(),
                         dbc.Row([
 
-                        dbc.Button(html.P("Tools", style={"line-height": "0.65em", "font-size": "0.65em"}), id="open-sc-tools", style={"width": "5em", "height": "1em"}, n_clicks=0)
+                            dbc.Button(html.P("Tools", style={"line-height": "0.65em", "font-size": "0.65em"}),
+                                       id="open-sc-tools", style={"width": "5em", "height": "1em"}, n_clicks=0)
                         ], justify="center", style={"text-align": "center"}),
                         dbc.Collapse(
                             dbc.Card(dbc.CardBody(
@@ -374,7 +394,6 @@ scatter_plot = [
 
 ]
 
-
 # DOS
 dos_plot = html.Div(
     [
@@ -410,8 +429,8 @@ skel_layout = [
         dbc.Col(
 
             [sidebar,
-            dbc.Button(">", id="open-offcanvas-l", n_clicks=0, style={'position': 'fixed', 'margin-top': '40vh',
-                                                                      'margin-left': '0.5vw'})],
+             dbc.Button(">", id="open-offcanvas-l", n_clicks=0, style={'position': 'fixed', 'margin-top': '40vh',
+                                                                       'margin-left': '0.5vw'})],
             id="l0", width=1, style={'background-color': 'red'}),
 
         dbc.Col(mc0_landing, id="mc0", width=10, style={'background-color': 'blue'}),
@@ -419,8 +438,7 @@ skel_layout = [
         dbc.Col(
 
             [side_r,
-            dbc.Button("<", id="open-settings-sc", n_clicks=0, style={'align': 'end'})],
-
+             dbc.Button("<", id="open-settings-sc", n_clicks=0, style={'align': 'end'})],
 
             id="r0", width=1, style={'background-color': 'green'})
 
@@ -430,14 +448,11 @@ skel_layout = [
 p_layout_landing = html.Div([
 
     dcc.Store(id="page_state", data="landing"),
-    dcc.Store(id="cam_store"),
     dcc.Store(id="df_store", storage_type="session"),
     dcc.Store(id="choice_store"),
     dcc.Store(id="sc_settings"),
 
-
     html.Div(skel_layout, id="content-layout"),
-
 
 ], style={'height': '100vh', 'width': '100vw', 'background-color': '#023B59'})
 app.layout = p_layout_landing
@@ -464,7 +479,7 @@ def toggle_upload(n_header, is_open):
 
 
 # this callback is totally optional and only decides if the reset-button should also reset plot-choice
-# turned off by PreventingUpdate for now
+# turned off for development by PreventingUpdate for now
 @app.callback(
     Output("plot-choice", "value"),
     Input("reset-data", "n_clicks"),
@@ -492,6 +507,7 @@ def toggle_plot_choice(n_header, page_state, data, is_open):
             return True
         else:
             return False
+
 
 # end of sidebar_l collapses
 
@@ -567,7 +583,7 @@ def toggle_z_cs(n_x, active, bc):
     Input("choice_store", "data"),
     prevent_initial_call=True)
 def toggle_density_sc(n_d, active, bc, plot_choice):
-        # Disabling density-slider for volume-plots
+    # Disabling density-slider for volume-plots
     if dash.callback_context.triggered_id == "choice_store":
         if plot_choice == "scatter":
             return True, False, False
@@ -630,7 +646,6 @@ def reset_cs_dense(n_clicks, data):
 # end of collapsable cross-section settings
 
 
-
 # Storing camera position
 @app.callback(
     Output("cam_store", "data"),
@@ -685,7 +700,6 @@ def store_cam(default_clicks, x_y_clicks, x_z_clicks, y_z_clicks, user_in):
     # END OF SCATTER CALLBACKS
 
 
-
 # UPDATE STORED DATA
 
 # page state
@@ -700,7 +714,7 @@ def updatePageState(trig1, trig2, trig3, state):
     new_state = "landing"
     if dash.callback_context.triggered_id == "df_store" or "choice_store":
         if trig1 is not None and trig2 is not None:
-            new_state="plotting"
+            new_state = "plotting"
     elif dash.callback_context.triggered_id == "reset-data":
         new_state = "landing"
 
@@ -849,6 +863,7 @@ def updatePlotChoice(choice):
     print("NEW CHOICE: ", choice)
     return choice
 
+
 # SC SETTINGS STORING
 # TODO: fix Opacity/Outline (Double Binding?)
 @app.callback(
@@ -920,7 +935,7 @@ def update_settings_store(size, outline, atoms, opac, saved):
     ],
 )
 def update_tools(data, plot_choice):
-    if data is None:    # in case of reset:
+    if data is None:  # in case of reset:
         raise PreventUpdate
     else:
         print("updating tools")
@@ -996,12 +1011,11 @@ cam_store can't be an input or else it triggers an update everytime the cam is m
      ],
 )
 def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, slider_range_cs_y, cs_y_inactive,
-                  slider_range_cs_z, cs_z_inactive,
-                  settings,
-                  cam_default, cam_xy, cam_xz, cam_yz, plots, relayout_data, stored_cam_settings, f_data, fig):
-
-   # TODO: make this function more efficient
-   #  - for example on settings-change, only update the settings and take the fig from relayout data instead of redefining it
+               slider_range_cs_z, cs_z_inactive,
+               settings,
+               cam_default, cam_xy, cam_xz, cam_yz, plots, relayout_data, stored_cam_settings, f_data, fig):
+    # TODO: make this function more efficient
+    #  - for example on settings-change, only update the settings and take the fig from relayout data instead of redefining it
 
     # new structure
 
@@ -1010,8 +1024,6 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
     # IF LAST INPUT ID contains "slider
 
     # IF LAST INPUT ID == "df_store" or "choice_store" or "
-
-
 
     print("-------------")
     print("Plot getting updated")
@@ -1109,11 +1121,10 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
             cauto=True
         ))
 
-
-
     # UPDATING FIG-SCENE- PROPERTIES
-    fig_upd.update_scenes(xaxis_visible = False, yaxis_visible = False, zaxis_visible = False, xaxis_showgrid=False, yaxis_showgrid=False, zaxis_showgrid=False)
-   # TODO why not working for volume?
+    fig_upd.update_scenes(xaxis_visible=False, yaxis_visible=False, zaxis_visible=False, xaxis_showgrid=False,
+                          yaxis_showgrid=False, zaxis_showgrid=False)
+    # TODO why not working for volume?
 
     # CAMERA
     if dash.callback_context.triggered_id == "default-cam":
@@ -1150,7 +1161,6 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
 
     # WAY TO CHANGE SIZE, OPACITY, OUTLINE
 
-
     # ADD ATOMS
     # TODO: COLOR-CODING ATOMS BASED OFF THEIR CHARGE
     if settings["atoms"]:
@@ -1163,7 +1173,7 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
         fig_upd.add_trace(
             go.Scatter3d(name="Atoms", x=atoms['x'], y=atoms['y'], z=atoms['z'], mode='markers',
                          marker=dict(size=30, color=atom_colors)))
-    #print(fig_upd)
+    # print(fig_upd)
     return fig_upd
 
 
@@ -1185,6 +1195,20 @@ def updateDoS(plot_choice, f_data):
 
 # END OF CALLBACKS FOR DOS PLOT
 
+# Update settings sidebar
+@app.callback(
+    Output("offcanvas-r-sc", "children"),
+    Input("choice_store", "data"),
+    prevent_initial_call=True
+)
+def updateSettingsBar(plot_choice):
+    if plot_choice == "scatter":
+        return r_content_sc
+    elif plot_choice == "volume":
+        return r_content_vol
+    else:
+        raise PreventUpdate
+
 
 # CALLBACKS FOR SIDEBAR
 
@@ -1205,7 +1229,7 @@ def toggle_offcanvas_l(n1, is_open):
     Input("open-settings-sc", "n_clicks"),
     [State("offcanvas-r-sc", "is_open")],
 )
-def toggle_scatter_settings(n1, is_open):
+def toggle__settings_bar(n1, is_open):
     if n1:
         return not is_open
     return is_open
