@@ -16,13 +16,13 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objs as go
 
-# Theming scatter
+# PX--Graph Object Theme
 templ1 = dict(layout=go.Layout(
     scene={
-        'xaxis': {'backgroundcolor': '#E5ECF6',
+        'xaxis': {'backgroundcolor': 'red',
                   'gridcolor': 'white',
                   'gridwidth': 0,
-                  'linecolor': 'white',
+                  'linecolor': 'red',
                   'showbackground': False,
                   'ticks': '',
                   'zerolinecolor': 'white',
@@ -52,8 +52,6 @@ default_scatter_marker = dict(marker=dict(
     opacity=1,
     line=dict(width=1, color='DarkSlateGrey')),
 )
-# not tested
-
 plot_layout = {
     'title': 'Plot',
     'height': '80vh',
@@ -62,10 +60,49 @@ plot_layout = {
 }
 orientation_style = {
     'title': 'x-y-z',
-    'height': '50em',
-    'width': '50em',
-    'background': '#000',  # not working
+    'height': '25vh',
+    'width': '25vw',
+    'background': '#f8f9fa',  # not working
 }
+
+#Graph-Object Scene
+orient_template = {
+        'xaxis': {
+                  'gridcolor': 'white',
+                  'gridwidth': 0,
+                  'linecolor': 'red',
+                  'linewidth': 5,
+                  'ticks': '',
+                  'showticklabels': False,
+                  'visible': False},
+        'yaxis': {
+                  'gridcolor': 'white',
+                  'gridwidth': 0,
+                    'showgrid': False,
+                  'linecolor': 'green',
+                  'linewidth': 0,
+                  'ticks': '',
+                  'showticklabels': False,
+                  'visible': False,
+                    'title': 'Test'
+        },
+        'zaxis': {
+                  'gridcolor': 'white',
+                  'gridwidth': 0,
+                  'linecolor': 'blue',
+                  'linewidth': 0,
+                  'ticks': '',
+                  'showticklabels': False,
+                  'visible': False},
+        'bgcolor': '#f8f9fa',
+    }
+'''
+    'height': '8vh',
+    'width': '8.33vw',
+    
+'''
+
+
 dos_plot_layout = {
     'height': '400px',
     'width': '800px',
@@ -194,7 +231,7 @@ sidebar = html.Div(
 
 # --------------------------
 r_content_sc = html.Div([
-    html.H5("Scatter"),
+    html.H5("Scatter", id="settings-head"),
     dbc.Card(dbc.CardBody(
         [
 
@@ -209,10 +246,10 @@ r_content_sc = html.Div([
                 size="sm",
             ),
 
-            html.H5("Size"),
+            html.H5("Size", id="sz/isosurf-label"),
             dcc.Slider(6, 18, 2, value=12, id='sc-size'),
 
-            html.H5("Opacity"),
+            html.H5("Opacity", id="opac-label"),
             dbc.Input(type="number", min=0.1, max=1, step=0.1, id="sc-opac", placeholder="0.1 - 1", size="sm"),
 
             dbc.Checkbox(label='Outline', value=True, id='sc-outline'),
@@ -265,10 +302,19 @@ side_r = html.Div([
 
 # -------------------------------
 # Figs
-def_fig = go.Figure(px.scatter(x=[0, 1], y=[2, 3]))
-orient_fig = go.Figure(px.scatter(x=[0, 1], y=[2, 3]))
+def_fig = go.Figure(go.Scatter3d(x=[1], y=[1], z=[1], showlegend=False))
 def_fig.update_scenes(xaxis_visible=False, yaxis_visible=False, zaxis_visible=False, xaxis_showgrid=False,
                       yaxis_showgrid=False, zaxis_showgrid=False)
+
+orient_fig = go.Figure()
+
+orient_fig.update_scenes(orient_template)
+orient_fig.update_layout(margin=dict(l=0, r=0, b=0, t=0), title=dict(text="test"))
+orient_fig.add_trace(go.Scatter3d(x=[0, 1], y=[0, 0], z=[0, 0], marker={'color': 'red', 'size': 0}, line={'width': 6}, showlegend=False))
+orient_fig.add_trace(go.Scatter3d(x=[0, 0], y=[0, 1], z=[0, 0], marker={'color': 'green', 'size': 0}, line={'width': 6}, showlegend=False))
+orient_fig.add_trace(go.Scatter3d(x=[0, 0], y=[0, 0], z=[0, 1], marker={'color': 'blue', 'size': 0}, line={'width': 6}, showlegend=False))
+
+
 # TODO: Orientation fig & bottom offcanvas (table+dos)
 
 scatter_plot = [
@@ -285,7 +331,7 @@ scatter_plot = [
                             className="density-scatter-plot"
                         ),
                         html.Div(
-                            dcc.Graph(id="orientation", responsive=True, figure=orient_fig, style=orientation_style)
+                            dcc.Graph(id="orientation", responsive=True, figure=orient_fig, style=orientation_style, config={'displayModeBar': False})
                         ),
                         # Tools
                         html.Hr(),
@@ -658,6 +704,9 @@ def reset_cs_dense(n_clicks, data):
 def store_cam(default_clicks, x_y_clicks, x_z_clicks, y_z_clicks, user_in):
     # user_in is the camera position set by mouse movement, it has to be updated on every mouse input on the fig
 
+
+    print("cam-store udated by: ", dash.callback_context.triggered_id)
+
     # set stored_cam_setting according to which button was last pressed
     if dash.callback_context.triggered_id[0:-4] == "default":
         return dict(
@@ -860,7 +909,6 @@ def updateDF(f_data, file, reset):
     [Input('plot-choice', 'value')],
     prevent_initial_call=True)
 def updatePlotChoice(choice):
-    print("NEW CHOICE: ", choice)
     return choice
 
 
@@ -876,8 +924,6 @@ def updatePlotChoice(choice):
     State("sc_settings", "data"),
 )
 def update_settings_store(size, outline, atoms, opac, saved):
-    print("sc settings updated")
-
     if saved is None:
         # default settings
         settings = {
@@ -900,7 +946,6 @@ def update_settings_store(size, outline, atoms, opac, saved):
         settings["outline"] = outline
     elif dash.callback_context.triggered_id == "sc-atoms":
         settings["atoms"] = atoms
-    print(settings)
     return settings
 
 
@@ -938,7 +983,6 @@ def update_tools(data, plot_choice):
     if data is None:  # in case of reset:
         raise PreventUpdate
     else:
-        print("updating tools")
         if plot_choice == "scatter":
             df = pd.DataFrame(data['MALA_DF']['scatter'])
         elif plot_choice == "volume":
@@ -970,7 +1014,6 @@ def update_tools(data, plot_choice):
     State("df_store", "data"),
     prevent_initial_call=True)
 def updateMC0(state, plots, data):
-    print("updating mc0")
     if data is None or state == "landing":
         return mc0_landing
 
@@ -1027,7 +1070,7 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
 
     print("-------------")
     print("Plot getting updated")
-    print(dash.callback_context.triggered_id)
+    print("Plot udated by: ", dash.callback_context.triggered_id)
     # DATA
     if f_data is None:
         # "no f_data -> cancel"
@@ -1118,15 +1161,16 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
             opacity=0.3,
             surface_count=settings["size"],
             colorscale=px.colors.sequential.Inferno_r,
-            cauto=True
+            cauto=True,
         ))
+    else:
+        fig_upd=def_fig
 
-    # UPDATING FIG-SCENE- PROPERTIES
-    fig_upd.update_scenes(xaxis_visible=False, yaxis_visible=False, zaxis_visible=False, xaxis_showgrid=False,
-                          yaxis_showgrid=False, zaxis_showgrid=False)
-    # TODO why not working for volume?
+    # UPDATING FIG-SCENE- and Layout- PROPERTIES
+    fig_upd.update_layout(margin=dict(l=0, r=0, b=0, t=0))
 
     # CAMERA
+    # TODO: extract buttons; Put them in update_cam
     if dash.callback_context.triggered_id == "default-cam":
         fig_upd.update_layout(scene_camera=dict(
             up=dict(x=0, y=0, z=1),
@@ -1159,7 +1203,6 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
     to the most recently stored manually adjusted camera position
     '''
 
-    # WAY TO CHANGE SIZE, OPACITY, OUTLINE
 
     # ADD ATOMS
     # TODO: COLOR-CODING ATOMS BASED OFF THEIR CHARGE
@@ -1173,9 +1216,26 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
         fig_upd.add_trace(
             go.Scatter3d(name="Atoms", x=atoms['x'], y=atoms['y'], z=atoms['z'], mode='markers',
                          marker=dict(size=30, color=atom_colors)))
-    # print(fig_upd)
     return fig_upd
 
+
+''' maybe interesting: animations on plot change:
+
+https://plotly.com/python-api-reference/generated/plotly.graph_objects.Figure.html
+"transition
+Sets transition options used during Plotly.react updates."
+
+'''
+
+@app.callback(
+    Output("orientation", "figure"),
+    Input("cam_store", "data")
+)
+def updateOrientation(stored_cam_settings):
+    fig_upd = orient_fig
+    fig_upd.update_layout(scene_camera=stored_cam_settings)
+
+    return fig_upd
 
 # TODO: updateDoS
 @app.callback(
@@ -1184,7 +1244,6 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
     [State("df_store", "data")]
 )
 def updateDoS(plot_choice, f_data):
-    print("update dos")
     if f_data is None:
         raise PreventUpdate
     dOs = f_data['MALA_DATA']['density_of_states']
@@ -1198,6 +1257,10 @@ def updateDoS(plot_choice, f_data):
 # Update settings sidebar
 @app.callback(
     Output("offcanvas-r-sc", "children"),
+    Output("settings-label", "childred"),
+    Output("sz/isosurf-label", "children"),
+    Output("opac-label", "visible"),
+    Output("sc-opac", "visible"),
     Input("choice_store", "data"),
     prevent_initial_call=True
 )
