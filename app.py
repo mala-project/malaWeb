@@ -229,6 +229,7 @@ sidebar = html.Div(
 
 # start plot with empty fig, fill on updateScatter-/...-callback
 
+# TODO Im in the process of updating individual parts of this. Thats why it's not working. Check out / continue on updateSettingsBar
 # --------------------------
 r_content_sc = html.Div([
     html.H5("Scatter", id="settings-head"),
