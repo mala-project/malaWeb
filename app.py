@@ -1,4 +1,5 @@
 # IMPORTS
+import json
 
 import mala_inference
 import ase.io
@@ -19,29 +20,14 @@ import plotly.graph_objs as go
 # PX--Graph Object Theme
 templ1 = dict(layout=go.Layout(
     scene={
-        'xaxis': {'backgroundcolor': 'red',
-                  'gridcolor': 'white',
-                  'gridwidth': 0,
-                  'linecolor': 'red',
-                  'showbackground': False,
+        'xaxis': {'showbackground': False,
                   'ticks': '',
-                  'zerolinecolor': 'white',
                   'visible': False},
-        'yaxis': {'backgroundcolor': '#E5ECF6',
-                  'gridcolor': 'white',
-                  'gridwidth': 0,
-                  'linecolor': 'white',
-                  'showbackground': False,
+        'yaxis': {'showbackground': False,
                   'ticks': '',
-                  'zerolinecolor': 'white',
                   'visible': False},
-        'zaxis': {'backgroundcolor': '#E5ECF6',
-                  'gridcolor': 'white',
-                  'gridwidth': 0,
-                  'linecolor': 'white',
-                  'showbackground': False,
+        'zaxis': {'showbackground': False,
                   'ticks': '',
-                  'zerolinecolor': 'white',
                   'visible': False}
     },
     paper_bgcolor='#f8f9fa',
@@ -1029,6 +1015,7 @@ cam_store can't be an input or else it triggers an update everytime the cam is m
      Input("df_store", "data"),
      State("scatter-plot", "figure")
      ],
+    # prevent_initial_call=True
 )
 def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, slider_range_cs_y, cs_y_inactive,
                slider_range_cs_z, cs_z_inactive,
@@ -1048,33 +1035,22 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
     print("-------------")
     print("updating/creating plot")
     print("Triggered by: ", dash.callback_context.triggered_id)
+
     # DATA
     # (TODO: IF its df_store that has changed
     #  TODO: OR there was a slider Input
     #       (Extra TODO: replace my x/y/z-sliders with actual slices and maybe just update the fig?)
     # TODO:
-
-
-
     # the density-Dataframe that we're updating, taken from df_store (=f_data)
-    if dash.callback_context.triggered_id == "df_store" or dash.callback_context.triggered_id is None:
-        print("RECREATING PLOT")
-        if plots == "scatter":
-            df = pd.DataFrame(f_data['MALA_DF']['scatter'])
-        elif plots == "volume":
-            df = pd.DataFrame(f_data['MALA_DF']['volume'])
-        else:
-            # "no plot-choice -> cancel"
-            raise PreventUpdate
 
-    elif dash.callback_context.triggered_id == "choice_store":
+    if f_data is None or plots is None:
+        raise PreventUpdate
 
-        print("fe")
-    elif dash.callback_context.triggered_id == "sc_settings":
-        print("fvee")
-    elif dash.callback_context.triggered_id.__contains__("slider_range"):
-        print("veve")
-
+    print("GET DATA from df_store")
+    if plots == "scatter":
+        df = pd.DataFrame(f_data['MALA_DF']['scatter'])
+    elif plots == "volume":
+        df = pd.DataFrame(f_data['MALA_DF']['volume'])
     else:
         # No Data to plot -> don't update
         raise PreventUpdate
@@ -1126,6 +1102,7 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
 
 
          # creating the figure, updateing some things
+
     if plots == "scatter":
         print("scatter triggered")
         # updating fig according to (cs'd) DF
@@ -1150,7 +1127,7 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
     elif plots == "volume":
 
         fig_upd = go.Figure(data=go.Volume(
-            x=dfu.x,
+            x=dfu.x,        #df for non-sliced
             y=dfu.y,
             z=dfu.z,
             value=dfu.val,
@@ -1167,7 +1144,8 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
     fig_upd_o = orient_fig
 
     # UPDATING FIG-SCENE- and Layout- PROPERTIES
-    fig_upd.update_layout(margin=dict(l=0, r=0, b=0, t=0))
+    fig_upd.update_layout(margin=dict(l=0, r=0, b=0, t=0), paper_bgcolor="#f8f9fa", modebar=dict())
+    fig_upd.update_layout(modebar_remove=["zoom", "pan", "orbitRotation", "tableRotation", "resetcameradefault", "resetcameralastsave"])
 
     # CAMERA
     if dash.callback_context.triggered_id == "default-cam":
@@ -1197,7 +1175,6 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
 
 
     fig_upd.update_layout(scene_camera=new_cam)
-    fig_upd_o.update_layout(scene_camera=new_cam)
     '''
     set camera-position according to the clicked button, 
                                 OR 
@@ -1218,7 +1195,28 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
         fig_upd.add_trace(
             go.Scatter3d(name="Atoms", x=atoms['x'], y=atoms['y'], z=atoms['z'], mode='markers',
                          marker=dict(size=30, color=atom_colors)))
+
+    print(fig_upd.layout)
+    fig_upd.update_layout(xaxis=dict())
+    print(fig_upd.layout)
+
     return fig_upd
+
+def new_upd_plot():
+
+    return
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ''' maybe interesting: animations on plot change:
@@ -1229,6 +1227,12 @@ Sets transition options used during Plotly.react updates."
 
 '''
 
+
+
+
+
+
+
 @app.callback(
     Output("orientation", "figure"),
     Input("cam_store", "data"),
@@ -1237,7 +1241,7 @@ Sets transition options used during Plotly.react updates."
 def updateOrientation(saved_cam, fig):
     #print(fig)
     fig_upd=orient_fig
-    fig_upd.update_layout(scene_camera=saved_cam)
+    fig_upd.update_layout(scene_camera=saved_cam, clickmode="none")
     return fig_upd
 
 
