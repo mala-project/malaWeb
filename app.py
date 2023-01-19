@@ -232,11 +232,11 @@ sidebar = html.Div(
 # TODO Im in the process of updating individual parts of this. Thats why it's not working. Check out / continue on updateSettingsBar
 # --------------------------
 r_content_sc = html.Div([
-    html.H5("Scatter", id="settings-head"),
+    html.H5("Settings"),
     dbc.Card(dbc.CardBody(
         [
 
-            html.H5("Camera"),
+            html.H6("Camera"),
             dbc.ButtonGroup(
                 [
                     dbc.Button('Def.', id='default-cam', n_clicks=0),
@@ -246,52 +246,28 @@ r_content_sc = html.Div([
                 ],
                 size="sm",
             ),
+            html.Hr(),
 
-            html.H5("Size", id="sz/isosurf-label"),
+            html.H6("", id="sz/isosurf-label"),
             dcc.Slider(6, 18, 2, value=12, id='sc-size'),
+            html.Hr(),
 
-            html.H5("Opacity", id="opac-label"),
+            html.H6("Opacity", id="opac-label"),
             dbc.Input(type="number", min=0.1, max=1, step=0.1, id="sc-opac", placeholder="0.1 - 1", size="sm"),
+            html.Hr(),
 
             dbc.Checkbox(label='Outline', value=True, id='sc-outline'),
             dbc.Checkbox(label='Atoms', value=True, id='sc-atoms'),
 
         ]
     ))])
-# --------------------------
-r_content_vol = html.Div([
-    html.H5("Volume"),
-    dbc.Card(dbc.CardBody(
-        [
 
-            html.H5("Camera"),
-            dbc.ButtonGroup(
-                [
-                    dbc.Button('Def.', id='default-cam', n_clicks=0),
-                    dbc.Button('X-Y', id='x-y-cam', n_clicks=0),
-                    dbc.Button('X-Z', id='x-z-cam', n_clicks=0),
-                    dbc.Button('Y-Z', id='y-z-cam', n_clicks=0)
-                ],
-                size="sm",
-            ),
-
-            html.H5("Isosurfaces"),
-            dcc.Slider(6, 18, 2, value=12, id='sc-size'),
-
-            html.H5("Opacity"),
-            dbc.Input(type="number", min=0.1, max=1, step=0.1, id="sc-opac", placeholder="0.1 - 1", size="sm"),
-
-            dbc.Checkbox(label='Outline', value=True, id='sc-outline'),
-            dbc.Checkbox(label='Atoms', value=True, id='sc-atoms'),
-
-        ]
-    ))])
 # ---------------------
 
 
 # Right SIDEBAR
 side_r = html.Div([
-    dbc.Offcanvas(html.Div(), id="offcanvas-r-sc", is_open=False,
+    dbc.Offcanvas(r_content_sc, id="offcanvas-r-sc", is_open=False,
                   style={'width': '15rem', 'height': 'min-content',
                          'margin-top': '1.5vh',
                          'margin-right': '0.5vw', 'border-radius': '10px',
@@ -1050,7 +1026,7 @@ cam_store can't be an input or else it triggers an update everytime the cam is m
     ],
     [State("scatter-plot", "relayoutData"),
      State("cam_store", "data"),
-     State("df_store", "data"),
+     Input("df_store", "data"),
      State("scatter-plot", "figure")
      ],
 )
@@ -1070,24 +1046,40 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
     # IF LAST INPUT ID == "df_store" or "choice_store" or "
 
     print("-------------")
-    print("Plot getting updated")
-    print("Plot udated by: ", dash.callback_context.triggered_id)
+    print("updating/creating plot")
+    print("Triggered by: ", dash.callback_context.triggered_id)
     # DATA
-    if f_data is None:
-        # "no f_data -> cancel"
-        raise PreventUpdate
+    # (TODO: IF its df_store that has changed
+    #  TODO: OR there was a slider Input
+    #       (Extra TODO: replace my x/y/z-sliders with actual slices and maybe just update the fig?)
+    # TODO:
+
+
 
     # the density-Dataframe that we're updating, taken from df_store (=f_data)
-    if plots == "scatter":
-        df = pd.DataFrame(f_data['MALA_DF']['scatter'])
-    elif plots == "volume":
-        df = pd.DataFrame(f_data['MALA_DF']['volume'])
+    if dash.callback_context.triggered_id == "df_store" or dash.callback_context.triggered_id is None:
+        print("RECREATING PLOT")
+        if plots == "scatter":
+            df = pd.DataFrame(f_data['MALA_DF']['scatter'])
+        elif plots == "volume":
+            df = pd.DataFrame(f_data['MALA_DF']['volume'])
+        else:
+            # "no plot-choice -> cancel"
+            raise PreventUpdate
+
+    elif dash.callback_context.triggered_id == "choice_store":
+
+        print("fe")
+    elif dash.callback_context.triggered_id == "sc_settings":
+        print("fvee")
+    elif dash.callback_context.triggered_id.__contains__("slider_range"):
+        print("veve")
+
     else:
-        # "no plot-choice -> cancel"
+        # No Data to plot -> don't update
         raise PreventUpdate
     dfu = df.copy()
 
-    print("UPDATING PLOT")
 
     # atoms-Dataframe also taken from f_data
     atoms = pd.DataFrame(f_data['INPUT_DF'])
@@ -1095,6 +1087,7 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
     # Dataframes are ready
 
     # TOOLS
+        # these edit the DF before the figure is built
     # filter-by-density
     if slider_range is not None and dense_inactive:  # Any slider Input there?
         low, high = slider_range
@@ -1131,8 +1124,10 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
         # SETTINGS
         # plot-settings
 
-    # creating the figure
+
+         # creating the figure, updateing some things
     if plots == "scatter":
+        print("scatter triggered")
         # updating fig according to (cs'd) DF
         fig_upd = px.scatter_3d(
             dfu, x="x", y="y", z="z",
@@ -1152,8 +1147,8 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
         # applying marker settings
         fig_upd.update_traces(marker=dict(size=settings["size"], line=outlined), selector=dict(mode='markers'))
 
-
     elif plots == "volume":
+
         fig_upd = go.Figure(data=go.Volume(
             x=dfu.x,
             y=dfu.y,
@@ -1164,39 +1159,45 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
             colorscale=px.colors.sequential.Inferno_r,
             cauto=True,
         ))
+
     else:
         fig_upd=def_fig
+
+    # TODO: (make this optional) Figure for axis-orientation
+    fig_upd_o = orient_fig
 
     # UPDATING FIG-SCENE- and Layout- PROPERTIES
     fig_upd.update_layout(margin=dict(l=0, r=0, b=0, t=0))
 
     # CAMERA
-    # TODO: extract buttons; Put them in update_cam
     if dash.callback_context.triggered_id == "default-cam":
-        fig_upd.update_layout(scene_camera=dict(
+        new_cam=dict(
             up=dict(x=0, y=0, z=1),
             center=dict(x=0, y=0, z=0),
             eye=dict(x=1.5, y=1.5, z=1.5)
-        ))
+        )
     elif dash.callback_context.triggered_id == "x-y-cam":
-        fig_upd.update_layout(scene_camera=dict(
+        new_cam=dict(
             up=dict(x=0, y=0, z=1),
             center=dict(x=0, y=0, z=0),
             eye=dict(x=0, y=0, z=3.00)
-        ))
+        )
     elif dash.callback_context.triggered_id == "x-z-cam":
-        fig_upd.update_layout(scene_camera=dict(
+        new_cam=dict(
             up=dict(x=0, y=0, z=1),
             center=dict(x=0, y=0, z=0),
             eye=dict(x=0, y=3.00, z=0)
-        ))
+        )
     elif dash.callback_context.triggered_id == "y-z-cam":
-        fig_upd.update_layout(scene_camera=dict(
+        new_cam=dict(
             up=dict(x=0, y=0, z=1),
             center=dict(x=0, y=0, z=0),
-            eye=dict(x=3.00, y=0, z=0)))
-    else:
-        fig_upd.update_layout(scene_camera=stored_cam_settings)
+            eye=dict(x=3.00, y=0, z=0))
+    else: new_cam=stored_cam_settings
+
+
+    fig_upd.update_layout(scene_camera=new_cam)
+    fig_upd_o.update_layout(scene_camera=new_cam)
     '''
     set camera-position according to the clicked button, 
                                 OR 
@@ -1230,13 +1231,15 @@ Sets transition options used during Plotly.react updates."
 
 @app.callback(
     Output("orientation", "figure"),
-    Input("cam_store", "data")
+    Input("cam_store", "data"),
+    State("scatter-plot", "figure")
 )
-def updateOrientation(stored_cam_settings):
-    fig_upd = orient_fig
-    fig_upd.update_layout(scene_camera=stored_cam_settings)
-
+def updateOrientation(saved_cam, fig):
+    #print(fig)
+    fig_upd=orient_fig
+    fig_upd.update_layout(scene_camera=saved_cam)
     return fig_upd
+
 
 # TODO: updateDoS
 @app.callback(
@@ -1255,26 +1258,39 @@ def updateDoS(plot_choice, f_data):
 
 # END OF CALLBACKS FOR DOS PLOT
 
+
+
+# CALLBACKS FOR SIDEBAR
+
 # Update settings sidebar
 @app.callback(
-    Output("offcanvas-r-sc", "children"),
-    Output("settings-label", "childred"),
     Output("sz/isosurf-label", "children"),
-    Output("opac-label", "visible"),
-    Output("sc-opac", "visible"),
+    Output("opac-label", "style"),
+    Output("sc-opac", "style"),
     Input("choice_store", "data"),
     prevent_initial_call=True
 )
 def updateSettingsBar(plot_choice):
     if plot_choice == "scatter":
-        return r_content_sc
+        return "Voxel-size", {'visibility': 'visible'}, {'visibility': 'visible'}
     elif plot_choice == "volume":
-        return r_content_vol
+        return "Isosurface-count", {'visibility': 'hidden'}, {'visibility': 'hidden'}
     else:
         raise PreventUpdate
 
 
-# CALLBACKS FOR SIDEBAR
+
+@app.callback(  # sidebar_r canvas (1/?)
+    Output("offcanvas-r-sc", "is_open"),
+    Input("open-settings-sc", "n_clicks"),
+    [State("offcanvas-r-sc", "is_open")],
+)
+def toggle__settings_bar(n1, is_open):
+    if n1:
+        return not is_open
+    return is_open
+
+
 
 # toggle canvas
 @app.callback(  # sidebar_l canvas
@@ -1287,16 +1303,6 @@ def toggle_offcanvas_l(n1, is_open):
         return not is_open
     return is_open
 
-
-@app.callback(  # sidebar_r canvas (1/?)
-    Output("offcanvas-r-sc", "is_open"),
-    Input("open-settings-sc", "n_clicks"),
-    [State("offcanvas-r-sc", "is_open")],
-)
-def toggle__settings_bar(n1, is_open):
-    if n1:
-        return not is_open
-    return is_open
 
 
 # FILE-UPLOAD-STATUS
