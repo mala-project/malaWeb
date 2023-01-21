@@ -1,6 +1,9 @@
-.wrapper = {
-    width: 100%;
+body {
+    margin: 100;
+    background-color: black;
 }
+
+
 .sidebar = {
 
     top: 5vh;

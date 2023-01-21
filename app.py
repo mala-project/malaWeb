@@ -40,46 +40,49 @@ default_scatter_marker = dict(marker=dict(
 )
 plot_layout = {
     'title': 'Plot',
-    'height': '80vh',
+    'height': '75vh',
     'width': '80vw',
     'background': '#000',  # not working
 }
 orientation_style = {
     'title': 'x-y-z',
-    'height': '25vh',
-    'width': '25vw',
-    'background': '#f8f9fa',  # not working
+    'height': '3em',
+    'width': '3em',
+    'background': '#f8f9fa',
+    'margin-top': '75vh',
 }
 
 #Graph-Object Scene
 orient_template = {
         'xaxis': {
-                  'gridcolor': 'white',
-                  'gridwidth': 0,
+                  'showgrid': False,
+                  'showbackground': False,
                   'linecolor': 'red',
-                  'linewidth': 5,
+                  'linewidth': 0,
                   'ticks': '',
                   'showticklabels': False,
-                  'visible': False},
+                  'visible': True,
+                    'title': 'x'},
         'yaxis': {
-                  'gridcolor': 'white',
-                  'gridwidth': 0,
-                    'showgrid': False,
+                  'showgrid': False,
+                    'showbackground': False,
                   'linecolor': 'green',
                   'linewidth': 0,
                   'ticks': '',
                   'showticklabels': False,
-                  'visible': False,
-                    'title': 'Test'
+                  'visible': True,
+                    'title': 'y'
         },
         'zaxis': {
-                  'gridcolor': 'white',
-                  'gridwidth': 0,
+                  'showgrid': False,
+                    'showbackground': False,
                   'linecolor': 'blue',
                   'linewidth': 0,
                   'ticks': '',
                   'showticklabels': False,
-                  'visible': False},
+                  'visible': True,
+                    'title': 'z'
+        },
         'bgcolor': '#f8f9fa',
     }
 '''
@@ -229,21 +232,23 @@ r_content_sc = html.Div([
                     dbc.Button('X-Y', id='x-y-cam', n_clicks=0),
                     dbc.Button('X-Z', id='x-z-cam', n_clicks=0),
                     dbc.Button('Y-Z', id='y-z-cam', n_clicks=0)
-                ],
-                size="sm",
+                ], vertical=True, size="sm",
             ),
-            html.Hr(),
-
-            html.H6("", id="sz/isosurf-label"),
-            dcc.Slider(6, 18, 2, value=12, id='sc-size'),
-            html.Hr(),
-
-            html.H6("Opacity", id="opac-label"),
-            dbc.Input(type="number", min=0.1, max=1, step=0.1, id="sc-opac", placeholder="0.1 - 1", size="sm"),
             html.Hr(),
 
             dbc.Checkbox(label='Outline', value=True, id='sc-outline'),
             dbc.Checkbox(label='Atoms', value=True, id='sc-atoms'),
+
+            html.Hr(),
+
+            html.H6("", id="sz/isosurf-label"),
+            dcc.Slider(6, 18, 2, value=12, id='sc-size', vertical=True, verticalHeight=150),
+
+            html.Hr(),
+
+            html.H6("Opacity", id="opac-label"),
+            dbc.Input(type="number", min=0.1, max=1, step=0.1, id="sc-opac", placeholder="0.1 - 1", style={"width": "5em"}, size="sm"),
+
 
         ]
     ))])
@@ -254,7 +259,7 @@ r_content_sc = html.Div([
 # Right SIDEBAR
 side_r = html.Div([
     dbc.Offcanvas(r_content_sc, id="offcanvas-r-sc", is_open=False,
-                  style={'width': '15rem', 'height': 'min-content',
+                  style={'width': '10rem', 'height': 'min-content',
                          'margin-top': '1.5vh',
                          'margin-right': '0.5vw', 'border-radius': '10px',
                          'box-shadow': 'rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px',
@@ -293,97 +298,105 @@ scatter_plot = [
                             dcc.Graph(id="scatter-plot", responsive=True, figure=def_fig, style=plot_layout),
                             className="density-scatter-plot"
                         ),
-                        html.Div(
-                            dcc.Graph(id="orientation", responsive=True, figure=orient_fig, style=orientation_style, config={'displayModeBar': False})
-                        ),
-                        # Tools
-                        html.Hr(),
-                        dbc.Row([
 
+                        dbc.Row([
+                            dbc.Col(width=11),
+                            dbc.Col( width=1),
+                        ]),
+
+                        # Tools
+
+
+
+                        dbc.Row([
+                            html.Hr(),
                             dbc.Button(html.P("Tools", style={"line-height": "0.65em", "font-size": "0.65em"}),
                                        id="open-sc-tools", style={"width": "5em", "height": "1em"}, n_clicks=0)
                         ], justify="center", style={"text-align": "center"}),
-                        dbc.Collapse(
-                            dbc.Card(dbc.CardBody(
-                                [
-                                    dbc.Row([
-                                        # Buttons
-                                        dbc.Col(
-                                            dbc.ButtonGroup(
-                                                [
-                                                    dbc.Button('X', id='sc-active-x', active=False, outline=True,
-                                                               color="primary", n_clicks=0),
-                                                    dbc.Button('Y', id='sc-active-y', active=False, outline=True,
-                                                               color="primary", n_clicks=0),
-                                                    dbc.Button('Z', id='sc-active-z', active=False, outline=True,
-                                                               color="primary", n_clicks=0),
-                                                    dbc.Button("Density", id='active-dense', active=False, outline=True,
-                                                               color="primary", n_clicks=0)
-                                                ],
-                                                vertical=True,
-                                            ), width=1),
 
-                                        # Sliders
-                                        dbc.Col([
-                                            dbc.Row([
-                                                dbc.Col(dcc.RangeSlider(id='range-slider-cs-x',
-                                                                        disabled=True,
-                                                                        min=0,
-                                                                        max=1,
-                                                                        marks=None,
-                                                                        pushable=True,
-                                                                        tooltip={"placement": "bottom",
-                                                                                 "always_visible": False},
-                                                                        updatemode='drag')),
-                                                dbc.Col(html.Img(id="reset-cs-x", src="/assets/x.svg", n_clicks=0,
-                                                                 style={'width': '1.25em'}), width=1)
-                                            ], style={"margin-top": "7px"}),  # X-Axis
-                                            dbc.Row([
-                                                dbc.Col(dcc.RangeSlider(
-                                                    id='range-slider-cs-y',
-                                                    disabled=True,
-                                                    pushable=True,
-                                                    min=0, max=1,
-                                                    marks=None,
-                                                    tooltip={"placement": "bottom", "always_visible": False},
-                                                    updatemode='drag')),
-                                                dbc.Col(html.Img(id="reset-cs-y", src="/assets/x.svg", n_clicks=0,
-                                                                 style={'width': '1.25em'}), width=1)
-                                            ]),  # Y-Axis
-                                            dbc.Row([
-                                                dbc.Col(dcc.RangeSlider(
-                                                    id='range-slider-cs-z',
-                                                    disabled=True,
-                                                    pushable=True,
-                                                    min=0, max=1,
-                                                    marks=None,
-                                                    tooltip={"placement": "bottom", "always_visible": False},
-                                                    updatemode='drag')),
-                                                dbc.Col(html.Img(id="reset-cs-z", src="/assets/x.svg", n_clicks=0,
-                                                                 style={'width': '1.25em'}), width=1)
+                        dbc.Row(
+                            dbc.Collapse(
+                                dbc.Card(dbc.CardBody(
+                                    [
+                                        dbc.Row([
+                                            # Buttons
+                                            dbc.Col(
+                                                dbc.ButtonGroup(
+                                                    [
+                                                        dbc.Button('X', id='sc-active-x', active=False, outline=True,
+                                                                   color="primary", n_clicks=0),
+                                                        dbc.Button('Y', id='sc-active-y', active=False, outline=True,
+                                                                   color="primary", n_clicks=0),
+                                                        dbc.Button('Z', id='sc-active-z', active=False, outline=True,
+                                                                   color="primary", n_clicks=0),
+                                                        dbc.Button("Density", id='active-dense', active=False, outline=True,
+                                                                   color="primary", n_clicks=0)
+                                                    ],
+                                                    vertical=True,
+                                                ), width=1),
 
-                                            ]),  # Z-Axis
-                                            dbc.Row([
+                                            # Sliders
+                                            dbc.Col([
+                                                dbc.Row([
+                                                    dbc.Col(dcc.RangeSlider(id='range-slider-cs-x',
+                                                                            disabled=True,
+                                                                            min=0,
+                                                                            max=1,
+                                                                            marks=None,
+                                                                            pushable=True,
+                                                                            tooltip={"placement": "bottom",
+                                                                                     "always_visible": False},
+                                                                            updatemode='drag')),
+                                                    dbc.Col(html.Img(id="reset-cs-x", src="/assets/x.svg", n_clicks=0,
+                                                                     style={'width': '1.25em'}), width=1)
+                                                ], style={"margin-top": "7px"}),  # X-Axis
+                                                dbc.Row([
+                                                    dbc.Col(dcc.RangeSlider(
+                                                        id='range-slider-cs-y',
+                                                        disabled=True,
+                                                        pushable=True,
+                                                        min=0, max=1,
+                                                        marks=None,
+                                                        tooltip={"placement": "bottom", "always_visible": False},
+                                                        updatemode='drag')),
+                                                    dbc.Col(html.Img(id="reset-cs-y", src="/assets/x.svg", n_clicks=0,
+                                                                     style={'width': '1.25em'}), width=1)
+                                                ]),  # Y-Axis
+                                                dbc.Row([
+                                                    dbc.Col(dcc.RangeSlider(
+                                                        id='range-slider-cs-z',
+                                                        disabled=True,
+                                                        pushable=True,
+                                                        min=0, max=1,
+                                                        marks=None,
+                                                        tooltip={"placement": "bottom", "always_visible": False},
+                                                        updatemode='drag')),
+                                                    dbc.Col(html.Img(id="reset-cs-z", src="/assets/x.svg", n_clicks=0,
+                                                                     style={'width': '1.25em'}), width=1)
 
-                                                dbc.Col(dcc.RangeSlider(
-                                                    id='range-slider-dense',
-                                                    disabled=True,
-                                                    pushable=True,
-                                                    min=0, max=1,
-                                                    marks=None,
-                                                    tooltip={"placement": "bottom", "always_visible": False},
-                                                    updatemode='drag'), width=11),
-                                                dbc.Col(html.Img(id="reset-dense", src="/assets/x.svg", n_clicks=0,
-                                                                 style={'width': '1.25em', 'position': 'float'}),
-                                                        width=1),
+                                                ]),  # Z-Axis
+                                                dbc.Row([
 
-                                            ]),  # Density
-                                        ], width=11),
-                                    ]),
-                                ]
-                            )),
-                            id="sc-tools-collapse",
-                            is_open=False)
+                                                    dbc.Col(dcc.RangeSlider(
+                                                        id='range-slider-dense',
+                                                        disabled=True,
+                                                        pushable=True,
+                                                        min=0, max=1,
+                                                        marks=None,
+                                                        tooltip={"placement": "bottom", "always_visible": False},
+                                                        updatemode='drag'), width=11),
+                                                    dbc.Col(html.Img(id="reset-dense", src="/assets/x.svg", n_clicks=0,
+                                                                     style={'width': '1.25em', 'position': 'float'}),
+                                                            width=1),
+
+                                                ]),  # Density
+                                            ], width=11),
+                                        ]),
+                                    ]
+                                )),
+                                id="sc-tools-collapse",
+                                is_open=False)
+                        )
                     ]
                 ), style={'background-color': 'rgba(248, 249, 250, 1)', 'width': 'min-content',
                           'align-content': 'center', 'margin-top': '1.5rem'}),
@@ -433,8 +446,7 @@ mc0_landing = html.Div([
              style={'text-align': 'center'}),
 ], style={'width': 'content-min', 'margin-top': '20vh'})
 
-skel_layout = [
-    dbc.Row([
+skel_layout = dbc.Row([
         dbc.Col(
 
             [sidebar,
@@ -445,25 +457,26 @@ skel_layout = [
         dbc.Col(mc0_landing, id="mc0", width=10, style={'background-color': 'blue'}),
 
         dbc.Col(
-
-            [side_r,
-             dbc.Button("<", id="open-settings-sc", n_clicks=0, style={'align': 'end'})],
+            [
+                side_r,
+                dbc.Button("<", id="open-settings-sc", n_clicks=0, style={'align': 'end'}),
+                dcc.Graph(id="orientation", responsive=True, figure=orient_fig, style=orientation_style, config={'displayModeBar': False})
+             ],
 
             id="r0", width=1, style={'background-color': 'green'})
 
     ])
-]
 
-p_layout_landing = html.Div([
 
-    dcc.Store(id="page_state", data="landing"),
-    dcc.Store(id="df_store", storage_type="session"),
-    dcc.Store(id="choice_store"),
-    dcc.Store(id="sc_settings"),
+p_layout_landing = dbc.Container([
 
-    html.Div(skel_layout, id="content-layout"),
+        dcc.Store(id="page_state", data="landing"),
+        dcc.Store(id="df_store", storage_type="session"),
+        dcc.Store(id="choice_store"),
+        dcc.Store(id="sc_settings"),
+        html.Div(skel_layout, id="content-layout")
+    ], fluid=True, style={'height': '100vh', 'width': '100', 'background-color': '#023B59'})
 
-], style={'height': '100vh', 'width': '100vw', 'background-color': '#023B59'})
 app.layout = p_layout_landing
 
 
@@ -1276,7 +1289,7 @@ def updateDoS(plot_choice, f_data):
 )
 def updateSettingsBar(plot_choice):
     if plot_choice == "scatter":
-        return "Voxel-size", {'visibility': 'visible'}, {'visibility': 'visible'}
+        return "Size", {'visibility': 'visible'}, {'visibility': 'visible', 'width': '5em'}
     elif plot_choice == "volume":
         return "Isosurface-count", {'visibility': 'hidden'}, {'visibility': 'hidden'}
     else:
@@ -1289,7 +1302,7 @@ def updateSettingsBar(plot_choice):
     Input("open-settings-sc", "n_clicks"),
     [State("offcanvas-r-sc", "is_open")],
 )
-def toggle__settings_bar(n1, is_open):
+def toggle_settings_bar(n1, is_open):
     if n1:
         return not is_open
     return is_open
