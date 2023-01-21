@@ -22,13 +22,19 @@ templ1 = dict(layout=go.Layout(
     scene={
         'xaxis': {'showbackground': False,
                   'ticks': '',
-                  'visible': False},
+                  'visible': True,
+                  },
         'yaxis': {'showbackground': False,
                   'ticks': '',
                   'visible': False},
         'zaxis': {'showbackground': False,
                   'ticks': '',
-                  'visible': False}
+                  'visible': False},
+    },
+    xaxis={
+        'dtick': 2,
+        'visible': True,
+        'linewidth': 5,
     },
     paper_bgcolor='#f8f9fa',
 ))
@@ -42,6 +48,7 @@ plot_layout = {
     'title': 'Plot',
     'height': '75vh',
     'width': '80vw',
+
     'background': '#000',  # not working
 }
 orientation_style = {
@@ -59,10 +66,12 @@ orient_template = {
                   'showbackground': False,
                   'linecolor': 'red',
                   'linewidth': 0,
-                  'ticks': '',
+                  'ticks': 'inside',
                   'showticklabels': False,
-                  'visible': True,
-                    'title': 'x'},
+                  'visible': False,
+                    'title': 'x',
+
+        },
         'yaxis': {
                   'showgrid': False,
                     'showbackground': False,
@@ -70,7 +79,7 @@ orient_template = {
                   'linewidth': 0,
                   'ticks': '',
                   'showticklabels': False,
-                  'visible': True,
+                  'visible': False,
                     'title': 'y'
         },
         'zaxis': {
@@ -80,7 +89,7 @@ orient_template = {
                   'linewidth': 0,
                   'ticks': '',
                   'showticklabels': False,
-                  'visible': True,
+                  'visible': False,
                     'title': 'z'
         },
         'bgcolor': '#f8f9fa',
@@ -132,7 +141,25 @@ radioItems = dbc.RadioItems(
     id="plot-choice",
 )
 
-# ----------------
+# -------------------------------
+# Figs
+def_fig = go.Figure(go.Scatter3d(x=[1], y=[1], z=[1], showlegend=False))
+def_fig.update_scenes(xaxis_visible=False, yaxis_visible=False, zaxis_visible=False, xaxis_showgrid=False,
+                      yaxis_showgrid=False, zaxis_showgrid=False)
+
+
+orient_fig = go.Figure()
+
+orient_fig.update_scenes(orient_template)
+orient_fig.update_layout(margin=dict(l=0, r=0, b=0, t=0), title=dict(text="test"))
+orient_fig.add_trace(go.Scatter3d(x=[0, 1], y=[0, 0], z=[0, 0], marker={'color': 'red', 'size': 0}, line={'width': 6}, showlegend=False))
+orient_fig.add_trace(go.Scatter3d(x=[0, 0], y=[0, 1], z=[0, 0], marker={'color': 'green', 'size': 0}, line={'width': 6}, showlegend=False))
+orient_fig.add_trace(go.Scatter3d(x=[0, 0], y=[0, 0], z=[0, 1], marker={'color': 'blue', 'size': 0}, line={'width': 6}, showlegend=False))
+
+orient_plot = dcc.Graph(id="orientation", responsive=True, figure=orient_fig, style=orientation_style, config={'displayModeBar': False})
+
+# -----------------
+
 # Left SIDEBAR
 sidebar = html.Div(
     dbc.Offcanvas(
@@ -253,6 +280,7 @@ r_content_sc = html.Div([
         ]
     ))])
 
+#orient_content = html.Div(orient_plot)
 # ---------------------
 
 
@@ -268,23 +296,22 @@ side_r = html.Div([
 ]
 )
 
-# -------------------------------
-# Figs
-def_fig = go.Figure(go.Scatter3d(x=[1], y=[1], z=[1], showlegend=False))
-def_fig.update_scenes(xaxis_visible=False, yaxis_visible=False, zaxis_visible=False, xaxis_showgrid=False,
-                      yaxis_showgrid=False, zaxis_showgrid=False)
-
-orient_fig = go.Figure()
-
-orient_fig.update_scenes(orient_template)
-orient_fig.update_layout(margin=dict(l=0, r=0, b=0, t=0), title=dict(text="test"))
-orient_fig.add_trace(go.Scatter3d(x=[0, 1], y=[0, 0], z=[0, 0], marker={'color': 'red', 'size': 0}, line={'width': 6}, showlegend=False))
-orient_fig.add_trace(go.Scatter3d(x=[0, 0], y=[0, 1], z=[0, 0], marker={'color': 'green', 'size': 0}, line={'width': 6}, showlegend=False))
-orient_fig.add_trace(go.Scatter3d(x=[0, 0], y=[0, 0], z=[0, 1], marker={'color': 'blue', 'size': 0}, line={'width': 6}, showlegend=False))
+# Orientation plot
+orient_canv = html.Div(
+    dbc.Offcanvas(orient_plot, id="offcanvas-orient", is_open=True,
+                  style={'width': '300px', 'height': '300px',
+                         'background': 'black',
+                         'margin-top': '70vh',
+                         'margin-right': '0.5vw', 'border-radius': '4px',
+                         'box-shadow': 'rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px',
+                         'position': 'absolute', },
+                  scrollable=True, backdrop=False, placement='end')),
 
 
 # TODO: Orientation fig & bottom offcanvas (table+dos)
 
+# ------------------------------
+# Plots for the created Figures
 scatter_plot = [
     # Center
     dcc.Store(id="cam_store"),
@@ -299,14 +326,7 @@ scatter_plot = [
                             className="density-scatter-plot"
                         ),
 
-                        dbc.Row([
-                            dbc.Col(width=11),
-                            dbc.Col( width=1),
-                        ]),
-
                         # Tools
-
-
 
                         dbc.Row([
                             html.Hr(),
@@ -324,13 +344,13 @@ scatter_plot = [
                                                 dbc.ButtonGroup(
                                                     [
                                                         dbc.Button('X', id='sc-active-x', active=False, outline=True,
-                                                                   color="primary", n_clicks=0),
+                                                                   color="danger", n_clicks=0),
                                                         dbc.Button('Y', id='sc-active-y', active=False, outline=True,
-                                                                   color="primary", n_clicks=0),
+                                                                   color="success", n_clicks=0),
                                                         dbc.Button('Z', id='sc-active-z', active=False, outline=True,
                                                                    color="primary", n_clicks=0),
                                                         dbc.Button("Density", id='active-dense', active=False, outline=True,
-                                                                   color="primary", n_clicks=0)
+                                                                   color="dark", n_clicks=0)
                                                     ],
                                                     vertical=True,
                                                 ), width=1),
@@ -350,6 +370,7 @@ scatter_plot = [
                                                     dbc.Col(html.Img(id="reset-cs-x", src="/assets/x.svg", n_clicks=0,
                                                                      style={'width': '1.25em'}), width=1)
                                                 ], style={"margin-top": "7px"}),  # X-Axis
+
                                                 dbc.Row([
                                                     dbc.Col(dcc.RangeSlider(
                                                         id='range-slider-cs-y',
@@ -362,6 +383,7 @@ scatter_plot = [
                                                     dbc.Col(html.Img(id="reset-cs-y", src="/assets/x.svg", n_clicks=0,
                                                                      style={'width': '1.25em'}), width=1)
                                                 ]),  # Y-Axis
+
                                                 dbc.Row([
                                                     dbc.Col(dcc.RangeSlider(
                                                         id='range-slider-cs-z',
@@ -375,6 +397,7 @@ scatter_plot = [
                                                                      style={'width': '1.25em'}), width=1)
 
                                                 ]),  # Z-Axis
+
                                                 dbc.Row([
 
                                                     dbc.Col(dcc.RangeSlider(
@@ -384,7 +407,7 @@ scatter_plot = [
                                                         min=0, max=1,
                                                         marks=None,
                                                         tooltip={"placement": "bottom", "always_visible": False},
-                                                        updatemode='drag'), width=11),
+                                                        updatemode='drag')),
                                                     dbc.Col(html.Img(id="reset-dense", src="/assets/x.svg", n_clicks=0,
                                                                      style={'width': '1.25em', 'position': 'float'}),
                                                             width=1),
@@ -460,7 +483,9 @@ skel_layout = dbc.Row([
             [
                 side_r,
                 dbc.Button("<", id="open-settings-sc", n_clicks=0, style={'align': 'end'}),
-                dcc.Graph(id="orientation", responsive=True, figure=orient_fig, style=orientation_style, config={'displayModeBar': False})
+                #orient_canv,
+                dcc.Graph(id="orientation", responsive=True, figure=orient_fig, style=orientation_style,
+                          config={'displayModeBar': False}),
              ],
 
             id="r0", width=1, style={'background-color': 'green'})
@@ -965,16 +990,19 @@ def update_tools(data, plot_choice):
             df = pd.DataFrame(data['MALA_DF']['volume'])
         else:
             # return these default values if we don#t have a plot-choice for some reason
-            return min(0, 1, 1), \
-                   min(0, 1, 1), \
-                   min(0, 1, 1), \
-                   min(0, 1, 1),
+            return 0, 1, 1, \
+                   0, 1, 1, \
+                   0, 1, 1, \
+                   0, 1, 1,
+
         scale = pd.DataFrame(data['SCALE'])
         x_step = scale["x_axis"][1]
         y_step = scale["y_axis"][2]
         z_step = scale["z_axis"][3]
         dense_step = round((max(df['val']) - min(df['val'])) / 30, ndigits=5)
-        return min(df["x"]), max(df["x"]), x_step, \
+
+        # BUG: have to add another half-step, else rangeslider won't ever be filled and will cut off very last x-column
+        return min(df["x"]), max(df["x"])+0.5*x_step, x_step, \
                min(df["y"]), max(df["y"]), y_step, \
                min(df["z"]), max(df["z"]), z_step, \
                min(df["val"]), max(df["val"]), dense_step
@@ -1037,29 +1065,21 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
     # TODO: make this function more efficient
     #  - for example on settings-change, only update the settings and take the fig from relayout data instead of redefining it
 
-    # new structure
-
-    # IF LAST INPUT ID == sc_settings
-
-    # IF LAST INPUT ID contains "slider
-
-    # IF LAST INPUT ID == "df_store" or "choice_store" or "
-
     print("-------------")
     print("updating/creating plot")
     print("Triggered by: ", dash.callback_context.triggered_id)
 
     # DATA
-    # (TODO: IF its df_store that has changed
-    #  TODO: OR there was a slider Input
-    #       (Extra TODO: replace my x/y/z-sliders with actual slices and maybe just update the fig?)
-    # TODO:
     # the density-Dataframe that we're updating, taken from df_store (=f_data)
 
     if f_data is None or plots is None:
         raise PreventUpdate
 
     print("GET DATA from df_store")
+
+    scale = pd.DataFrame(f_data['SCALE'])
+    x_ratio, y_ratio, z_ratio = scale.x_axis[1]*5, scale.y_axis[2]*5, scale.z_axis[3]*5
+
     if plots == "scatter":
         df = pd.DataFrame(f_data['MALA_DF']['scatter'])
     elif plots == "volume":
@@ -1081,34 +1101,30 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
     if slider_range is not None and dense_inactive:  # Any slider Input there?
         low, high = slider_range
         mask = (dfu['val'] >= low) & (dfu['val'] <= high)
-        dfu = dfu[mask]
+        dfu = df[mask]
     else:
         mask = (dfu['val'] >= min(dfu['val'])) & (dfu['val'] <= max(dfu['val']))
         # TODO: mask could be referenced without being defined
     # x-Cross-section
     if slider_range_cs_x is not None and cs_x_inactive:  # Any slider Input there?
-        low, high = slider_range_cs_x
-        mask = (dfu['x'] >= low) & (dfu['x'] <= high)
-        dfu = dfu[mask]
+        lowx, highx = slider_range_cs_x
+        x_ratio *= (highx-lowx) / (max(dfu.x) - min(dfu.x))
     else:
-        mask = (dfu['x'] >= min(dfu['x'])) & (dfu['x'] <= max(dfu['x']))
-        dfu = dfu[mask]
+        lowx, highx = [min(dfu.x), max(dfu.x)]
     # Y-Cross-section
     if slider_range_cs_y is not None and cs_y_inactive:  # Any slider Input there?
-        low, high = slider_range_cs_y
-        mask = (dfu['y'] >= low) & (dfu['y'] <= high)
-        dfu = dfu[mask]
+        lowy, highy = slider_range_cs_y
+        y_ratio *= (highy - lowy) / (max(dfu.y) - min(dfu.y))
     else:
-        mask = (dfu['y'] >= min(dfu['y'])) & (dfu['y'] <= max(dfu['y']))
-        dfu = dfu[mask]
+        lowy, highy = [min(dfu.y), max(dfu.y)]
     # Z-Cross-section
     if slider_range_cs_z is not None and cs_z_inactive:  # Any slider Input there?
-        low, high = slider_range_cs_z
-        mask = (dfu['z'] >= low) & (dfu['z'] <= high)
-        dfu = dfu[mask]
+        lowz, highz = slider_range_cs_z
+        z_ratio *= (highz - lowz) / (max(dfu.z) - min(dfu.z))
     else:
-        mask = (dfu['z'] >= min(dfu['z'])) & (dfu['z'] <= max(dfu['z']))
-        dfu = dfu[mask]
+        lowz, highz = [min(dfu.z), max(dfu.z)]
+
+
 
         # SETTINGS
         # plot-settings
@@ -1117,7 +1133,6 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
          # creating the figure, updateing some things
 
     if plots == "scatter":
-        print("scatter triggered")
         # updating fig according to (cs'd) DF
         fig_upd = px.scatter_3d(
             dfu, x="x", y="y", z="z",
@@ -1127,6 +1142,9 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
             color_continuous_scale=px.colors.sequential.Inferno_r,
             range_color=[min(df['val']), max(df['val'])],
             # takes color range from original dataset, so colors don't change
+            range_x=[lowx, highx],
+            range_y=[lowy, highy],
+            range_z=[lowz, highz],
             template=templ1,
         )
         # Outline settings
@@ -1136,16 +1154,27 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
             outlined = dict(width=0, color='DarkSlateGrey')
         # applying marker settings
         fig_upd.update_traces(marker=dict(size=settings["size"], line=outlined), selector=dict(mode='markers'))
+        fig_upd.update_scenes(aspectratio={'x': x_ratio, 'y': y_ratio, 'z': z_ratio})
+
 
     elif plots == "volume":
+        x_ratio, y_ratio, z_ratio = 1, 1, 1
+        fig_upd = go.Figure(
+            data=go.Volume(
 
-        fig_upd = go.Figure(data=go.Volume(
-            x=dfu.x,        #df for non-sliced
-            y=dfu.y,
-            z=dfu.z,
-            value=dfu.val,
+
+
+
+
+            #x=df.x,        #df for non-sliced
+            #y=df.y,
+            #z=df.z,
+            #value=df.val,
+
             opacity=0.3,
-            surface_count=settings["size"],
+            surface={'count': settings["size"], 'fill': 0.5}, # fill=0.5 etc adds a nice texture/mesh inside
+            spaceframe={'fill': 0.5}, # does what exactly?
+            contour={'show': settings["outline"], 'width': 5},
             colorscale=px.colors.sequential.Inferno_r,
             cauto=True,
         ))
@@ -1153,8 +1182,6 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
     else:
         fig_upd=def_fig
 
-    # TODO: (make this optional) Figure for axis-orientation
-    fig_upd_o = orient_fig
 
     # UPDATING FIG-SCENE- and Layout- PROPERTIES
     fig_upd.update_layout(margin=dict(l=0, r=0, b=0, t=0), paper_bgcolor="#f8f9fa", modebar=dict())
@@ -1209,27 +1236,7 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
             go.Scatter3d(name="Atoms", x=atoms['x'], y=atoms['y'], z=atoms['z'], mode='markers',
                          marker=dict(size=30, color=atom_colors)))
 
-    print(fig_upd.layout)
-    fig_upd.update_layout(xaxis=dict())
-    print(fig_upd.layout)
-
     return fig_upd
-
-def new_upd_plot():
-
-    return
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 ''' maybe interesting: animations on plot change:
@@ -1291,7 +1298,7 @@ def updateSettingsBar(plot_choice):
     if plot_choice == "scatter":
         return "Size", {'visibility': 'visible'}, {'visibility': 'visible', 'width': '5em'}
     elif plot_choice == "volume":
-        return "Isosurface-count", {'visibility': 'hidden'}, {'visibility': 'hidden'}
+        return "Resolution", {'visibility': 'hidden'}, {'visibility': 'hidden'}
     else:
         raise PreventUpdate
 
@@ -1363,4 +1370,4 @@ def uploadStatus(filename, contents, data, reset):
 # END OF CALLBACKS FOR SIDEBAR
 
 if __name__ == '__main__':
-    app.run_server(debug=True, port=8050)
+    app.run_server(debug=True, port=8051)
