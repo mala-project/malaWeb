@@ -1078,7 +1078,7 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
     print("GET DATA from df_store")
 
     scale = pd.DataFrame(f_data['SCALE'])
-    x_ratio, y_ratio, z_ratio = scale.x_axis[1]*5, scale.y_axis[2]*5, scale.z_axis[3]*5
+    x_ratio, y_ratio, z_ratio = scale.x_axis[1], scale.y_axis[2], scale.z_axis[3]
 
     if plots == "scatter":
         df = pd.DataFrame(f_data['MALA_DF']['scatter'])
@@ -1102,9 +1102,7 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
         low, high = slider_range
         mask = (dfu['val'] >= low) & (dfu['val'] <= high)
         dfu = df[mask]
-    else:
-        mask = (dfu['val'] >= min(dfu['val'])) & (dfu['val'] <= max(dfu['val']))
-        # TODO: mask could be referenced without being defined
+
     # x-Cross-section
     if slider_range_cs_x is not None and cs_x_inactive:  # Any slider Input there?
         lowx, highx = slider_range_cs_x
@@ -1153,9 +1151,11 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
         else:
             outlined = dict(width=0, color='DarkSlateGrey')
         # applying marker settings
+        print("x-voxel: ", scale['x_axis'], "y-voxel: ", scale['y_axis'], "z-voxel: ", scale['z_axis'])
+        print("x-rat: ", x_ratio, "y-rat: ", y_ratio, "z-rat: ", z_ratio)
         fig_upd.update_traces(marker=dict(size=settings["size"], line=outlined), selector=dict(mode='markers'))
-        fig_upd.update_scenes(aspectratio={'x': x_ratio, 'y': y_ratio, 'z': z_ratio})
-
+        fig_upd.update_scenes(aspectratio={'x': 1.8*x_ratio, 'y': 1.8*y_ratio, 'z': 2.7*z_ratio})
+        #fig_upd.update_scenes(aspectmode="auto")
 
     elif plots == "volume":
         x_ratio, y_ratio, z_ratio = 1, 1, 1
@@ -1166,10 +1166,10 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
 
 
 
-            #x=df.x,        #df for non-sliced
-            #y=df.y,
-            #z=df.z,
-            #value=df.val,
+            x=df.x,        #df for non-sliced
+            y=df.y,
+            z=df.z,
+            value=df.val,
 
             opacity=0.3,
             surface={'count': settings["size"], 'fill': 0.5}, # fill=0.5 etc adds a nice texture/mesh inside
