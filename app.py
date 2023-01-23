@@ -110,6 +110,18 @@ dos_plot_layout = {
 # TODO: (optional) ability to en-/disable individual Atoms (that are in the uploaded file) and let MALA recalculate
 #  -> helps see each Atoms' impact in the grid
 
+x, y, z = np.mgrid[-8:8:40j, -8:8:40j, -8:8:40j]
+values = np.sin(x*y*z) / (x*y*z)
+
+testing = {
+    'x': x,
+    'y': y,
+    'z': z,
+    'val': values}
+
+
+
+
 
 print("_________________________________________________________________________________________")
 print("STARTING UP...")
@@ -325,6 +337,7 @@ scatter_plot = [
                             dcc.Graph(id="scatter-plot", responsive=True, figure=def_fig, style=plot_layout),
                             className="density-scatter-plot"
                         ),
+
 
                         # Tools
 
@@ -859,7 +872,7 @@ def updateDF(f_data, file, reset):
     data_sc = data0.copy()
     data_vol = data0.copy()
 
-    # SHEARING für scatter_3d
+    # SHEARING für scatter_3d - linearcombination
     data_sc.x += y_axis[1] * (data0.y / y_axis[2])
     data_sc.x += z_axis[1] * (data0.z / z_axis[3])
 
@@ -886,7 +899,7 @@ def updateDF(f_data, file, reset):
                    - unit-vector
                        - f.e. ( x_axis[1] / x_axis[2] / x_axis[3] ) is x-axis unit-vector
                TODO: find a GOOD way to transform our data from kartesian grid to the according (in example data sheared) one
-                   - so far only doing that in a complicated way for dataframe in scatter_3d format
+                   - so far only doing that with a linear combination for dataframe in scatter_3d format
                    - need to to this for volume too
                    --> good way would be a matrix multiplication of some sort
     '''
@@ -1127,6 +1140,19 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
         # SETTINGS
         # plot-settings
 
+        # ADD ATOMS
+        # TODO: COLOR-CODING ATOMS BASED OFF THEIR CHARGE
+        if settings["atoms"]:
+            atom_colors = []
+            for i in range(0, int(no_of_atoms)):
+                if atoms['charge'][i] == 4.0:
+                    atom_colors.append("black")
+                else:
+                    atom_colors.append("white")
+            atoms_fig = go.Scatter3d(name="Atoms", x=atoms['x'], y=atoms['y'], z=atoms['z'], mode='markers',
+                             marker=dict(size=30, color=atom_colors))
+
+
 
          # creating the figure, updateing some things
 
@@ -1150,21 +1176,23 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
             outlined = dict(width=1, color='DarkSlateGrey')
         else:
             outlined = dict(width=0, color='DarkSlateGrey')
+
         # applying marker settings
         print("x-voxel: ", scale['x_axis'], "y-voxel: ", scale['y_axis'], "z-voxel: ", scale['z_axis'])
         print("x-rat: ", x_ratio, "y-rat: ", y_ratio, "z-rat: ", z_ratio)
         fig_upd.update_traces(marker=dict(size=settings["size"], line=outlined), selector=dict(mode='markers'))
-        fig_upd.update_scenes(aspectratio={'x': 1.8*x_ratio, 'y': 1.8*y_ratio, 'z': 2.7*z_ratio})
-        #fig_upd.update_scenes(aspectmode="auto")
 
+        # atoms fig
+        if settings["atoms"]:
+            fig_upd.add_trace(atoms_fig)
+        '''
+        fig_upd.update_scenes(aspectratio={'x': 0.25*scale['x_axis'][0]*x_ratio, 'y': 0.25*scale['y_axis'][0]*y_ratio, 'z': 0.25*scale['z_axis'][0]*z_ratio})
+        '''
+        fig_upd.update_scenes(aspectmode="data")
     elif plots == "volume":
         x_ratio, y_ratio, z_ratio = 1, 1, 1
         fig_upd = go.Figure(
             data=go.Volume(
-
-
-
-
 
             x=df.x,        #df for non-sliced
             y=df.y,
@@ -1172,13 +1200,20 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
             value=df.val,
 
             opacity=0.3,
-            surface={'count': settings["size"], 'fill': 0.5}, # fill=0.5 etc adds a nice texture/mesh inside
-            spaceframe={'fill': 0.5}, # does what exactly?
-            contour={'show': settings["outline"], 'width': 5},
+            surface={'count': settings["size"], 'fill': 1}, # fill=0.5 etc adds a nice texture/mesh inside
+            #spaceframe={'fill': 0.5}, # does what exactly?
+            #contour={'show': settings["outline"], 'width': 5},
             colorscale=px.colors.sequential.Inferno_r,
             cauto=True,
         ))
 
+        # atoms fig
+        if settings["atoms"]:
+            fig_upd.add_trace(atoms_fig)
+
+        fig_upd.update_scenes(
+            aspectratio={'x': 0.1 * scale['x_axis'][0] * x_ratio, 'y': 0.1 * scale['y_axis'][0] * y_ratio,
+                         'z': 0.1 * scale['z_axis'][0] * z_ratio})
     else:
         fig_upd=def_fig
 
@@ -1223,18 +1258,7 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
     '''
 
 
-    # ADD ATOMS
-    # TODO: COLOR-CODING ATOMS BASED OFF THEIR CHARGE
-    if settings["atoms"]:
-        atom_colors = []
-        for i in range(0, int(no_of_atoms)):
-            if atoms['charge'][i] == 4.0:
-                atom_colors.append("black")
-            else:
-                atom_colors.append("white")
-        fig_upd.add_trace(
-            go.Scatter3d(name="Atoms", x=atoms['x'], y=atoms['y'], z=atoms['z'], mode='markers',
-                         marker=dict(size=30, color=atom_colors)))
+
 
     return fig_upd
 
