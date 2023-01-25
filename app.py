@@ -1,11 +1,24 @@
 # IMPORTS
 import json
+import random
 
 import mala_inference
 import ase.io
 import dash
 from dash.dependencies import Input, Output, State
 from dash import dcc, html, dash_table
+
+
+import dash_vtk as vtk
+from dash_vtk.utils import to_volume_state
+
+try:
+    # VTK 9+
+    from vtkmodules.vtkImagingCore import vtkRTAnalyticSource
+except ImportError:
+    # VTK =< 8
+    from vtk.vtkImagingCore import vtkRTAnalyticSource
+
 
 import dash_bootstrap_components as dbc
 # from dash_bootstrap_templates import load_figure_template
@@ -110,14 +123,13 @@ dos_plot_layout = {
 # TODO: (optional) ability to en-/disable individual Atoms (that are in the uploaded file) and let MALA recalculate
 #  -> helps see each Atoms' impact in the grid
 
-x, y, z = np.mgrid[-8:8:40j, -8:8:40j, -8:8:40j]
-values = np.sin(x*y*z) / (x*y*z)
+# Use VTK to get some data
+data_source = vtkRTAnalyticSource()
+data_source.Update()  # <= Execute source to produce an output
+dataset = data_source.GetOutput()
 
-testing = {
-    'x': x,
-    'y': y,
-    'z': z,
-    'val': values}
+# Use helper to get a volume structure that can be passed as-is to a Volume
+volume_state = to_volume_state(dataset)  # No need to select field
 
 
 
@@ -320,9 +332,24 @@ orient_canv = html.Div(
                   scrollable=True, backdrop=False, placement='end')),
 
 
+
+
 # TODO: Orientation fig & bottom offcanvas (table+dos)
 
 # ------------------------------
+
+# Use VTK to get some data
+data_source = vtkRTAnalyticSource()
+data_source.Update()  # <= Execute source to produce an output
+dataset = data_source.GetOutput()
+print(type(dataset))
+print(dataset)
+
+# Use helper to get a volume structure that can be passed as-is to a Volume
+volume_state = to_volume_state(dataset)  # No need to select field
+
+
+#---------------------------------
 # Plots for the created Figures
 scatter_plot = [
     # Center
@@ -337,6 +364,29 @@ scatter_plot = [
                             dcc.Graph(id="scatter-plot", responsive=True, figure=def_fig, style=plot_layout),
                             className="density-scatter-plot"
                         ),
+
+
+
+
+
+
+
+                        html.Div(
+                            style={"width": "100%", "height": "400px"},
+                            children=[
+
+                                vtk.View(
+                                    children=html.Div(),
+                                    id="vtk-plot"
+                                )
+
+                                      ]),
+
+
+
+
+
+
 
 
                         # Tools
@@ -1046,6 +1096,7 @@ cam_store can't be an input or else it triggers an update everytime the cam is m
 
 @app.callback(
     Output("scatter-plot", "figure"),
+    #Output("vtk-plot", "children"),
     [
         # Tools
         Input("range-slider-dense", "value"),
@@ -1091,7 +1142,8 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
     print("GET DATA from df_store")
 
     scale = pd.DataFrame(f_data['SCALE'])
-    x_ratio, y_ratio, z_ratio = scale.x_axis[1], scale.y_axis[2], scale.z_axis[3]
+    x_axis, y_axis, z_axis = scale.x_axis, scale.y_axis, scale.z_axis
+    x_ratio, y_ratio, z_ratio = x_axis[1], y_axis[2], z_axis[3]
 
     if plots == "scatter":
         df = pd.DataFrame(f_data['MALA_DF']['scatter'])
@@ -1189,8 +1241,8 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
         fig_upd.update_scenes(aspectratio={'x': 0.25*scale['x_axis'][0]*x_ratio, 'y': 0.25*scale['y_axis'][0]*y_ratio, 'z': 0.25*scale['z_axis'][0]*z_ratio})
         '''
         fig_upd.update_scenes(aspectmode="data")
+        vtk_vol_rep = html.Div()
     elif plots == "volume":
-        x_ratio, y_ratio, z_ratio = 1, 1, 1
         fig_upd = go.Figure(
             data=go.Volume(
 
@@ -1214,6 +1266,16 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
         fig_upd.update_scenes(
             aspectratio={'x': 0.1 * scale['x_axis'][0] * x_ratio, 'y': 0.1 * scale['y_axis'][0] * y_ratio,
                          'z': 0.1 * scale['z_axis'][0] * z_ratio})
+
+        print("hier:", volume_state)
+# VTK TESTING
+
+
+
+
+
+
+
     else:
         fig_upd=def_fig
 
