@@ -8,18 +8,6 @@ import dash
 from dash.dependencies import Input, Output, State
 from dash import dcc, html, dash_table
 
-
-import dash_vtk as vtk
-from dash_vtk.utils import to_volume_state
-
-try:
-    # VTK 9+
-    from vtkmodules.vtkImagingCore import vtkRTAnalyticSource
-except ImportError:
-    # VTK =< 8
-    from vtk.vtkImagingCore import vtkRTAnalyticSource
-
-
 import dash_bootstrap_components as dbc
 # from dash_bootstrap_templates import load_figure_template
 from dash.exceptions import PreventUpdate
@@ -1266,12 +1254,6 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
         fig_upd.update_scenes(
             aspectratio={'x': 0.1 * scale['x_axis'][0] * x_ratio, 'y': 0.1 * scale['y_axis'][0] * y_ratio,
                          'z': 0.1 * scale['z_axis'][0] * z_ratio})
-
-        print("hier:", volume_state)
-# VTK TESTING
-
-
-
 
 
 
