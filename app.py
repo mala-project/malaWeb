@@ -336,27 +336,6 @@ scatter_plot = [
 
 
 
-
-
-
-                        html.Div(
-                            style={"width": "100%", "height": "400px"},
-                            children=[
-
-                                vtk.View(
-                                    children=html.Div(),
-                                    id="vtk-plot"
-                                )
-
-                                      ]),
-
-
-
-
-
-
-
-
                         # Tools
 
                         dbc.Row([
