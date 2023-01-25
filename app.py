@@ -315,17 +315,6 @@ orient_canv = html.Div(
 
 # TODO: Orientation fig & bottom offcanvas (table+dos)
 
-# ------------------------------
-
-# Use VTK to get some data
-data_source = vtkRTAnalyticSource()
-data_source.Update()  # <= Execute source to produce an output
-dataset = data_source.GetOutput()
-print(type(dataset))
-print(dataset)
-
-# Use helper to get a volume structure that can be passed as-is to a Volume
-volume_state = to_volume_state(dataset)  # No need to select field
 
 
 #---------------------------------
