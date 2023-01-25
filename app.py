@@ -111,15 +111,6 @@ dos_plot_layout = {
 # TODO: (optional) ability to en-/disable individual Atoms (that are in the uploaded file) and let MALA recalculate
 #  -> helps see each Atoms' impact in the grid
 
-# Use VTK to get some data
-data_source = vtkRTAnalyticSource()
-data_source.Update()  # <= Execute source to produce an output
-dataset = data_source.GetOutput()
-
-# Use helper to get a volume structure that can be passed as-is to a Volume
-volume_state = to_volume_state(dataset)  # No need to select field
-
-
 
 
 
