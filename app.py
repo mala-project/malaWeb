@@ -266,7 +266,7 @@ r_content_sc = html.Div([
 # Bottom BAR ontent
 bot_content = html.Div([
 
-    dash_table.DataTable(df_table.to_dict('records'), [{"name": i, "id": i} for i in df_table.columns], id='energy_table'),
+    dash_table.DataTable(df_table.to_dict('records'), [{"name": i, "id": i} for i in df_table.columns], id='energy-table'),
 
     dcc.Graph(id="dos-plot")
 
@@ -720,9 +720,6 @@ def reset_cs_dense(n_clicks, data):
     prevent_initial_call=True)
 def store_cam(default_clicks, x_y_clicks, x_z_clicks, y_z_clicks, user_in):
     # user_in is the camera position set by mouse movement, it has to be updated on every mouse input on the fig
-
-
-    print("cam-store udated by: ", dash.callback_context.triggered_id)
 
     # set stored_cam_setting according to which button was last pressed
     if dash.callback_context.triggered_id[0:-4] == "default":
@@ -1294,14 +1291,17 @@ def updateOrientation(saved_cam, fig):
 @app.callback(
     #Output("dos-plot", "figure"),
     Output("energy-table", "data"),
-    Output("energy-table", "columns"),
+    #Output("energy-table", "columns"),
     [Input("df_store", "data"),
      Input("page_state", "data"),
-     State("energy-table", "children")]
+     State("energy-table", "data")]
 )
 def update_bot_canv(f_data, state, child):
+
+
 # TODO: this is NOT working - FIX IT - (also style that thing..)
     print(child)
+    print(f_data['MALA_DATA']['band_energy'])
     if f_data is not None:
         dOs = f_data['MALA_DATA']['density_of_states']
 
@@ -1309,21 +1309,17 @@ def update_bot_canv(f_data, state, child):
         df = pd.DataFrame(dOs, columns=['density of state'])
         def_fig = px.scatter(df)
 
-        df_table = pd.DataFrame({
-    "Energy": ['Band Energy', 'Total Energy', 'Fermi Energy'],
-    "Value": [f_data['MALA_DATA']['band_energy'], f_data['MALA_DATA']['total_energy'], 1337]
-        })
+        df_table = [{'band_energy': f_data['MALA_DATA']['band_energy'], 'total_energy': f_data['MALA_DATA']['total_energy'], 'fermi_energy': 111}]
 
     else:
         def_fig = px.scatter()
 
-        df_table = pd.DataFrame({
-            "Energy": ['Band Energy', 'Total Energy', 'Fermi Energy'],
-            "Value": [0, 0, 0]
-        })
+        df_table = {
+            #"Energy": ['Band Energy', 'Total Energy', 'Fermi Energy'],
+            [0, 0, 0]
+        }
 
-    return df_table, ['Band Energy', 'Total Energy', 'Fermi Energy']
-
+    return df_table
 
 # END OF CALLBACKS FOR DOS PLOT
 
