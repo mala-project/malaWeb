@@ -23,7 +23,7 @@ templ1 = dict(layout=go.Layout(
     scene={
         'xaxis': {'showbackground': False,
                   'ticks': '',
-                  'visible': True,
+                  'visible': False,
                   },
         'yaxis': {'showbackground': False,
                   'ticks': '',
@@ -31,6 +31,7 @@ templ1 = dict(layout=go.Layout(
         'zaxis': {'showbackground': False,
                   'ticks': '',
                   'visible': False},
+        'aspectmode': 'data'
     },
     xaxis={
         'dtick': 2,
@@ -987,6 +988,7 @@ def update_settings_store(size, outline, atoms, opac, saved):
         Input("df_store", "data"),
     ],
     [
+        # as long as volume and scatter don't share their dataset: state instead of input
         State("choice_store", "data")
     ],
 )
@@ -1076,10 +1078,6 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
     # TODO: make this function more efficient
     #  - for example on settings-change, only update the settings and take the fig from relayout data instead of redefining it
 
-    print("-------------")
-    print("updating/creating plot")
-    print("Triggered by: ", dash.callback_context.triggered_id)
-
     # DATA
     # the density-Dataframe that we're updating, taken from df_store (=f_data)
 
@@ -1105,7 +1103,22 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
     # atoms-Dataframe also taken from f_data
     atoms = pd.DataFrame(f_data['INPUT_DF'])
     no_of_atoms = len(atoms)
+
+
+    df_bound = df.from_dict({
+        'x': [min(dfu['x']), min(dfu['x']), min(dfu['x']), min(dfu['x']), max(dfu['x']), max(dfu['x']), max(dfu['x']), max(dfu['x'])],
+        'y': [min(dfu['y']), min(dfu['y']), max(dfu['y']), max(dfu['y']), min(dfu['y']), min(dfu['y']), max(dfu['y']), max(dfu['y'])],
+        'z': [min(dfu['z']), max(dfu['z']), min(dfu['z']), max(dfu['z']), min(dfu['z']), max(dfu['z']), min(dfu['z']), max(dfu['z'])]
+
+    })
+    fig_bound = go.Scatter3d(
+        x=df_bound['x'], y=df_bound['y'], z=df_bound['z'], mode='markers',
+        marker=dict(size=0, color='white'), visible=False, showlegend= False,
+    )
+
     # Dataframes are ready
+
+
 
     # TOOLS
         # these edit the DF before the figure is built
@@ -1113,43 +1126,44 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
     if slider_range is not None and dense_inactive:  # Any slider Input there?
         low, high = slider_range
         mask = (dfu['val'] >= low) & (dfu['val'] <= high)
-        dfu = df[mask]
+        dfu = dfu[mask]
 
     # x-Cross-section
     if slider_range_cs_x is not None and cs_x_inactive:  # Any slider Input there?
-        lowx, highx = slider_range_cs_x
-        x_ratio *= (highx-lowx) / (max(dfu.x) - min(dfu.x))
-    else:
-        lowx, highx = [min(dfu.x), max(dfu.x)]
+        low, high = slider_range_cs_x
+        mask = (dfu['x'] >= low) & (dfu['x'] <= high)
+        dfu = dfu[mask]
+
     # Y-Cross-section
     if slider_range_cs_y is not None and cs_y_inactive:  # Any slider Input there?
-        lowy, highy = slider_range_cs_y
-        y_ratio *= (highy - lowy) / (max(dfu.y) - min(dfu.y))
-    else:
-        lowy, highy = [min(dfu.y), max(dfu.y)]
+        low, high = slider_range_cs_y
+        mask = (dfu['y'] >= low) & (dfu['y'] <= high)
+        dfu = dfu[mask]
+
     # Z-Cross-section
     if slider_range_cs_z is not None and cs_z_inactive:  # Any slider Input there?
-        lowz, highz = slider_range_cs_z
-        z_ratio *= (highz - lowz) / (max(dfu.z) - min(dfu.z))
+        low, high = slider_range_cs_z
+        mask = (dfu['z'] >= low) & (dfu['z'] <= high)
+        dfu = dfu[mask]
+
+
+
+    # SETTINGS
+    # plot-settings
+
+    # ADD ATOMS
+    # TODO: COLOR-CODING ATOMS BASED OFF THEIR CHARGE
+    if settings["atoms"]:
+        atom_colors = []
+        for i in range(0, int(no_of_atoms)):
+            if atoms['charge'][i] == 4.0:
+                atom_colors.append("black")
+            else:
+                atom_colors.append("white")
+        atoms_fig = go.Scatter3d(name="Atoms", x=atoms['x'], y=atoms['y'], z=atoms['z'], mode='markers',
+                         marker=dict(size=30, color=atom_colors))
     else:
-        lowz, highz = [min(dfu.z), max(dfu.z)]
-
-
-
-        # SETTINGS
-        # plot-settings
-
-        # ADD ATOMS
-        # TODO: COLOR-CODING ATOMS BASED OFF THEIR CHARGE
-        if settings["atoms"]:
-            atom_colors = []
-            for i in range(0, int(no_of_atoms)):
-                if atoms['charge'][i] == 4.0:
-                    atom_colors.append("black")
-                else:
-                    atom_colors.append("white")
-            atoms_fig = go.Scatter3d(name="Atoms", x=atoms['x'], y=atoms['y'], z=atoms['z'], mode='markers',
-                             marker=dict(size=30, color=atom_colors))
+        atoms_fig = go.Figure()
 
 
 
@@ -1165,10 +1179,6 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
             color_continuous_scale=px.colors.sequential.Inferno_r,
             range_color=[min(df['val']), max(df['val'])],
             # takes color range from original dataset, so colors don't change
-            range_x=[lowx, highx],
-            range_y=[lowy, highy],
-            range_z=[lowz, highz],
-            template=templ1,
         )
         # Outline settings
         if settings["outline"]:
@@ -1177,53 +1187,38 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
             outlined = dict(width=0, color='DarkSlateGrey')
 
         # applying marker settings
-        print("x-voxel: ", scale['x_axis'], "y-voxel: ", scale['y_axis'], "z-voxel: ", scale['z_axis'])
-        print("x-rat: ", x_ratio, "y-rat: ", y_ratio, "z-rat: ", z_ratio)
         fig_upd.update_traces(marker=dict(size=settings["size"], line=outlined), selector=dict(mode='markers'))
 
-        # atoms fig
-        if settings["atoms"]:
-            fig_upd.add_trace(atoms_fig)
-        '''
-        fig_upd.update_scenes(aspectratio={'x': 0.25*scale['x_axis'][0]*x_ratio, 'y': 0.25*scale['y_axis'][0]*y_ratio, 'z': 0.25*scale['z_axis'][0]*z_ratio})
-        '''
-        fig_upd.update_scenes(aspectmode="data")
-        vtk_vol_rep = html.Div()
+
     elif plots == "volume":
         fig_upd = go.Figure(
             data=go.Volume(
 
-            x=df.x,        #df for non-sliced
-            y=df.y,
-            z=df.z,
-            value=df.val,
+            x=dfu.x,        #df for non-sliced
+            y=dfu.y,
+            z=dfu.z,
+            value=dfu.val,
 
             opacity=0.3,
             surface={'count': settings["size"], 'fill': 1}, # fill=0.5 etc adds a nice texture/mesh inside
             #spaceframe={'fill': 0.5}, # does what exactly?
-            #contour={'show': settings["outline"], 'width': 5},
+            contour={'show': settings["outline"], 'width': 5},
             colorscale=px.colors.sequential.Inferno_r,
-            cauto=True,
+            cmin=min(df['val']),
+            cmax=max(df['val'])
+            #cauto=True,
         ))
-
-        # atoms fig
-        if settings["atoms"]:
-            fig_upd.add_trace(atoms_fig)
-
-        fig_upd.update_scenes(
-            aspectratio={'x': 0.1 * scale['x_axis'][0] * x_ratio, 'y': 0.1 * scale['y_axis'][0] * y_ratio,
-                         'z': 0.1 * scale['z_axis'][0] * z_ratio})
-
-
-
-
     else:
         fig_upd=def_fig
 
 
+    # atoms fig
+    if settings["atoms"]:
+        fig_upd.add_trace(atoms_fig)
+
     # UPDATING FIG-SCENE- and Layout- PROPERTIES
     fig_upd.update_layout(margin=dict(l=0, r=0, b=0, t=0), paper_bgcolor="#f8f9fa", modebar=dict())
-    fig_upd.update_layout(modebar_remove=["zoom", "pan", "orbitRotation", "tableRotation", "resetcameradefault", "resetcameralastsave"])
+    fig_upd.update_layout(modebar_remove=["zoom", "resetcameradefault", "resetcameralastsave"])
 
     # CAMERA
     if dash.callback_context.triggered_id == "default-cam":
@@ -1252,7 +1247,7 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
     else: new_cam=stored_cam_settings
 
 
-    fig_upd.update_layout(scene_camera=new_cam)
+    fig_upd.update_layout(scene_camera=new_cam, template=templ1,)
     '''
     set camera-position according to the clicked button, 
                                 OR 
@@ -1260,8 +1255,8 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
     to the most recently stored manually adjusted camera position
     '''
 
-
-
+    # adding helperfigure to keep camera-zoom the same, regardless of data(-slicing)-changes
+    fig_upd.add_trace(fig_bound)
 
     return fig_upd
 
