@@ -122,20 +122,10 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.icons.BOOTSTRAP, dbc.themes.
                 suppress_callback_exceptions=True)
 app.title = 'MALAweb'
 
-# until data is uploaded, show:
-bandEn = 0
-totalEn = 0
-# TABLE SECTION
+# just needed for styling of some headings
 indent = '      '
-# Data
-row1 = html.Tr([html.Td(indent.join("Band - Energy"), style={'text-align': 'center'})], style={"font-weight": "bold"})
-row2 = html.Tr([html.Td(0, id="bandEn", style={'text-align': 'right'})])
-row3 = html.Tr([html.Td(indent.join("Total - Energy"), style={'text-align': 'center'})], style={"font-weight": "bold"})
-row4 = html.Tr([html.Td(0, id="totalEn", style={'text-align': 'right'})])
-row5 = html.Tr([html.Td(indent.join("Fermi - Energy"), style={'text-align': 'center'})], style={"font-weight": "bold"})
-row6 = html.Tr([html.Td("placeholder", style={'text-align': 'right'})])
-table_body = [html.Tbody([row1, row2, row3, row4, row5, row6])]
 
+# defining plot-choice-items
 radioItems = dbc.RadioItems(
     options=[
         {"label": "Scatter", "value": "scatter"},
@@ -162,14 +152,12 @@ orient_fig.add_trace(go.Scatter3d(x=[0, 0], y=[0, 0], z=[0, 1], marker={'color':
 
 orient_plot = dcc.Graph(id="orientation", responsive=True, figure=orient_fig, style=orientation_style, config={'displayModeBar': False})
 
-# -----------------
 
-# Left SIDEBAR
-sidebar = html.Div(
-    dbc.Offcanvas(
-        # default sidebar
-        html.Div(
-            [
+df_table = pd.DataFrame()
+
+# -----------------
+# Left SIDEBAR content
+menu = html.Div([
                 # Logo Section
                 html.Div([
                     html.Img(src='https://avatars.githubusercontent.com/u/81354661?s=200&v=4', className="logo"),
@@ -239,18 +227,9 @@ sidebar = html.Div(
                     is_open=False,
                 ),
 
-            ], className="sidebar"
-        ), id="offcanvas-l", is_open=True, scrollable=True, backdrop=False,
-        style={'width': '15rem', 'margin-top': '3rem', 'margin-left': '0.5vw', 'border-radius': '10px',
-               'height': 'min-content',
-               'box-shadow': 'rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px'},
-    ),
-)
+            ], className="sidebar")
 
-# start plot with empty fig, fill on updateScatter-/...-callback
-
-# TODO Im in the process of updating individual parts of this. Thats why it's not working. Check out / continue on updateSettingsBar
-# --------------------------
+# Right SIDEBAR (default) content
 r_content_sc = html.Div([
     html.H5("Settings"),
     dbc.Card(dbc.CardBody(
@@ -284,9 +263,27 @@ r_content_sc = html.Div([
         ]
     ))])
 
-#orient_content = html.Div(orient_plot)
-# ---------------------
+# Bottom BAR ontent
+bot_content = html.Div([
 
+    dash_table.DataTable(df_table.to_dict('records'), [{"name": i, "id": i} for i in df_table.columns], id='energy_table'),
+
+    dcc.Graph(id="dos-plot")
+
+], style={'width': 'min-content'})
+
+# --------------------------
+
+# Filling offcanvasses with respective content
+
+# Left SIDEBAR
+side_l = html.Div([
+    dbc.Offcanvas(menu, id="offcanvas-l", is_open=True, scrollable=True, backdrop=False,
+                  style={'width': '15rem', 'margin-top': '3rem', 'margin-left': '0.5vw', 'border-radius': '10px',
+               'height': 'min-content',
+                         'box-shadow': 'rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px'},
+),
+])
 
 # Right SIDEBAR
 side_r = html.Div([
@@ -297,8 +294,14 @@ side_r = html.Div([
                          'box-shadow': 'rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px',
                          'position': 'absolute', },
                   scrollable=True, backdrop=False, placement='end'),
-]
-)
+])
+
+# Bottom BAR
+bot = html.Div([dbc.Offcanvas(bot_content, id="offcanvas-r-sc", is_open=True,
+                  style={'width': 'min-content', 'height': 'min-content', 'border-radius': '10px',
+                         'box-shadow': 'rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px',
+                         'position': 'absolute', },
+                  scrollable=True, backdrop=False, placement='bottom')])
 
 # Orientation plot
 orient_canv = html.Div(
@@ -480,12 +483,14 @@ mc0_landing = html.Div([
              style={'text-align': 'center'}),
 ], style={'width': 'content-min', 'margin-top': '20vh'})
 
-skel_layout = dbc.Row([
+skel_layout = [dbc.Row([
         dbc.Col(
 
-            [sidebar,
+            [side_l,
              dbc.Button(">", id="open-offcanvas-l", n_clicks=0, style={'position': 'fixed', 'margin-top': '40vh',
-                                                                       'margin-left': '0.5vw'})],
+                                                                       'margin-left': '0.5vw'}),
+            bot     # it doesn't matter where offcanvasses are placed here - only their "placement"-prop matters
+             ],
             id="l0", width=1, style={'background-color': 'red'}),
 
         dbc.Col(mc0_landing, id="mc0", width=10, style={'background-color': 'blue'}),
@@ -501,7 +506,7 @@ skel_layout = dbc.Row([
 
             id="r0", width=1, style={'background-color': 'green'})
 
-    ])
+    ])]
 
 
 p_layout_landing = dbc.Container([
@@ -905,7 +910,8 @@ def updateDF(f_data, file, reset):
     # _______________________________________________________________________________________
 
     df_store = {'MALA_DF': {'default': data0.to_dict("records"), 'scatter': data_sc.to_dict("records"),
-                            'volume': data_vol.to_dict("records")}, 'MALA_DATA': mala_data,
+                            'volume': data_vol.to_dict("records")},
+                'MALA_DATA': mala_data,
                 'INPUT_DF': atoms_data.to_dict("records"),
                 'SCALE': {'x_axis': x_axis, 'y_axis': y_axis, 'z_axis': z_axis}}
 
@@ -920,7 +926,7 @@ def updateDF(f_data, file, reset):
     Output("choice_store", "data"),
     [Input('plot-choice', 'value')],
     prevent_initial_call=True)
-def updatePlotChoice(choice):
+def update_choice_store(choice):
     return choice
 
 
@@ -1077,6 +1083,7 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
                cam_default, cam_xy, cam_xz, cam_yz, plots, relayout_data, stored_cam_settings, f_data, fig):
     # TODO: make this function more efficient
     #  - for example on settings-change, only update the settings and take the fig from relayout data instead of redefining it
+    # --> most likely only possible with client-side-callbacks
 
     # DATA
     # the density-Dataframe that we're updating, taken from df_store (=f_data)
@@ -1271,10 +1278,6 @@ Sets transition options used during Plotly.react updates."
 
 
 
-
-
-
-
 @app.callback(
     Output("orientation", "figure"),
     Input("cam_store", "data"),
@@ -1289,17 +1292,37 @@ def updateOrientation(saved_cam, fig):
 
 # TODO: updateDoS
 @app.callback(
-    Output("dos-plot", "figure"),
-    [Input("choice_store", "data")],
-    [State("df_store", "data")]
+    #Output("dos-plot", "figure"),
+    Output("energy-table", "data"),
+    Output("energy-table", "columns"),
+    [Input("df_store", "data"),
+     Input("page_state", "data"),
+     State("energy-table", "children")]
 )
-def updateDoS(plot_choice, f_data):
-    if f_data is None:
-        raise PreventUpdate
-    dOs = f_data['MALA_DATA']['density_of_states']
-    df = pd.DataFrame(dOs, columns=['density of state'])
-    upd_fig = px.scatter(df)
-    return upd_fig
+def update_bot_canv(f_data, state, child):
+# TODO: this is NOT working - FIX IT - (also style that thing..)
+    print(child)
+    if f_data is not None:
+        dOs = f_data['MALA_DATA']['density_of_states']
+
+
+        df = pd.DataFrame(dOs, columns=['density of state'])
+        def_fig = px.scatter(df)
+
+        df_table = pd.DataFrame({
+    "Energy": ['Band Energy', 'Total Energy', 'Fermi Energy'],
+    "Value": [f_data['MALA_DATA']['band_energy'], f_data['MALA_DATA']['total_energy'], 1337]
+        })
+
+    else:
+        def_fig = px.scatter()
+
+        df_table = pd.DataFrame({
+            "Energy": ['Band Energy', 'Total Energy', 'Fermi Energy'],
+            "Value": [0, 0, 0]
+        })
+
+    return df_table, ['Band Energy', 'Total Energy', 'Fermi Energy']
 
 
 # END OF CALLBACKS FOR DOS PLOT
