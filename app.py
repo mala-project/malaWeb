@@ -1,4 +1,5 @@
 # IMPORTS
+import itertools
 import json
 import random
 
@@ -153,7 +154,25 @@ orient_fig.add_trace(go.Scatter3d(x=[0, 0], y=[0, 0], z=[0, 1], marker={'color':
 orient_plot = dcc.Graph(id="orientation", responsive=True, figure=orient_fig, style=orientation_style, config={'displayModeBar': False})
 
 
-df_table = pd.DataFrame()
+#------------------------------------
+# Table
+
+row1 = html.Tr([html.Td(indent.join("Band - Energy"), style={'text-align': 'center'})],
+               style={"font-weight": "bold"})
+row2 = html.Tr([html.Td(0, id="bandEn", style={'text-align': 'right'})])
+row3 = html.Tr([html.Td(indent.join("Total - Energy"), style={'text-align': 'center'})],
+               style={"font-weight": "bold"})
+row4 = html.Tr([html.Td(0, id="totalEn", style={'text-align': 'right'})])
+row5 = html.Tr([html.Td(indent.join("Fermi - Energy"), style={'text-align': 'center'})],
+               style={"font-weight": "bold"})
+row6 = html.Tr([html.Td("placeholder", id='fermiEn', style={'text-align': 'right'})])
+table_body = [html.Tbody([row1, row2, row3, row4, row5, row6])]
+
+
+table = dbc.Table(table_body, bordered=True, striped=True, style={'width': 'min-content'})
+
+
+
 
 # -----------------
 # Left SIDEBAR content
@@ -263,14 +282,19 @@ r_content_sc = html.Div([
         ]
     ))])
 
+
+
+
+
 # Bottom BAR ontent
-bot_content = html.Div([
+bot_content = html.Div(dbc.Row([
 
-    dash_table.DataTable(df_table.to_dict('records'), [{"name": i, "id": i} for i in df_table.columns], id='energy-table'),
+    dbc.Col(table, style={'heigth': 'min-content'}),
+    dbc.Col([
+        #html.H4(indent.join('2D-Density-of-State-Plot'), style={'color': 'white', 'margin-top': '1.5rem'}),
+        dcc.Graph(id="dos-plot", style={'width': 'min-content', 'height': 'min-content'})])
 
-    dcc.Graph(id="dos-plot")
-
-], style={'width': 'min-content'})
+], style={'min-width': '1000px', 'height': 'min-content'}))
 
 # --------------------------
 
@@ -297,11 +321,11 @@ side_r = html.Div([
 ])
 
 # Bottom BAR
-bot = html.Div([dbc.Offcanvas(bot_content, id="offcanvas-r-sc", is_open=True,
+bot = html.Div([dbc.Offcanvas(bot_content, id="offcanvas-bot", is_open=True,
                   style={'width': 'min-content', 'height': 'min-content', 'border-radius': '10px',
                          'box-shadow': 'rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px',
-                         'position': 'absolute', },
-                  scrollable=True, backdrop=False, placement='bottom')])
+                         'position': 'absolute'},
+                  scrollable=True, backdrop=False, placement='bottom' )])
 
 # Orientation plot
 orient_canv = html.Div(
@@ -453,21 +477,6 @@ scatter_plot = [
 
 ]
 
-# DOS
-dos_plot = html.Div(
-    [
-        # Density of State Section
-        html.H4(indent.join('2D-Density-of-State-Plot'), style={'color': 'white', 'margin-top': '1.5rem'}),
-        dbc.Card(dbc.CardBody(html.Div(
-            dcc.Graph(id="dos-plot", figure=go.Figure(), style=dos_plot_layout),
-            className='dos-plot',
-        )),
-            style={'background-color': 'rgba(248, 249, 250, 1)', 'width': 'min-content',
-                   'margin-bottom': '1rem', 'margin-top': '1rem',
-                   'box-shadow': 'rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px'}),
-    ],
-    className="content"
-)
 
 # ----------------
 # landing-cell for mc0
@@ -1289,37 +1298,44 @@ def updateOrientation(saved_cam, fig):
 
 # TODO: updateDoS
 @app.callback(
-    #Output("dos-plot", "figure"),
-    Output("energy-table", "data"),
-    #Output("energy-table", "columns"),
+    Output("dos-plot", "figure"),
+    Output("bandEn", "children"),
+    Output("totalEn", "children"),
+    Output("fermiEn", "children"),
     [Input("df_store", "data"),
-     Input("page_state", "data"),
-     State("energy-table", "data")]
+     Input("page_state", "data")]
 )
-def update_bot_canv(f_data, state, child):
+def update_bot_canv(f_data, state):
 
 
 # TODO: this is NOT working - FIX IT - (also style that thing..)
-    print(child)
-    print(f_data['MALA_DATA']['band_energy'])
+
     if f_data is not None:
+        #print(f_data['MALA_DATA'])
+        # PLOT data
         dOs = f_data['MALA_DATA']['density_of_states']
+        df = pd.DataFrame(dOs)
 
+        fig = go.Figure()
+        fig.add_trace(
+            go.Scatter(x=df.index, y=df[0], name='densityOfstate',
+                       line=dict(color='#f15e64', width=3, dash='dot')))
+        fig.update_layout(margin=dict(l=0, r=0, b=0, t=0))
 
-        df = pd.DataFrame(dOs, columns=['density of state'])
-        def_fig = px.scatter(df)
-
-        df_table = [{'band_energy': f_data['MALA_DATA']['band_energy'], 'total_energy': f_data['MALA_DATA']['total_energy'], 'fermi_energy': 111}]
+        # TABLE data
+        # take the first
+        band_en = f_data['MALA_DATA']['band_energy']
+        total_en = f_data['MALA_DATA']['total_energy']
+        fermi_en = 0
 
     else:
-        def_fig = px.scatter()
+        fig = px.scatter()
 
-        df_table = {
-            #"Energy": ['Band Energy', 'Total Energy', 'Fermi Energy'],
-            [0, 0, 0]
-        }
+        band_en = '-'
+        total_en = '-'
+        fermi_en = '-'
 
-    return df_table
+    return fig, band_en, total_en, fermi_en
 
 # END OF CALLBACKS FOR DOS PLOT
 
