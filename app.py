@@ -343,14 +343,23 @@ bot = html.Div([dbc.Offcanvas(bot_content, id="offcanvas-bot", is_open=False,
 bot_button = html.Div(dbc.Offcanvas([
 
 # this is not centered
-    dbc.Row([
-        dbc.Col(dbc.Button(html.P("Energy / Density of State", style={"line-height": "0.65em", "font-size": "0.65em"}),
-                       id="open-bot", style={"width": "10em", "height": "1.2em"}, n_clicks=0), width=2)
-    ], justify='center')
+    dbc.Row(
+        dbc.Col(dbc.Button(html.P("Energy / Density of State",
+                                  style={"line-height": "0.65em", "font-size": "0.65em"}),
+                       id="open-bot", style={
+                "width": "10em",
+                "height": "1.2em",
+                "position": "absolute",
+                "left": "50%",
+                "-webkit-transform": "translateX(-50%)",
+                "transform": "translateX(-50%)",
+                'bottom': '0.5em'
+            }, n_clicks=0), width=1)
+    ,)
 
 
 
-    ],id="open-bot-canv", style={'height': 'min-content','position': 'absolute',
+    ], id="open-bot-canv", style={'height': 'min-content',
                          'background-color': 'rgba(0, 0, 0, 0)', 'border': '0'},
                   is_open=False, scrollable=True, backdrop=False, close_button=False, placement='bottom')
 )
