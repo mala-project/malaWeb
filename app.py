@@ -207,7 +207,7 @@ menu = html.Div([
                                 id='upload-data',
                                 children=html.Div([
                                     'Drag & Drop', html.Br(), 'or ', html.Br(),
-                                    html.A('Click to select Files')
+                                    html.A('Click to select')
                                 ]),
                                 style={
                                     'width': '90%',
@@ -217,19 +217,18 @@ menu = html.Div([
                                     'borderStyle': 'dashed',
                                     'borderRadius': '5px',
                                     'textAlign': 'center',
-                                    'margin': '1rem',
+                                    'margin-left': "0.5em",
+                                    'margin-top': '1em',
+                                    'margin-bottom': '1em',
                                     "font-size": "0.85em",
                                 },
                                 # don't allow multiple files to be uploaded
                                 multiple=False
                             ),
-
-                            dbc.Row([
-                                dbc.Col(dbc.Button("reset", id="reset-data"), width=4),
-                                dbc.Col(html.Div("Awaiting upload..", id='output-upload-state',
-                                                 style={'margin': '2px', "font-size": "0.85em"}),
-                                        style={'text-align': 'center'}, width=8)
-                            ])
+                            html.Div("Awaiting upload..", id='output-upload-state',
+                                     style={'margin': '2px', "font-size": "0.85em",
+                                    'textAlign': 'center',}),
+                            dbc.Button("reset", id="reset-data", style={'margin-left': "1.75em"})
 
                         ], className="upload-section"
                         ),
@@ -239,7 +238,7 @@ menu = html.Div([
                 ),
 
                 dbc.Card(
-                    html.H6(children='Choose Plot Style', style={'margin': '5px'}, id="open-plot-choice", n_clicks=0),
+                    html.H6(children='Plot Style', style={'margin': '5px'}, id="open-plot-choice", n_clicks=0),
                     style={"text-align": "center", 'margin-top': '15px'}),
 
                 dbc.Collapse(dbc.Card(dbc.CardBody(
@@ -267,22 +266,22 @@ r_content_sc = html.Div([
             ),
             html.Hr(),
 
-            dbc.Checkbox(label='Outline', value=True, id='sc-outline'),
-            dbc.Checkbox(label='Atoms', value=True, id='sc-atoms'),
+            dbc.Checkbox(label='Outline', value=True, id='sc-outline', style={'text-align': 'left'}),
+            dbc.Checkbox(label='Atoms', value=True, id='sc-atoms', style={'text-align': 'left'}),
 
             html.Hr(),
 
             html.H6("", id="sz/isosurf-label"),
-            dcc.Slider(6, 18, 2, value=12, id='sc-size', vertical=True, verticalHeight=150),
+            html.Div(dcc.Slider(6, 18, 2, value=12, id='sc-size', vertical=True, verticalHeight=150), style={'margin-left': '1rem'}),
 
             html.Hr(),
 
             html.H6("Opacity", id="opac-label"),
-            dbc.Input(type="number", min=0.1, max=1, step=0.1, id="sc-opac", placeholder="0.1 - 1", style={"width": "5em"}, size="sm"),
+            dbc.Input(type="number", min=0.1, max=1, step=0.1, id="sc-opac", placeholder="0.1 - 1", style={"width": "7em", 'margin-left': '1.5rem'}, size="sm"),
 
 
         ]
-    ))])
+    ))], style={'text-align': 'center'})
 
 
 
@@ -294,7 +293,7 @@ bot_content = dbc.Container([
     dbc.Row(
         dbc.Col(
             dbc.Button(html.P("Close", style={"line-height": "0.65em", "font-size": "0.65em"}),
-                       id="open-bot", style={"width": "5em", "height": "1.2em"}, n_clicks=0),
+                       id="close-bot", style={"width": "5em", "height": "1.2em"}, n_clicks=0),
             style={'width': 'min-content', 'margin-bottom': '1em'}, width=2
         ), justify='center', className="g-0"
     ),
@@ -315,7 +314,7 @@ bot_content = dbc.Container([
 # Left SIDEBAR
 side_l = html.Div([
     dbc.Offcanvas(menu, id="offcanvas-l", is_open=True, scrollable=True, backdrop=False,
-                  style={'width': '15rem', 'margin-top': '3rem', 'margin-left': '0.5vw', 'border-radius': '10px',
+                  style={'width': '12rem', 'margin-top': '3rem', 'margin-left': '0.5vw', 'border-radius': '10px',
                'height': 'min-content',
                          'box-shadow': 'rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px'},
 ),
@@ -324,16 +323,16 @@ side_l = html.Div([
 # Right SIDEBAR
 side_r = html.Div([
     dbc.Offcanvas(r_content_sc, id="offcanvas-r-sc", is_open=False,
-                  style={'width': '10rem', 'height': 'min-content',
-                         'margin-top': '1.5vh',
+                  style={'width': '9rem', 'height': 'min-content',
+                         'margin-top': '3em',
                          'margin-right': '0.5vw', 'border-radius': '10px',
                          'box-shadow': 'rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px',
-                         'position': 'absolute', },
+                         'position': 'absolute'},
                   scrollable=True, backdrop=False, placement='end'),
 ])
 
 # Bottom BAR
-bot = html.Div([dbc.Offcanvas(bot_content, id="offcanvas-bot", is_open=True,
+bot = html.Div([dbc.Offcanvas(bot_content, id="offcanvas-bot", is_open=False,
                   style={'height': 'min-content', 'border-radius': '5px',
                          'margin-left': '15vw',
                          'margin-right': '15vw',
@@ -343,7 +342,7 @@ bot = html.Div([dbc.Offcanvas(bot_content, id="offcanvas-bot", is_open=True,
 
 bot_button = html.Div(dbc.Offcanvas([
 
-
+# this is not centered
     dbc.Row([
         dbc.Col(dbc.Button(html.P("Energy / Density of State", style={"line-height": "0.65em", "font-size": "0.65em"}),
                        id="open-bot", style={"width": "10em", "height": "1.2em"}, n_clicks=0), width=2)
@@ -351,10 +350,9 @@ bot_button = html.Div(dbc.Offcanvas([
 
 
 
-    ],id="bot-button", style={'height': 'min-content','position': 'absolute',
+    ],id="open-bot-canv", style={'height': 'min-content','position': 'absolute',
                          'background-color': 'rgba(0, 0, 0, 0)', 'border': '0'},
-
-                  is_open=True, scrollable=True, backdrop=False, close_button=False, placement='bottom')
+                  is_open=False, scrollable=True, backdrop=False, close_button=False, placement='bottom')
 )
 
 
@@ -590,6 +588,47 @@ def toggle_plot_choice(n_header, page_state, data, is_open):
 
 
 # end of sidebar_l collapses
+
+
+# BOTTOM bar callbacks
+
+@app.callback(
+    Output("open-bot-canv", "is_open"),
+    Input("page_state", "data"),
+    Input("offcanvas-bot", "is_open"),
+    prevent_initial_call=True,
+)
+def toggle_bot_button(page_state, canv_open):
+    if page_state == "plotting":
+        if not canv_open:
+            return True
+        else:
+            return False
+
+    else:
+        print("not plotting..")
+        return False
+# show button if we're plotting and if bot-canvas is closed
+
+@app.callback(
+    Output("offcanvas-bot", "is_open"),
+    Input("open-bot", "n_clicks"),
+    Input("close-bot", "n_clicks"),
+    Input("page_state", "data"),
+    prevent_initial_call=True,
+)
+def toggle_bot_canv(open_cl, close_cl, page_state):
+    if page_state == "plotting":
+        if dash.callback_context.triggered_id[0:4] == "open":
+            return True
+        else:
+            return False
+    else:
+        return False
+
+
+
+# END BOTTOM BAR CALLBACKS
 
 
 # CALLBACKS FOR SCATTERPLOT

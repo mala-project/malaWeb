@@ -20,6 +20,7 @@ body {
 
 .logo {
     display: block;
+    width: 10rem;
     margin-right: auto;
     margin-left: auto;
     justify-content: center;
