@@ -59,7 +59,9 @@ orientation_style = {
     'height': '3em',
     'width': '3em',
     'background': '#f8f9fa',
+    'position': 'fixed',
     'margin-top': '75vh',
+    'margin-right': '0.5vw'
 }
 
 #Graph-Object Scene
@@ -157,19 +159,19 @@ orient_plot = dcc.Graph(id="orientation", responsive=True, figure=orient_fig, st
 #------------------------------------
 # Table
 
-row1 = html.Tr([html.Td(indent.join("Band - Energy"), style={'text-align': 'center'})],
+row1 = html.Tr([html.Td(indent.join("Band - Energy"), style={'text-align': 'center', 'padding': 3})],
                style={"font-weight": "bold"})
-row2 = html.Tr([html.Td(0, id="bandEn", style={'text-align': 'right'})])
-row3 = html.Tr([html.Td(indent.join("Total - Energy"), style={'text-align': 'center'})],
+row2 = html.Tr([html.Td(0, id="bandEn", style={'text-align': 'right', 'padding': 5})])
+row3 = html.Tr([html.Td(indent.join("Total - Energy"), style={'text-align': 'center', 'padding': 3})],
                style={"font-weight": "bold"})
-row4 = html.Tr([html.Td(0, id="totalEn", style={'text-align': 'right'})])
-row5 = html.Tr([html.Td(indent.join("Fermi - Energy"), style={'text-align': 'center'})],
+row4 = html.Tr([html.Td(0, id="totalEn", style={'text-align': 'right', 'padding': 5})])
+row5 = html.Tr([html.Td(indent.join("Fermi - Energy"), style={'text-align': 'center', 'padding': 3})],
                style={"font-weight": "bold"})
-row6 = html.Tr([html.Td("placeholder", id='fermiEn', style={'text-align': 'right'})])
+row6 = html.Tr([html.Td("placeholder", id='fermiEn', style={'text-align': 'right', 'padding': 5})])
 table_body = [html.Tbody([row1, row2, row3, row4, row5, row6])]
 
 
-table = dbc.Table(table_body, bordered=True, striped=True, style={'width': 'min-content'})
+table = dbc.Table(table_body, bordered=True, striped=True, style={'height': 'min-content', 'padding': 0, 'margin': 0})
 
 
 
@@ -286,15 +288,25 @@ r_content_sc = html.Div([
 
 
 
-# Bottom BAR ontent
-bot_content = html.Div(dbc.Row([
+# Bottom BAR content
+bot_content = dbc.Container([
 
-    dbc.Col(table, style={'heigth': 'min-content'}),
-    dbc.Col([
-        #html.H4(indent.join('2D-Density-of-State-Plot'), style={'color': 'white', 'margin-top': '1.5rem'}),
-        dcc.Graph(id="dos-plot", style={'width': 'min-content', 'height': 'min-content'})])
+    dbc.Row(
+        dbc.Col(
+            dbc.Button(html.P("Close", style={"line-height": "0.65em", "font-size": "0.65em"}),
+                       id="open-bot", style={"width": "5em", "height": "1.2em"}, n_clicks=0),
+            style={'width': 'min-content', 'margin-bottom': '1em'}, width=2
+        ), justify='center', className="g-0"
+    ),
 
-], style={'min-width': '1000px', 'height': 'min-content'}))
+    dbc.Row([
+
+        dbc.Col(dbc.Card(dbc.CardBody(table)), style={'height': 'min-content'}, width='auto', align="end"),
+        dbc.Col(dbc.Card(dbc.CardBody(dcc.Graph(id="dos-plot", style={'width': '30vh', 'height': '15vh'}))), width='auto'),
+
+    ], style={'height': 'min-content'}, justify='center')
+
+])
 
 # --------------------------
 
@@ -322,23 +334,28 @@ side_r = html.Div([
 
 # Bottom BAR
 bot = html.Div([dbc.Offcanvas(bot_content, id="offcanvas-bot", is_open=True,
-                  style={'width': 'min-content', 'height': 'min-content', 'border-radius': '10px',
-                         'box-shadow': 'rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px',
-                         'position': 'absolute'},
-                  scrollable=True, backdrop=False, placement='bottom' )])
-
-# Orientation plot
-orient_canv = html.Div(
-    dbc.Offcanvas(orient_plot, id="offcanvas-orient", is_open=True,
-                  style={'width': '300px', 'height': '300px',
-                         'background': 'black',
-                         'margin-top': '70vh',
-                         'margin-right': '0.5vw', 'border-radius': '4px',
-                         'box-shadow': 'rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px',
-                         'position': 'absolute', },
-                  scrollable=True, backdrop=False, placement='end')),
+                  style={'height': 'min-content', 'border-radius': '5px',
+                         'margin-left': '15vw',
+                         'margin-right': '15vw',
+                         'background-color': 'rgba(0, 0, 0, .25)'},
+                  scrollable=True, backdrop=False, close_button=False, placement='bottom')])
 
 
+bot_button = html.Div(dbc.Offcanvas([
+
+
+    dbc.Row([
+        dbc.Col(dbc.Button(html.P("Energy / Density of State", style={"line-height": "0.65em", "font-size": "0.65em"}),
+                       id="open-bot", style={"width": "10em", "height": "1.2em"}, n_clicks=0), width=2)
+    ], justify='center')
+
+
+
+    ],id="bot-button", style={'height': 'min-content','position': 'absolute',
+                         'background-color': 'rgba(0, 0, 0, 0)', 'border': '0'},
+
+                  is_open=True, scrollable=True, backdrop=False, close_button=False, placement='bottom')
+)
 
 
 # TODO: Orientation fig & bottom offcanvas (table+dos)
@@ -347,8 +364,9 @@ orient_canv = html.Div(
 
 #---------------------------------
 # Plots for the created Figures
-scatter_plot = [
-    # Center
+main_plot = [
+
+
     dcc.Store(id="cam_store"),
     dbc.Row([
         # Plot section
@@ -356,6 +374,10 @@ scatter_plot = [
             [
                 dbc.Card(dbc.CardBody(
                     [
+
+                        dcc.Graph(id="orientation", responsive=True, figure=orient_fig, style=orientation_style,
+                                  config={'displayModeBar': False}),
+
                         html.Div(
                             dcc.Graph(id="scatter-plot", responsive=True, figure=def_fig, style=plot_layout),
                             className="density-scatter-plot"
@@ -369,7 +391,7 @@ scatter_plot = [
                         dbc.Row([
                             html.Hr(),
                             dbc.Button(html.P("Tools", style={"line-height": "0.65em", "font-size": "0.65em"}),
-                                       id="open-sc-tools", style={"width": "5em", "height": "1em"}, n_clicks=0)
+                                       id="open-sc-tools", style={"width": "5em", "height": "1.2em"}, n_clicks=0)
                         ], justify="center", style={"text-align": "center"}),
 
                         dbc.Row(
@@ -456,25 +478,14 @@ scatter_plot = [
                                     ]
                                 )),
                                 id="sc-tools-collapse",
-                                is_open=False)
+                                is_open=False), style={'margin-top': '1em'}
                         )
                     ]
                 ), style={'background-color': 'rgba(248, 249, 250, 1)', 'width': 'min-content',
                           'align-content': 'center', 'margin-top': '1.5rem'}),
             ],
             className="plot-section"),
-
-        # Right
-        dbc.Col(
-            #
-            # ..
-            # Settingsbar
-            [
-
-            ], style={}, id="r_sc")
-
     ]),
-
 ]
 
 
@@ -490,32 +501,29 @@ mc0_landing = html.Div([
               html.Div('Upload a .cube-File for MALA to process'),
               html.Div('Then choose a style for plotting')],
              style={'text-align': 'center'}),
+
 ], style={'width': 'content-min', 'margin-top': '20vh'})
 
 skel_layout = [dbc.Row([
         dbc.Col(
 
             [side_l,
-             dbc.Button(">", id="open-offcanvas-l", n_clicks=0, style={'position': 'fixed', 'margin-top': '40vh',
-                                                                       'margin-left': '0.5vw'}),
-            bot     # it doesn't matter where offcanvasses are placed here - only their "placement"-prop matters
+             dbc.Button(">", id="open-offcanvas-l", n_clicks=0, style={'margin-top': '40vh'}),
+            bot_button, bot     # it doesn't matter where offcanvasses are placed here - only their "placement"-prop matters
              ],
-            id="l0", width=1, style={'background-color': 'red'}),
+            id="l0", width='auto', style={'background-color': 'red'}),
 
-        dbc.Col(mc0_landing, id="mc0", width=10, style={'background-color': 'blue'}),
+        dbc.Col(mc0_landing, id="mc0", width='auto', style={'background-color': 'blue'}),
 
         dbc.Col(
             [
                 side_r,
-                dbc.Button("<", id="open-settings-sc", n_clicks=0, style={'align': 'end'}),
-                #orient_canv,
-                dcc.Graph(id="orientation", responsive=True, figure=orient_fig, style=orientation_style,
-                          config={'displayModeBar': False}),
+                dbc.Button("<", id="open-settings-sc", n_clicks=0, style={'margin-top': '40vh',}),
              ],
 
-            id="r0", width=1, style={'background-color': 'green'})
+            id="r0", width='auto', style={'background-color': 'green'})
 
-    ])]
+    ], justify='center')]
 
 
 p_layout_landing = dbc.Container([
@@ -525,7 +533,7 @@ p_layout_landing = dbc.Container([
         dcc.Store(id="choice_store"),
         dcc.Store(id="sc_settings"),
         html.Div(skel_layout, id="content-layout")
-    ], fluid=True, style={'height': '100vh', 'width': '100', 'background-color': '#023B59'})
+    ], fluid=True, style={'height': '100vh', 'width': '100vw', 'background-color': '#023B59'})
 
 app.layout = p_layout_landing
 
@@ -1046,7 +1054,7 @@ def updateMC0(state, plots, data):
         return mc0_landing
 
     elif state == "plotting":
-        return scatter_plot
+        return main_plot
 
 
 '''
@@ -1427,4 +1435,4 @@ def uploadStatus(filename, contents, data, reset):
 # END OF CALLBACKS FOR SIDEBAR
 
 if __name__ == '__main__':
-    app.run_server(debug=True, port=8051)
+    app.run_server(debug=True, port=8050)
