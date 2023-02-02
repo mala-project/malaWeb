@@ -1269,7 +1269,7 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
             cmin=min(df['val']),
             cmax=max(df['val']),
             showlegend=False,
-            colorbar={'thickness': 10}
+            colorbar={'thickness': 10, 'len': 0.9}
         ))
     else:
         fig_upd=def_fig
@@ -1282,7 +1282,7 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
     # UPDATING FIG-SCENE- and Layout- PROPERTIES
     fig_upd.update_layout(margin=dict(l=0, r=0, b=0, t=0), paper_bgcolor="#f8f9fa", showlegend=False,
                           modebar_remove=["zoom", "resetcameradefault", "resetcameralastsave"])
-    fig_upd.update_coloraxes(colorbar={'thickness': 10, 'title': ''})
+    fig_upd.update_coloraxes(colorbar={'thickness': 10, 'title': '', 'len': 0.9})
 
     # CAMERA
     if dash.callback_context.triggered_id == "default-cam":
@@ -1334,19 +1334,20 @@ Sets transition options used during Plotly.react updates."
 '''
 
 
-
 @app.callback(
     Output("orientation", "figure"),
     Input("cam_store", "data"),
-    State("scatter-plot", "figure")
+    State("scatter-plot", "figure"),
+    prevent_initial_call=True
 )
 def updateOrientation(saved_cam, fig):
     fig_upd=orient_fig
-    fig_upd.update_layout(scene_camera=saved_cam, clickmode="none")
+    print(saved_cam)
+    fig_upd.update_layout(scene_camera={'up': {'x': 0, 'y': 0, 'z': 1}, 'center': {'x': 0, 'y': 0, 'z': 0},
+                                        'eye': saved_cam['eye']}, clickmode="none")
     return fig_upd
 
 
-# TODO: updateDoS
 @app.callback(
     Output("dos-plot", "figure"),
     Output("bandEn", "children"),
@@ -1367,7 +1368,9 @@ def update_bot_canv(f_data, state):
         fig.add_trace(
             go.Scatter(x=df.index, y=df[0], name='densityOfstate',
                        line=dict(color='#f15e64', width=3, dash='dot')))
-        fig.update_layout(margin=dict(l=0, r=0, b=0, t=0), modebar_remove=["zoom2d", "pan2d", "select2d", "lasso2d", "zoomIn2d", "zoomOut2d", "autoScale2d", "resetScale2d"])
+        fig.update_layout(margin=dict(l=0, r=0, b=0, t=0), modebar_remove=["zoom2d", "pan2d", "select2d", "lasso2d", "zoomIn2d", "zoomOut2d", "autoScale2d", "resetScale2d"],
+                          #xaxis={"fixedrange" = True}, fig.layout.yaxis.fixedrange = True
+        )
 
         # TABLE data
         # take the first
@@ -1429,7 +1432,6 @@ def toggle_settings_bar(n1, reset, is_open):
     prevent_initial_call=True
 )
 def toggle_settings_button(state):
-    print(state)
     if state == "plotting":
         return {'visibility': 'visible', 'margin-top': '40vh', 'position': 'absolute', 'right': '0'}
     else:
