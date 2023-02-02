@@ -1,16 +1,11 @@
 # IMPORTS
-import itertools
-import json
-import random
-
 import mala_inference
 import ase.io
 import dash
 from dash.dependencies import Input, Output, State
-from dash import dcc, html, dash_table
+from dash import dcc, html
 
 import dash_bootstrap_components as dbc
-# from dash_bootstrap_templates import load_figure_template
 from dash.exceptions import PreventUpdate
 
 # visualization
@@ -112,7 +107,7 @@ dos_plot_layout = {
     'background': '#f8f9fa',
 }
 
-# TODO: (optional) ability to en-/disable individual Atoms (that are in the uploaded file) and let MALA recalculate
+# TODO: IDEA: ability to en-/disable individual Atoms (that are in the uploaded file) and let MALA recalculate
 #  -> helps see each Atoms' impact in the grid
 
 
@@ -131,8 +126,8 @@ indent = '      '
 # defining plot-choice-items
 radioItems = dbc.RadioItems(
     options=[
-        {"label": "Scatter", "value": "scatter"},
-        {"label": "Isosurface", "value": "volume"},
+        {"label": "Points", "value": "scatter"},
+        {"label": "Volume", "value": "volume"},
     ], style={"font-size": "0.85em"},
     inline=True,
     id="plot-choice",
@@ -143,6 +138,7 @@ radioItems = dbc.RadioItems(
 def_fig = go.Figure(go.Scatter3d(x=[1], y=[1], z=[1], showlegend=False))
 def_fig.update_scenes(xaxis_visible=False, yaxis_visible=False, zaxis_visible=False, xaxis_showgrid=False,
                       yaxis_showgrid=False, zaxis_showgrid=False)
+
 
 
 orient_fig = go.Figure()
@@ -159,13 +155,13 @@ orient_plot = dcc.Graph(id="orientation", responsive=True, figure=orient_fig, st
 #------------------------------------
 # Table
 
-row1 = html.Tr([html.Td(indent.join("Band - Energy"), style={'text-align': 'center', 'padding': 3})],
+row1 = html.Tr([html.Td("Band - Energy", style={'text-align': 'center', 'padding': 3})],
                style={"font-weight": "bold"})
 row2 = html.Tr([html.Td(0, id="bandEn", style={'text-align': 'right', 'padding': 5})])
-row3 = html.Tr([html.Td(indent.join("Total - Energy"), style={'text-align': 'center', 'padding': 3})],
+row3 = html.Tr([html.Td('Total - Energy', style={'text-align': 'center', 'padding': 3})],
                style={"font-weight": "bold"})
 row4 = html.Tr([html.Td(0, id="totalEn", style={'text-align': 'right', 'padding': 5})])
-row5 = html.Tr([html.Td(indent.join("Fermi - Energy"), style={'text-align': 'center', 'padding': 3})],
+row5 = html.Tr([html.Td("Fermi - Energy", style={'text-align': 'center', 'padding': 3})],
                style={"font-weight": "bold"})
 row6 = html.Tr([html.Td("placeholder", id='fermiEn', style={'text-align': 'right', 'padding': 5})])
 table_body = [html.Tbody([row1, row2, row3, row4, row5, row6])]
@@ -199,9 +195,7 @@ menu = html.Div([
 
                             html.Div(children='''
                             Upload atompositions via .cube! (later npy)
-                            ''', style={'text-align': 'center'}),
-                            # TODO: make this give dynamic promts (like "choose a plot!")
-                            # right now we're reloading the whole "welcome mala"-cell for that
+                            ''', style={'text-align': 'center', 'font-size': '0.85em'}),
 
                             dcc.Upload(
                                 id='upload-data',
@@ -226,9 +220,8 @@ menu = html.Div([
                                 multiple=False
                             ),
                             html.Div("Awaiting upload..", id='output-upload-state',
-                                     style={'margin': '2px', "font-size": "0.85em",
-                                    'textAlign': 'center',}),
-                            dbc.Button("reset", id="reset-data", style={'margin-left': "1.75em"})
+                                     style={'margin': '2px', "font-size": "0.85em", 'textAlign': 'center'}),
+                            dbc.Button("reset", id="reset-data", style={"line-height": "0.85em", 'height': 'min-content', 'margin-left': "2.2em", 'font-size': '0.85em'})
 
                         ], className="upload-section"
                         ),
@@ -250,7 +243,7 @@ menu = html.Div([
             ], className="sidebar")
 
 # Right SIDEBAR (default) content
-r_content_sc = html.Div([
+r_content = html.Div([
     html.H5("Settings"),
     dbc.Card(dbc.CardBody(
         [
@@ -258,21 +251,21 @@ r_content_sc = html.Div([
             html.H6("Camera"),
             dbc.ButtonGroup(
                 [
-                    dbc.Button('Def.', id='default-cam', n_clicks=0),
-                    dbc.Button('X-Y', id='x-y-cam', n_clicks=0),
-                    dbc.Button('X-Z', id='x-z-cam', n_clicks=0),
-                    dbc.Button('Y-Z', id='y-z-cam', n_clicks=0)
+                    dbc.Button('Def.', id='default-cam', n_clicks=0, style={"font-size": "0.85em"}),
+                    dbc.Button('X-Y', id='x-y-cam', n_clicks=0, style={"font-size": "0.85em"}),
+                    dbc.Button('X-Z', id='x-z-cam', n_clicks=0, style={"font-size": "0.85em"}),
+                    dbc.Button('Y-Z', id='y-z-cam', n_clicks=0, style={"font-size": "0.85em"})
                 ], vertical=True, size="sm",
             ),
             html.Hr(),
 
-            dbc.Checkbox(label='Outline', value=True, id='sc-outline', style={'text-align': 'left'}),
-            dbc.Checkbox(label='Atoms', value=True, id='sc-atoms', style={'text-align': 'left'}),
+            dbc.Checkbox(label='Outline', value=True, id='sc-outline', style={'text-align': 'left', "font-size": "0.85em"}),
+            dbc.Checkbox(label='Atoms', value=True, id='sc-atoms', style={'text-align': 'left', "font-size": "0.85em"}),
 
             html.Hr(),
 
             html.H6("", id="sz/isosurf-label"),
-            html.Div(dcc.Slider(6, 18, 2, value=12, id='sc-size', vertical=True, verticalHeight=150), style={'margin-left': '1rem'}),
+            html.Div(dcc.Slider(6, 18, 2, value=12, id='sc-size', vertical=True, verticalHeight=150), style={'margin-left': '1.2em'}),
 
             html.Hr(),
 
@@ -282,10 +275,6 @@ r_content_sc = html.Div([
 
         ]
     ))], style={'text-align': 'center'})
-
-
-
-
 
 # Bottom BAR content
 bot_content = dbc.Container([
@@ -308,7 +297,6 @@ bot_content = dbc.Container([
 ])
 
 # --------------------------
-
 # Filling offcanvasses with respective content
 
 # Left SIDEBAR
@@ -317,13 +305,14 @@ side_l = html.Div([
                   style={'width': '12rem', 'margin-top': '3rem', 'left': '0', 'border-top-right-radius': '5px',
                          'border-bottom-right-radius': '5px',
                          'height': 'min-content',
-                         'box-shadow': 'rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px'},
-),
+                         'box-shadow': 'rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px',
+                         }
+    )
 ])
 
 # Right SIDEBAR
 side_r = html.Div([
-    dbc.Offcanvas(r_content_sc, id="offcanvas-r-sc", is_open=False,
+    dbc.Offcanvas(r_content, id="offcanvas-r-sc", is_open=False,
                   style={'width': '9rem', 'height': 'min-content',
                          'margin-top': '3em',
                          'margin-right': '0', 'border-top-left-radius': '5px', 'border-bottom-left-radius': '5px',
@@ -334,15 +323,16 @@ side_r = html.Div([
 # Bottom BAR
 bot = html.Div([dbc.Offcanvas(bot_content, id="offcanvas-bot", is_open=False,
                   style={'height': 'min-content', 'width': 'max-content', 'border-radius': '5px',
-                         'background-color': 'rgba(0, 0, 0, .25)',
+                         'background-color': 'rgba(248, 249, 250, 1)',
                          'left': '0',
                          'right': '0',
                          'margin': 'auto',
-                         'bottom': '0.5em'
+                         'bottom': '0.5em',
+                         'box-shadow': 'rgba(0, 0, 0, 0.3) 0px 0px 16px -8px'
                          },
                   scrollable=True, backdrop=False, close_button=False, placement='bottom')])
 
-
+# button to open bottom bar
 bot_button = html.Div(dbc.Offcanvas([
 
     dbc.Row(
@@ -366,11 +356,6 @@ bot_button = html.Div(dbc.Offcanvas([
                   is_open=False, scrollable=True, backdrop=False, close_button=False, placement='bottom')
 )
 
-
-# TODO: Orientation fig & bottom offcanvas (table+dos)
-
-
-
 #---------------------------------
 # Plots for the created Figures
 main_plot = [
@@ -383,7 +368,7 @@ main_plot = [
         [
 
             dcc.Graph(id="orientation", responsive=True, figure=orient_fig, style=orientation_style,
-                      config={'displayModeBar': False, 'displaylogo': False}),
+                      config={'displayModeBar': False, 'displaylogo': False, 'showAxisDragHandles': True}),
 
             html.Div(
                 dcc.Graph(id="scatter-plot", responsive=True, figure=def_fig, style=plot_layout, config={'displaylogo': False}),
@@ -493,7 +478,6 @@ main_plot = [
 
 ]
 
-
 # ----------------
 # landing-cell for mc0
 mc0_landing = html.Div([
@@ -526,6 +510,11 @@ skel_layout = [dbc.Row([
     ], justify='center')]
 
 
+
+
+# All the previously defined Components are not yet rendered in our app. They have to be inside app.layout
+# app.layouts content gets updated, which makes our app reactive
+
 p_layout_landing = dbc.Container([
         dcc.Store(id="page_state", data="landing"),
         dcc.Store(id="df_store", storage_type="session"),
@@ -533,14 +522,11 @@ p_layout_landing = dbc.Container([
         dcc.Store(id="sc_settings"),
         html.Div(skel_layout, id="content-layout")
     ], fluid=True, style={'height': '100vh', 'width': '100vw', 'background-color': '#023B59'})
-
 app.layout = p_layout_landing
 
+# The Div in p_layout_plotting will be redefined on page_state-change
 
-# p_layout_plotting will be redefined on page_state-change
-# parts of plotting_layout will be redefined on data-upload
 
-# FGEDF4 as contrast ??
 
 
 # CALLBACKS & FUNCTIONS
@@ -1357,8 +1343,6 @@ def updateOrientation(saved_cam, fig):
      Input("page_state", "data")]
 )
 def update_bot_canv(f_data, state):
-
-
     if f_data is not None:
         # PLOT data
         dOs = f_data['MALA_DATA']['density_of_states']
@@ -1369,7 +1353,6 @@ def update_bot_canv(f_data, state):
             go.Scatter(x=df.index, y=df[0], name='densityOfstate',
                        line=dict(color='#f15e64', width=3, dash='dot')))
         fig.update_layout(margin=dict(l=0, r=0, b=0, t=0), modebar_remove=["zoom2d", "pan2d", "select2d", "lasso2d", "zoomIn2d", "zoomOut2d", "autoScale2d", "resetScale2d"],
-                          #xaxis={"fixedrange" = True}, fig.layout.yaxis.fixedrange = True
         )
 
         # TABLE data
@@ -1377,6 +1360,7 @@ def update_bot_canv(f_data, state):
         band_en = f_data['MALA_DATA']['band_energy']
         total_en = f_data['MALA_DATA']['total_energy']
         fermi_en = 0
+        # TODO: add Fermi-Energy here as soon as MALA's Inference delivers that too
 
     else:
         fig = px.scatter()
@@ -1403,7 +1387,7 @@ def update_bot_canv(f_data, state):
 )
 def updateSettings(plot_choice):
     if plot_choice == "scatter":
-        return "Size", {'visibility': 'visible'}, {'visibility': 'visible', 'width': '5em'}
+        return "Size", {'visibility': 'visible'}, {'visibility': 'visible', 'width': '5em', 'margin-left': '0.25em'}
     elif plot_choice == "volume":
         return "Resolution", {'visibility': 'hidden'}, {'visibility': 'hidden'}
     else:
@@ -1494,4 +1478,4 @@ def uploadStatus(filename, contents, data, reset):
 # END OF CALLBACKS FOR SIDEBAR
 
 if __name__ == '__main__':
-    app.run_server(debug=True, port=8050)
+    app.run_server(debug=True, port=8051)
