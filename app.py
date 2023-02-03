@@ -29,13 +29,9 @@ templ1 = dict(layout=go.Layout(
                   'visible': False},
         'aspectmode': 'data'
     },
-    xaxis={
-        'dtick': 2,
-        'visible': True,
-        'linewidth': 5,
-    },
     paper_bgcolor='#f8f9fa',
 ))
+
 
 default_scatter_marker = dict(marker=dict(
     size=12,
@@ -155,19 +151,19 @@ orient_plot = dcc.Graph(id="orientation", responsive=True, figure=orient_fig, st
 #------------------------------------
 # Table
 
-row1 = html.Tr([html.Td("Band - Energy", style={'text-align': 'center', 'padding': 3})],
+row1 = html.Tr([html.Td("Band - Energy", style={'text-align': 'center', 'padding': 3, 'font-size': '0.85em'})],
                style={"font-weight": "bold"})
-row2 = html.Tr([html.Td(0, id="bandEn", style={'text-align': 'right', 'padding': 5})])
-row3 = html.Tr([html.Td('Total - Energy', style={'text-align': 'center', 'padding': 3})],
+row2 = html.Tr([html.Td(0, id="bandEn", style={'text-align': 'right', 'padding': 5, 'font-size': '0.85em'})])
+row3 = html.Tr([html.Td('Total - Energy', style={'text-align': 'center', 'padding': 3, 'font-size': '0.85em'})],
                style={"font-weight": "bold"})
-row4 = html.Tr([html.Td(0, id="totalEn", style={'text-align': 'right', 'padding': 5})])
-row5 = html.Tr([html.Td("Fermi - Energy", style={'text-align': 'center', 'padding': 3})],
+row4 = html.Tr([html.Td(0, id="totalEn", style={'text-align': 'right', 'padding': 5, 'font-size': '0.85em'})])
+row5 = html.Tr([html.Td("Fermi - Energy", style={'text-align': 'center', 'padding': 3, 'font-size': '0.85em'})],
                style={"font-weight": "bold"})
-row6 = html.Tr([html.Td("placeholder", id='fermiEn', style={'text-align': 'right', 'padding': 5})])
+row6 = html.Tr([html.Td("placeholder", id='fermiEn', style={'text-align': 'right', 'padding': 5, 'font-size': '0.85em'})])
 table_body = [html.Tbody([row1, row2, row3, row4, row5, row6])]
 
 
-table = dbc.Table(table_body, bordered=True, striped=True, style={'height': 'min-content', 'padding': 0, 'margin': 0})
+table = dbc.Table(table_body, bordered=True, striped=True, style={'padding': 0, 'margin': 0})
 
 
 
@@ -248,7 +244,7 @@ r_content = html.Div([
     dbc.Card(dbc.CardBody(
         [
 
-            html.H6("Camera"),
+            html.H6("Camera", style={"font-size": "0.95em"}),
             dbc.ButtonGroup(
                 [
                     dbc.Button('Def.', id='default-cam', n_clicks=0, style={"font-size": "0.85em"}),
@@ -264,12 +260,12 @@ r_content = html.Div([
 
             html.Hr(),
 
-            html.H6("", id="sz/isosurf-label"),
+            html.H6("", id="sz/isosurf-label", style={"font-size": "0.95em"}),
             html.Div(dcc.Slider(6, 18, 2, value=12, id='sc-size', vertical=True, verticalHeight=150), style={'margin-left': '1.2em'}),
 
             html.Hr(),
 
-            html.H6("Opacity", id="opac-label"),
+            html.H6("Opacity", id="opac-label", style={"font-size": "0.95em"}),
             dbc.Input(type="number", min=0.1, max=1, step=0.1, id="sc-opac", placeholder="0.1 - 1", style={"width": "7em", 'margin-left': '1.5rem'}, size="sm"),
 
 
@@ -279,20 +275,15 @@ r_content = html.Div([
 # Bottom BAR content
 bot_content = dbc.Container([
 
-    dbc.Row(
-        dbc.Col(
-            dbc.Button(html.P("Close", style={"line-height": "0.65em", "font-size": "0.65em"}),
-                       id="close-bot", style={"width": "5em", "height": "1.2em"}, n_clicks=0),
-            style={'width': 'min-content', 'margin-bottom': '1em'}, width=2
-        ), justify='center', className="g-0"
-    ),
-
     dbc.Row([
 
-        dbc.Col(dbc.Card(dbc.CardBody(table)), style={'height': 'min-content'}, width='auto', align="end"),
-        dbc.Col(dbc.Card(dbc.CardBody(dcc.Graph(id="dos-plot", style={'width': '30vh', 'height': '15vh'}))), width='auto'),
+        dbc.Col(dbc.Card(dbc.CardBody(table)), width='auto'),
+        dbc.Col(dbc.Card(dbc.CardBody([
+            html.H6('Density of State', style={'font-size': '0.85em', 'font-weight': 'bold'}),
+            dcc.Graph(id="dos-plot", style={'width': '20vh', 'height': '10vh'}, config={'displaylogo': False})
+        ])), width='auto', align='center'),
 
-    ], style={'height': 'min-content'}, justify='center')
+    ], style={'height': 'min-content', 'padding': 0}, justify='center')
 
 ])
 
@@ -328,9 +319,10 @@ bot = html.Div([dbc.Offcanvas(bot_content, id="offcanvas-bot", is_open=False,
                          'right': '0',
                          'margin': 'auto',
                          'bottom': '0.5em',
-                         'box-shadow': 'rgba(0, 0, 0, 0.3) 0px 0px 16px -8px'
+                         'box-shadow': 'rgba(0, 0, 0, 0.3) 0px 0px 16px -8px',
+                         'padding': -30
                          },
-                  scrollable=True, backdrop=False, close_button=False, placement='bottom')])
+                  scrollable=True, backdrop=False, placement='bottom')])
 
 # button to open bottom bar
 bot_button = html.Div(dbc.Offcanvas([
@@ -376,10 +368,7 @@ main_plot = [
             ),
 
 
-
-
             # Tools
-
             dbc.Row([
                 html.Hr(),
                 dbc.Button(html.P("Tools", style={"line-height": "0.65em", "font-size": "0.65em"}),
@@ -599,11 +588,10 @@ def toggle_bot_button(page_state, canv_open):
 @app.callback(
     Output("offcanvas-bot", "is_open"),
     Input("open-bot", "n_clicks"),
-    Input("close-bot", "n_clicks"),
     Input("page_state", "data"),
     prevent_initial_call=True,
 )
-def toggle_bot_canv(open_cl, close_cl, page_state):
+def toggle_bot_canv(open_cl, page_state):
 
     if page_state == "plotting":
         if dash.callback_context.triggered_id[0:4] == "open":
@@ -1351,8 +1339,9 @@ def update_bot_canv(f_data, state):
         fig = go.Figure()
         fig.add_trace(
             go.Scatter(x=df.index, y=df[0], name='densityOfstate',
-                       line=dict(color='#f15e64', width=3, dash='dot')))
-        fig.update_layout(margin=dict(l=0, r=0, b=0, t=0), modebar_remove=["zoom2d", "pan2d", "select2d", "lasso2d", "zoomIn2d", "zoomOut2d", "autoScale2d", "resetScale2d"],
+                       line=dict(color='#f15e64', width=2, dash='dot')))
+        fig.update_layout(margin=dict(l=0, r=0, b=0, t=0), modebar_remove=["zoom2d", "pan2d", "select2d", "lasso2d", "zoomIn2d", "zoomOut2d", "autoScale2d", "resetScale2d"], paper_bgcolor='#f8f9fa', plot_bgcolor='#f8f9fa',
+                          xaxis={'gridcolor': '#D3D3D3', 'dtick': 1, 'linecolor': 'black'}, yaxis={'gridcolor': '#D3D3D3', 'linecolor': 'black'}
         )
 
         # TABLE data
@@ -1389,7 +1378,7 @@ def updateSettings(plot_choice):
     if plot_choice == "scatter":
         return "Size", {'visibility': 'visible'}, {'visibility': 'visible', 'width': '5em', 'margin-left': '0.25em'}
     elif plot_choice == "volume":
-        return "Resolution", {'visibility': 'hidden'}, {'visibility': 'hidden'}
+        return "Resolution", {'visibility': 'hidden', "font-size": "0.95em"}, {'visibility': 'hidden'}
     else:
         raise PreventUpdate
 
