@@ -2,7 +2,7 @@
 Web app to visualize on-the-fly MALA predictions. 
 
 Note: So far, this only renders test-data for BE2. NOT the data that is uploaded. 
-There is only a type-check for .cube happening. If successfull, a hardcoded inference-script is run.
+There is only a file-format-check for .cube happening. If successfull, a hardcoded inference-script is run.
 
 # Installation:
 

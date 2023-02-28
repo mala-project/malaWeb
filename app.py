@@ -362,8 +362,10 @@ main_plot = [
             dcc.Graph(id="orientation", responsive=True, figure=orient_fig, style=orientation_style,
                       config={'displayModeBar': False, 'displaylogo': False, 'showAxisDragHandles': True}),
 
-            html.Div(
+            html.Div([
                 dcc.Graph(id="scatter-plot", responsive=True, figure=def_fig, style=plot_layout, config={'displaylogo': False}),
+                dcc.Graph(id="test-plot", responsive=True, figure=def_fig, style=plot_layout, config={'displaylogo': False})
+                ],
                 className="density-scatter-plot"
             ),
 
@@ -829,10 +831,28 @@ def updatePageState(trig1, trig2, trig3, state):
      Input("reset-data", "n_clicks")],
     prevent_initial_call=True)
 def updateDF(f_data, file, reset):
+    '''
+    Input
+    :param f_data: uploaded data
+    :param file: name of the uploaded file
+    :param reset: trigger for reset of stored data
+    :return: returns two values: (a) a dictionary with the data necessary to render and (b) None, to reset the upload-component
+
+    Output
+    df_store[data] = variable where we store the info necessary to render, so that we can use it in other callbacks
+    upload-data[contents] = temporary location of the uploaded data - gets reset after data is stored
+
+    NOW:
+    after file-check for .cube-format, run mala inference
+    returns density data and energy values
+
+
+    '''
+
     # GOAL:
-    # f_data = uploaded data -> to be .npy
+    # f_data = uploaded data -> .npy, containing atom-positions
     # TODO: smth like (mala_data = mala.webAPI(f_data)) (run a mala .getter(uploadedData))
-    #  --> mala takes uploaded data and returns calculations
+    #  --> mala takes uploaded data (core positions (and atom type?)) and returns calculations
     #  --> waiting for Lenz
 
     # TODO: check if data is valid before updating
@@ -850,11 +870,9 @@ def updateDF(f_data, file, reset):
     # (a) GET DATA FROM MALA (/ inference script)
     print("Running MALA-Inference")
     mala_data = mala_inference.results
-    bandEn = mala_data['band_energy']
-    totalEn = mala_data['total_energy']
+    # contains 'band_energy', 'total_energy', 'density', 'density_of_states', 'energy_grid'
+    # mala_data is stored in df_store dict under key 'MALA_DATA'. Additionally,
     density = mala_data['density']
-    dOs = mala_data['density_of_states']
-    enGrid = mala_data['energy_grid']
 
     coord_arr = np.column_stack(
         list(map(np.ravel, np.meshgrid(*map(np.arange, density.shape), indexing="ij"))) + [density.ravel()])
@@ -862,11 +880,11 @@ def updateDF(f_data, file, reset):
 
     atoms = [[], [], [], [], []]
 
-    # Reding .cube-File
-    # TODO: this has to be done with uploaded .npy
+    # Reading .cube-File
+    # TODO: this will be done with .npy instead of .cube and before running mala inference
 
     # (b) GET ATOMPOSITION & AXIS SCALING FROM .cube CREATED BY MALA (located where 'mala-inference-script' is located
-    atom_data = '/home/maxyyy/PycharmProjects/mala/app/Be2_density.cube'
+    atom_data = './Be2_density.cube'
 
     # 0-1 = Comment, Energy, broadening     //      2 = number of atoms, coord origin
     # 3-5 = number of voxels per Axis (x/y/z), lentgh of axis-vector -> info on cell-warping
@@ -912,6 +930,10 @@ def updateDF(f_data, file, reset):
 
     data_sc.z += y_axis[3] * (data0.y / y_axis[2])
     data_sc.z += x_axis[3] * (data0.x / x_axis[1])
+
+    # TODO Haut nie hin
+    print("MinX: ", min(data_sc.x), "MaxX: ", max(data_sc.x), "Delta: ", max(data_sc.x) + abs(min(data_sc.x)), "Sheared Voxelcount: ", (max(data_sc.x) + abs(min(data_sc.x)) / (x_axis[1]+y_axis[1])) )
+    print(x_axis)
 
     '''
            Importing Data 
@@ -1079,7 +1101,7 @@ cam_store can't be an input or else it triggers an update everytime the cam is m
 
 @app.callback(
     Output("scatter-plot", "figure"),
-    #Output("vtk-plot", "children"),
+    Output("test-plot", "figure"),
     [
         # Tools
         Input("range-slider-dense", "value"),
@@ -1123,12 +1145,14 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
 
     scale = pd.DataFrame(f_data['SCALE'])
     x_axis, y_axis, z_axis = scale.x_axis, scale.y_axis, scale.z_axis
-    x_ratio, y_ratio, z_ratio = x_axis[1], y_axis[2], z_axis[3]
+    # 1 = nr of voxels || 2 = axis scale of x || 3 = axis scale of y || 4 = axis scale of z
 
     if plots == "scatter":
         df = pd.DataFrame(f_data['MALA_DF']['scatter'])
+        # sheared coordinates
     elif plots == "volume":
         df = pd.DataFrame(f_data['MALA_DF']['volume'])
+        # non-sheared coordinates
     else:
         # No Data to plot -> don't update
         raise PreventUpdate
@@ -1204,7 +1228,7 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
 
 
 
-         # creating the figure, updateing some things
+         # creating the figure, updating some things
 
     if plots == "scatter":
         # updating fig according to (cs'd) DF
@@ -1228,10 +1252,10 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
 
 
     elif plots == "volume":
+
         fig_upd = go.Figure(
             data=go.Volume(
-
-            x=dfu.x,        #df for non-sliced
+            x=dfu.x,
             y=dfu.y,
             z=dfu.z,
             value=dfu.val,
@@ -1247,6 +1271,35 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
         ))
     else:
         fig_upd=def_fig
+
+
+
+
+    # ADD TEST_FIG
+
+    print(x_axis)
+    print(y_axis)
+    print(z_axis)
+
+    x = np.linspace(0, x_axis[0], 1)
+
+    X, Y, Z = np.mgrid[:x_axis[0], :y_axis[0], :z_axis[0]]
+    val = np.sin(np.pi * X) * np.cos(np.pi * Z) * np.sin(np.pi * Y)
+
+
+    test_fig = go.Figure(data=go.Volume(
+        x=X.flatten(), y=Y.flatten(), z=Z.flatten(),
+        value=val.flatten(),
+        isomin=0.2,
+        isomax=0.7,
+        opacity=0.1,
+        surface_count=25,
+    ))
+
+    # END
+
+
+
 
 
     # atoms fig
@@ -1285,7 +1338,7 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
     else: new_cam=stored_cam_settings
 
 
-    fig_upd.update_layout(scene_camera=new_cam, template=templ1,)
+    fig_upd.update_layout(scene_camera=new_cam, template=templ1)
     '''
     set camera-position according to the clicked button, 
                                 OR 
@@ -1295,8 +1348,9 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
 
     # adding helperfigure to keep camera-zoom the same, regardless of data(-slicing)-changes
     fig_upd.add_trace(fig_bound)
+    test_fig.add_trace(fig_bound)
 
-    return fig_upd
+    return fig_upd, test_fig
 
 
 ''' maybe interesting: animations on plot change:
@@ -1316,7 +1370,6 @@ Sets transition options used during Plotly.react updates."
 )
 def updateOrientation(saved_cam, fig):
     fig_upd=orient_fig
-    print(saved_cam)
     fig_upd.update_layout(scene_camera={'up': {'x': 0, 'y': 0, 'z': 1}, 'center': {'x': 0, 'y': 0, 'z': 0},
                                         'eye': saved_cam['eye']}, clickmode="none")
     return fig_upd
