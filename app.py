@@ -1,4 +1,11 @@
 # IMPORTS
+import os
+import random
+
+import vtk
+from dash_vtk.utils import to_volume_state
+from vtkmodules.vtkImagingCore import vtkRTAnalyticSource
+
 import mala_inference
 import ase.io
 import dash
@@ -13,6 +20,12 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objs as go
+
+import dash_vtk
+import pyvista as pv
+from pyvista import examples
+
+
 
 # PX--Graph Object Theme
 templ1 = dict(layout=go.Layout(
@@ -114,7 +127,11 @@ print("STARTING UP...")
 
 app = dash.Dash(__name__, external_stylesheets=[dbc.icons.BOOTSTRAP, dbc.themes.BOOTSTRAP],
                 suppress_callback_exceptions=True)
+server = app.server
 app.title = 'MALAweb'
+
+
+
 
 # just needed for styling of some headings
 indent = '      '
@@ -358,16 +375,13 @@ main_plot = [
 
     dbc.Card(dbc.CardBody(
         [
+            dbc.Row([
+                dcc.Graph(id="orientation", responsive=True, figure=orient_fig, style=orientation_style,
+                          config={'displayModeBar': False, 'displaylogo': False, 'showAxisDragHandles': True}),
 
-            dcc.Graph(id="orientation", responsive=True, figure=orient_fig, style=orientation_style,
-                      config={'displayModeBar': False, 'displaylogo': False, 'showAxisDragHandles': True}),
-
-            html.Div([
                 dcc.Graph(id="scatter-plot", responsive=True, figure=def_fig, style=plot_layout, config={'displaylogo': False}),
-                dcc.Graph(id="test-plot", responsive=True, figure=def_fig, style=plot_layout, config={'displaylogo': False})
-                ],
-                className="density-scatter-plot"
-            ),
+            ]),
+
 
 
             # Tools
@@ -466,6 +480,8 @@ main_plot = [
         ]
     ), style={'background-color': 'rgba(248, 249, 250, 1)', 'width': 'min-content',
               'align-content': 'center', 'margin-top': '1.5rem'}),
+
+    html.Div(id="vtk", style={"height": "100%", "width": "100%"}),
 
 ]
 
@@ -867,8 +883,15 @@ def updateDF(f_data, file, reset):
 
     if dash.callback_context.triggered_id == "reset-data":
         return None, None
+
+    # file decoding as done in: https://towardsdatascience.com/3d-mesh-models-in-the-browser-using-python-dash-vtk-e15cbf36a132
+    # data = base64.b64decode(n_ns_b64.split(',')[1])
+    # df_nodes = pd.read_csv(io.StringIO(data.decode('utf-8')), delim_whitespace=True, header=None, skiprows=1, names=['id', 'x', 'y', 'z'])
+
+
     # (a) GET DATA FROM MALA (/ inference script)
     print("Running MALA-Inference")
+    # TODO: This should pass the (decoded?) data of the uploaded file - WAITING for inference to expect parameters
     mala_data = mala_inference.results
     # contains 'band_energy', 'total_energy', 'density', 'density_of_states', 'energy_grid'
     # mala_data is stored in df_store dict under key 'MALA_DATA'. Additionally,
@@ -931,9 +954,6 @@ def updateDF(f_data, file, reset):
     data_sc.z += y_axis[3] * (data0.y / y_axis[2])
     data_sc.z += x_axis[3] * (data0.x / x_axis[1])
 
-    # TODO Haut nie hin
-    print("MinX: ", min(data_sc.x), "MaxX: ", max(data_sc.x), "Delta: ", max(data_sc.x) + abs(min(data_sc.x)), "Sheared Voxelcount: ", (max(data_sc.x) + abs(min(data_sc.x)) / (x_axis[1]+y_axis[1])) )
-    print(x_axis)
 
     '''
            Importing Data 
@@ -1101,7 +1121,7 @@ cam_store can't be an input or else it triggers an update everytime the cam is m
 
 @app.callback(
     Output("scatter-plot", "figure"),
-    Output("test-plot", "figure"),
+    Output("vtk", "children"),
     [
         # Tools
         Input("range-slider-dense", "value"),
@@ -1275,33 +1295,6 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
 
 
 
-    # ADD TEST_FIG
-
-    print(x_axis)
-    print(y_axis)
-    print(z_axis)
-
-    x = np.linspace(0, x_axis[0], 1)
-
-    X, Y, Z = np.mgrid[:x_axis[0], :y_axis[0], :z_axis[0]]
-    val = np.sin(np.pi * X) * np.cos(np.pi * Z) * np.sin(np.pi * Y)
-
-
-    test_fig = go.Figure(data=go.Volume(
-        x=X.flatten(), y=Y.flatten(), z=Z.flatten(),
-        value=val.flatten(),
-        isomin=0.2,
-        isomax=0.7,
-        opacity=0.1,
-        surface_count=25,
-    ))
-
-    # END
-
-
-
-
-
     # atoms fig
     if settings["atoms"]:
         fig_upd.add_trace(atoms_fig)
@@ -1348,9 +1341,48 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
 
     # adding helperfigure to keep camera-zoom the same, regardless of data(-slicing)-changes
     fig_upd.add_trace(fig_bound)
-    test_fig.add_trace(fig_bound)
 
-    return fig_upd, test_fig
+
+
+    # -------------------------------------------------------------------
+    # VTK
+
+        # Prepping Data
+
+    # Data file path
+    demo_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    head_vti = os.path.join(demo_dir, "data", "head.vti")
+
+    # Use VTK to get some data
+    data_source = vtkRTAnalyticSource()
+    data_source.Update()  # <= Execute source to produce an output
+    dataset = data_source.GetOutput()
+    print(dataset)
+
+    # Use helper to get a volume structure that can be passed as-is to a Volume
+    volume_state = to_volume_state(dataset)  # No need to select field
+    print(volume_state)
+
+
+        #Figure
+    # Get point cloud data from PyVista
+
+
+
+
+    vtk_fig = dash_vtk.View([
+    dash_vtk.VolumeRepresentation([
+        # GUI to control Volume Rendering
+        # + Setup good default at startup
+        dash_vtk.VolumeController(),
+        # Actual volume
+        dash_vtk.Volume(state=volume_state),
+    ]),
+])
+    # ------------------------------------------------------------------
+
+
+    return fig_upd, vtk_fig
 
 
 ''' maybe interesting: animations on plot change:
