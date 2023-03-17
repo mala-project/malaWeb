@@ -1,13 +1,6 @@
 # IMPORTS
-import os
-import random
-
-import vtk
-from dash_vtk.utils import to_volume_state
-from vtkmodules.vtkImagingCore import vtkRTAnalyticSource
 
 import mala_inference
-import ase.io
 import dash
 from dash.dependencies import Input, Output, State
 from dash import dcc, html
@@ -21,10 +14,9 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objs as go
 
-import dash_vtk
-import pyvista as pv
-from pyvista import examples
-
+# I/O
+import ase.io
+import dash_uploader as du
 
 
 # PX--Graph Object Theme
@@ -130,6 +122,9 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.icons.BOOTSTRAP, dbc.themes.
 server = app.server
 app.title = 'MALAweb'
 
+# configure upload folder
+du.configure_upload(app, r"./upload")
+
 
 
 
@@ -140,7 +135,7 @@ indent = '      '
 radioItems = dbc.RadioItems(
     options=[
         {"label": "Points", "value": "scatter"},
-        {"label": "Volume", "value": "volume"},
+        {"label": "Volume", "value": "volume", 'id': 'vol-warn'},
     ], style={"font-size": "0.85em"},
     inline=True,
     id="plot-choice",
@@ -207,8 +202,18 @@ menu = html.Div([
                         html.Div([
 
                             html.Div(children='''
-                            Upload atompositions via .cube! (later npy)
+                            Upload atom-positions via file!
                             ''', style={'text-align': 'center', 'font-size': '0.85em'}),
+
+                            html.Div(children='''
+                            Supported files
+                            ''', id="supported-files", style={'text-align': 'center', 'font-size': '0.6em', 'text-decoration': 'underline'}),
+
+                            dbc.Popover(
+                                dbc.PopoverBody("ASE supports the following file-formats: ..."),
+                                target="supported-files",
+                                trigger="hover",
+                            ),
 
                             dcc.Upload(
                                 id='upload-data',
@@ -232,6 +237,7 @@ menu = html.Div([
                                 # don't allow multiple files to be uploaded
                                 multiple=False
                             ),
+                            du.Upload(),
                             html.Div("Awaiting upload..", id='output-upload-state',
                                      style={'margin': '2px', "font-size": "0.85em", 'textAlign': 'center'}),
                             dbc.Button("reset", id="reset-data", style={"line-height": "0.85em", 'height': 'min-content', 'margin-left': "2.2em", 'font-size': '0.85em'})
@@ -252,6 +258,12 @@ menu = html.Div([
                     id="collapse-plot-choice",
                     is_open=False,
                 ),
+
+                dbc.Popover(
+                    dbc.PopoverBody("Skewed cells only supported by Points-style"),
+                    target="open-plot-choice",
+                    trigger="hover",
+                )
 
             ], className="sidebar")
 
@@ -480,8 +492,6 @@ main_plot = [
         ]
     ), style={'background-color': 'rgba(248, 249, 250, 1)', 'width': 'min-content',
               'align-content': 'center', 'margin-top': '1.5rem'}),
-
-    html.Div(id="vtk", style={"height": "100%", "width": "100%"}),
 
 ]
 
@@ -884,14 +894,19 @@ def updateDF(f_data, file, reset):
     if dash.callback_context.triggered_id == "reset-data":
         return None, None
 
-    # file decoding as done in: https://towardsdatascience.com/3d-mesh-models-in-the-browser-using-python-dash-vtk-e15cbf36a132
-    # data = base64.b64decode(n_ns_b64.split(',')[1])
-    # df_nodes = pd.read_csv(io.StringIO(data.decode('utf-8')), delim_whitespace=True, header=None, skiprows=1, names=['id', 'x', 'y', 'z'])
+    # f_data so far is an bas64-encoded string -> not helpful
+    # TODO: implement dash-uploader, so that we have actual files we can give to ASE
+    # --> is implemented and set up to upload to ./upload . Creates an extra folder inside though --> not sure how to identify this for ASE to access it
+    # https://github.com/np-8/dash-uploader
 
+    # ASE INPUT
+    # './upload'
 
     # (a) GET DATA FROM MALA (/ inference script)
     print("Running MALA-Inference")
     # TODO: This should pass the (decoded?) data of the uploaded file - WAITING for inference to expect parameters
+
+
     mala_data = mala_inference.results
     # contains 'band_energy', 'total_energy', 'density', 'density_of_states', 'energy_grid'
     # mala_data is stored in df_store dict under key 'MALA_DATA'. Additionally,
@@ -1121,7 +1136,6 @@ cam_store can't be an input or else it triggers an update everytime the cam is m
 
 @app.callback(
     Output("scatter-plot", "figure"),
-    Output("vtk", "children"),
     [
         # Tools
         Input("range-slider-dense", "value"),
@@ -1343,46 +1357,7 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
     fig_upd.add_trace(fig_bound)
 
 
-
-    # -------------------------------------------------------------------
-    # VTK
-
-        # Prepping Data
-
-    # Data file path
-    demo_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    head_vti = os.path.join(demo_dir, "data", "head.vti")
-
-    # Use VTK to get some data
-    data_source = vtkRTAnalyticSource()
-    data_source.Update()  # <= Execute source to produce an output
-    dataset = data_source.GetOutput()
-    print(dataset)
-
-    # Use helper to get a volume structure that can be passed as-is to a Volume
-    volume_state = to_volume_state(dataset)  # No need to select field
-    print(volume_state)
-
-
-        #Figure
-    # Get point cloud data from PyVista
-
-
-
-
-    vtk_fig = dash_vtk.View([
-    dash_vtk.VolumeRepresentation([
-        # GUI to control Volume Rendering
-        # + Setup good default at startup
-        dash_vtk.VolumeController(),
-        # Actual volume
-        dash_vtk.Volume(state=volume_state),
-    ]),
-])
-    # ------------------------------------------------------------------
-
-
-    return fig_upd, vtk_fig
+    return fig_upd
 
 
 ''' maybe interesting: animations on plot change:
