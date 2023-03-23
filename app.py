@@ -1,4 +1,5 @@
 # IMPORTS
+import base64
 
 import mala_inference
 import dash
@@ -16,8 +17,8 @@ import plotly.graph_objs as go
 
 # I/O
 import ase.io
+from ase.io.cube import read_cube_data
 import dash_uploader as du
-
 
 # PX--Graph Object Theme
 templ1 = dict(layout=go.Layout(
@@ -36,7 +37,6 @@ templ1 = dict(layout=go.Layout(
     },
     paper_bgcolor='#f8f9fa',
 ))
-
 
 default_scatter_marker = dict(marker=dict(
     size=12,
@@ -60,47 +60,46 @@ orientation_style = {
     'margin-right': '0.5vw'
 }
 
-#Graph-Object Scene
+# Graph-Object Scene
 orient_template = {
-        'xaxis': {
-                  'showgrid': False,
-                  'showbackground': False,
-                  'linecolor': 'red',
-                  'linewidth': 0,
-                  'ticks': 'inside',
-                  'showticklabels': False,
-                  'visible': False,
-                    'title': 'x',
+    'xaxis': {
+        'showgrid': False,
+        'showbackground': False,
+        'linecolor': 'red',
+        'linewidth': 0,
+        'ticks': 'inside',
+        'showticklabels': False,
+        'visible': False,
+        'title': 'x',
 
-        },
-        'yaxis': {
-                  'showgrid': False,
-                    'showbackground': False,
-                  'linecolor': 'green',
-                  'linewidth': 0,
-                  'ticks': '',
-                  'showticklabels': False,
-                  'visible': False,
-                    'title': 'y'
-        },
-        'zaxis': {
-                  'showgrid': False,
-                    'showbackground': False,
-                  'linecolor': 'blue',
-                  'linewidth': 0,
-                  'ticks': '',
-                  'showticklabels': False,
-                  'visible': False,
-                    'title': 'z'
-        },
-        'bgcolor': '#f8f9fa',
-    }
+    },
+    'yaxis': {
+        'showgrid': False,
+        'showbackground': False,
+        'linecolor': 'green',
+        'linewidth': 0,
+        'ticks': '',
+        'showticklabels': False,
+        'visible': False,
+        'title': 'y'
+    },
+    'zaxis': {
+        'showgrid': False,
+        'showbackground': False,
+        'linecolor': 'blue',
+        'linewidth': 0,
+        'ticks': '',
+        'showticklabels': False,
+        'visible': False,
+        'title': 'z'
+    },
+    'bgcolor': '#f8f9fa',
+}
 '''
     'height': '8vh',
     'width': '8.33vw',
     
 '''
-
 
 dos_plot_layout = {
     'height': '400px',
@@ -112,8 +111,6 @@ dos_plot_layout = {
 #  -> helps see each Atoms' impact in the grid
 
 
-
-
 print("_________________________________________________________________________________________")
 print("STARTING UP...")
 
@@ -123,9 +120,9 @@ server = app.server
 app.title = 'MALAweb'
 
 # configure upload folder
-du.configure_upload(app, r"./upload")
-
-
+du.configure_upload(app, r"./upload", http_request_handler=None)
+# for publicly hosting this app, add http_request_handler=True and implement as in:
+# https://github.com/np-8/dash-uploader/blob/dev/docs/dash-uploader.md
 
 
 # just needed for styling of some headings
@@ -147,20 +144,23 @@ def_fig = go.Figure(go.Scatter3d(x=[1], y=[1], z=[1], showlegend=False))
 def_fig.update_scenes(xaxis_visible=False, yaxis_visible=False, zaxis_visible=False, xaxis_showgrid=False,
                       yaxis_showgrid=False, zaxis_showgrid=False)
 
-
-
 orient_fig = go.Figure()
 
 orient_fig.update_scenes(orient_template)
 orient_fig.update_layout(margin=dict(l=0, r=0, b=0, t=0), title=dict(text="test"))
-orient_fig.add_trace(go.Scatter3d(x=[0, 1], y=[0, 0], z=[0, 0], marker={'color': 'red', 'size': 0}, line={'width': 6}, showlegend=False, hoverinfo='skip'))
-orient_fig.add_trace(go.Scatter3d(x=[0, 0], y=[0, 1], z=[0, 0], marker={'color': 'green', 'size': 0}, line={'width': 6}, showlegend=False, hoverinfo='skip'))
-orient_fig.add_trace(go.Scatter3d(x=[0, 0], y=[0, 0], z=[0, 1], marker={'color': 'blue', 'size': 0}, line={'width': 6}, showlegend=False, hoverinfo='skip'))
+orient_fig.add_trace(
+    go.Scatter3d(x=[0, 1], y=[0, 0], z=[0, 0], marker={'color': 'red', 'size': 0}, line={'width': 6}, showlegend=False,
+                 hoverinfo='skip'))
+orient_fig.add_trace(go.Scatter3d(x=[0, 0], y=[0, 1], z=[0, 0], marker={'color': 'green', 'size': 0}, line={'width': 6},
+                                  showlegend=False, hoverinfo='skip'))
+orient_fig.add_trace(
+    go.Scatter3d(x=[0, 0], y=[0, 0], z=[0, 1], marker={'color': 'blue', 'size': 0}, line={'width': 6}, showlegend=False,
+                 hoverinfo='skip'))
 
-orient_plot = dcc.Graph(id="orientation", responsive=True, figure=orient_fig, style=orientation_style, config={'displayModeBar': False, 'displaylogo': False})
+orient_plot = dcc.Graph(id="orientation", responsive=True, figure=orient_fig, style=orientation_style,
+                        config={'displayModeBar': False, 'displaylogo': False})
 
-
-#------------------------------------
+# ------------------------------------
 # Table
 
 row1 = html.Tr([html.Td("Band - Energy", style={'text-align': 'center', 'padding': 3, 'font-size': '0.85em'})],
@@ -171,101 +171,108 @@ row3 = html.Tr([html.Td('Total - Energy', style={'text-align': 'center', 'paddin
 row4 = html.Tr([html.Td(0, id="totalEn", style={'text-align': 'right', 'padding': 5, 'font-size': '0.85em'})])
 row5 = html.Tr([html.Td("Fermi - Energy", style={'text-align': 'center', 'padding': 3, 'font-size': '0.85em'})],
                style={"font-weight": "bold"})
-row6 = html.Tr([html.Td("placeholder", id='fermiEn', style={'text-align': 'right', 'padding': 5, 'font-size': '0.85em'})])
+row6 = html.Tr(
+    [html.Td("placeholder", id='fermiEn', style={'text-align': 'right', 'padding': 5, 'font-size': '0.85em'})])
 table_body = [html.Tbody([row1, row2, row3, row4, row5, row6])]
-
 
 table = dbc.Table(table_body, bordered=True, striped=True, style={'padding': 0, 'margin': 0})
 
-
-
-
 # -----------------
 # Left SIDEBAR content
+
 menu = html.Div([
-                # Logo Section
-                html.Div([
-                    html.Img(src='https://avatars.githubusercontent.com/u/81354661?s=200&v=4', className="logo"),
-                    html.H2(children='MALA', style={'text-align': 'center'}),
-                    html.Div(children='''
+    # Logo Section
+    html.Div([
+        html.Img(src='https://avatars.githubusercontent.com/u/81354661?s=200&v=4', className="logo"),
+        html.H2(children='MALA', style={'text-align': 'center'}),
+        html.Div(children='''
                     Framework for machine learning materials properties from first-principles data.
                 ''', style={'text-align': 'center'}),
-                ], className="logo"),
+    ], className="logo"),
 
-                html.Hr(style={'margin-bottom': '2rem', 'margin-top': '1rem', 'width': '5rem'}),
+    html.Hr(style={'margin-bottom': '2rem', 'margin-top': '1rem', 'width': '5rem'}),
 
-                dbc.Card(html.H6(children='File-Upload', style={'margin': '5px'}, id="open-upload", n_clicks=0),
-                         style={"text-align": "center"}),
+    dbc.Card(html.H6(children='File-Upload', style={'margin': '5px'}, id="open-upload", n_clicks=0),
+             style={"text-align": "center"}),
 
-                dbc.Collapse(
-                    dbc.Card(dbc.CardBody(  # Upload Section
-                        html.Div([
+    dbc.Collapse(
+        dbc.Card(dbc.CardBody(  # Upload Section
+            html.Div([
 
-                            html.Div(children='''
+                html.Div(children='''
                             Upload atom-positions via file!
                             ''', style={'text-align': 'center', 'font-size': '0.85em'}),
 
-                            html.Div(children='''
+                html.Div(children='''
                             Supported files
-                            ''', id="supported-files", style={'text-align': 'center', 'font-size': '0.6em', 'text-decoration': 'underline'}),
-
-                            dbc.Popover(
-                                dbc.PopoverBody("ASE supports the following file-formats: ..."),
-                                target="supported-files",
-                                trigger="hover",
-                            ),
-
-                            dcc.Upload(
-                                id='upload-data',
-                                children=html.Div([
-                                    'Drag & Drop', html.Br(), 'or ', html.Br(),
-                                    html.A('Click to select')
-                                ]),
-                                style={
-                                    'width': '90%',
-                                    'height': 'auto',
-                                    'lineHeight': '15px',
-                                    'borderWidth': '1px',
-                                    'borderStyle': 'dashed',
-                                    'borderRadius': '5px',
-                                    'textAlign': 'center',
-                                    'margin-left': "0.5em",
-                                    'margin-top': '1em',
-                                    'margin-bottom': '1em',
-                                    "font-size": "0.85em",
-                                },
-                                # don't allow multiple files to be uploaded
-                                multiple=False
-                            ),
-                            du.Upload(),
-                            html.Div("Awaiting upload..", id='output-upload-state',
-                                     style={'margin': '2px', "font-size": "0.85em", 'textAlign': 'center'}),
-                            dbc.Button("reset", id="reset-data", style={"line-height": "0.85em", 'height': 'min-content', 'margin-left': "2.2em", 'font-size': '0.85em'})
-
-                        ], className="upload-section"
-                        ),
-                    )),
-                    id="collapse-upload",
-                    is_open=True,
-                ),
-
-                dbc.Card(
-                    html.H6(children='Plot Style', style={'margin': '5px'}, id="open-plot-choice", n_clicks=0),
-                    style={"text-align": "center", 'margin-top': '15px'}),
-
-                dbc.Collapse(dbc.Card(dbc.CardBody(
-                    html.Div(children=[radioItems]))),
-                    id="collapse-plot-choice",
-                    is_open=False,
-                ),
+                            ''', id="supported-files",
+                         style={'text-align': 'center', 'font-size': '0.6em', 'text-decoration': 'underline'}),
 
                 dbc.Popover(
-                    dbc.PopoverBody("Skewed cells only supported by Points-style"),
-                    target="open-plot-choice",
-                    trigger="hover",
-                )
+                    dbc.PopoverBody(
+                        "ASE supports the following file-formats: " + str(ase.io.formats.ioformats.keys())[11:-2]),
+                    style={'font-size': "0.6em"},
+                    target="supported-files",
+                    trigger="legacy",
+                ),
 
-            ], className="sidebar")
+                dcc.Upload(
+                    id='upload-data',
+                    children=html.Div([
+                        'Drag & Drop', html.Br(), 'or ', html.Br(),
+                        html.A('Click to select')
+                    ]),
+                    style={
+                        'width': '90%',
+                        'height': 'auto',
+                        'lineHeight': '15px',
+                        'borderWidth': '1px',
+                        'borderStyle': 'dashed',
+                        'borderRadius': '5px',
+                        'textAlign': 'center',
+                        'margin-left': "0.5em",
+                        'margin-top': '1em',
+                        'margin-bottom': '1em',
+                        "font-size": "0.85em",
+                    },
+                    # don't allow multiple files to be uploaded
+                    multiple=False
+                ),
+
+                # dash-uploader component (not vanilla)
+                du.Upload(id="upload-data-2", text="Drag & Drop or Click to select",
+                          filetypes=list(ase.io.formats.ioformats.keys())),
+
+                html.Div("Awaiting upload..", id='output-upload-state',
+                         style={'margin': '2px', "font-size": "0.85em", 'textAlign': 'center'}),
+                dbc.Button("reset", id="reset-data",
+                           style={"line-height": "0.85em", 'height': 'min-content', 'margin-left': "2.2em",
+                                  'font-size': '0.85em'})
+
+            ], className="upload-section"
+            ),
+        )),
+        id="collapse-upload",
+        is_open=True,
+    ),
+
+    dbc.Card(
+        html.H6(children='Plot Style', style={'margin': '5px'}, id="open-plot-choice", n_clicks=0),
+        style={"text-align": "center", 'margin-top': '15px'}),
+
+    dbc.Collapse(dbc.Card(dbc.CardBody(
+        html.Div(children=[radioItems]))),
+        id="collapse-plot-choice",
+        is_open=False,
+    ),
+
+    dbc.Popover(
+        dbc.PopoverBody("Skewed cells only supported by Points-style"),
+        target="open-plot-choice",
+        trigger="hover",
+    )
+
+], className="sidebar")
 
 # Right SIDEBAR (default) content
 r_content = html.Div([
@@ -284,19 +291,21 @@ r_content = html.Div([
             ),
             html.Hr(),
 
-            dbc.Checkbox(label='Outline', value=True, id='sc-outline', style={'text-align': 'left', "font-size": "0.85em"}),
+            dbc.Checkbox(label='Outline', value=True, id='sc-outline',
+                         style={'text-align': 'left', "font-size": "0.85em"}),
             dbc.Checkbox(label='Atoms', value=True, id='sc-atoms', style={'text-align': 'left', "font-size": "0.85em"}),
 
             html.Hr(),
 
             html.H6("", id="sz/isosurf-label", style={"font-size": "0.95em"}),
-            html.Div(dcc.Slider(6, 18, 2, value=12, id='sc-size', vertical=True, verticalHeight=150), style={'margin-left': '1.2em'}),
+            html.Div(dcc.Slider(6, 18, 2, value=12, id='sc-size', vertical=True, verticalHeight=150),
+                     style={'margin-left': '1.2em'}),
 
             html.Hr(),
 
             html.H6("Opacity", id="opac-label", style={"font-size": "0.95em"}),
-            dbc.Input(type="number", min=0.1, max=1, step=0.1, id="sc-opac", placeholder="0.1 - 1", style={"width": "7em", 'margin-left': '1.5rem'}, size="sm"),
-
+            dbc.Input(type="number", min=0.1, max=1, step=0.1, id="sc-opac", placeholder="0.1 - 1",
+                      style={"width": "7em", 'margin-left': '1.5rem'}, size="sm"),
 
         ]
     ))], style={'text-align': 'center'})
@@ -327,7 +336,7 @@ side_l = html.Div([
                          'height': 'min-content',
                          'box-shadow': 'rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px',
                          }
-    )
+                  )
 ])
 
 # Right SIDEBAR
@@ -336,30 +345,30 @@ side_r = html.Div([
                   style={'width': '9rem', 'height': 'min-content',
                          'margin-top': '3em',
                          'margin-right': '0', 'border-top-left-radius': '5px', 'border-bottom-left-radius': '5px',
-                         'box-shadow': 'rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px',},
+                         'box-shadow': 'rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px', },
                   scrollable=True, backdrop=False, placement='end'),
 ])
 
 # Bottom BAR
 bot = html.Div([dbc.Offcanvas(bot_content, id="offcanvas-bot", is_open=False,
-                  style={'height': 'min-content', 'width': 'max-content', 'border-radius': '5px',
-                         'background-color': 'rgba(248, 249, 250, 1)',
-                         'left': '0',
-                         'right': '0',
-                         'margin': 'auto',
-                         'bottom': '0.5em',
-                         'box-shadow': 'rgba(0, 0, 0, 0.3) 0px 0px 16px -8px',
-                         'padding': -30
-                         },
-                  scrollable=True, backdrop=False, placement='bottom')])
+                              style={'height': 'min-content', 'width': 'max-content', 'border-radius': '5px',
+                                     'background-color': 'rgba(248, 249, 250, 1)',
+                                     'left': '0',
+                                     'right': '0',
+                                     'margin': 'auto',
+                                     'bottom': '0.5em',
+                                     'box-shadow': 'rgba(0, 0, 0, 0.3) 0px 0px 16px -8px',
+                                     'padding': -30
+                                     },
+                              scrollable=True, backdrop=False, placement='bottom')])
 
 # button to open bottom bar
 bot_button = html.Div(dbc.Offcanvas([
 
     dbc.Row(
         dbc.Col(dbc.Button(html.P("Energy / Density of State",
-                    style={"line-height": "0.65em", "font-size": "0.65em"}),
-                id="open-bot", style={
+                                  style={"line-height": "0.65em", "font-size": "0.65em"}),
+                           id="open-bot", style={
                 "width": "10em",
                 "height": "1.2em",
                 "position": "absolute",
@@ -368,22 +377,18 @@ bot_button = html.Div(dbc.Offcanvas([
                 "transform": "translateX(-50%)",
                 'bottom': '0.5em'
             }, n_clicks=0), width=1)
-    ,)
+        , )
 
-
-
-    ], id="open-bot-canv", style={'height': 'min-content',
-                         'background-color': 'rgba(0, 0, 0, 0)', 'border': '0'},
-                  is_open=False, scrollable=True, backdrop=False, close_button=False, placement='bottom')
+], id="open-bot-canv", style={'height': 'min-content',
+                              'background-color': 'rgba(0, 0, 0, 0)', 'border': '0'},
+    is_open=False, scrollable=True, backdrop=False, close_button=False, placement='bottom')
 )
 
-#---------------------------------
+# ---------------------------------
 # Plots for the created Figures
 main_plot = [
 
-
     dcc.Store(id="cam_store"),
-
 
     dbc.Card(dbc.CardBody(
         [
@@ -391,10 +396,9 @@ main_plot = [
                 dcc.Graph(id="orientation", responsive=True, figure=orient_fig, style=orientation_style,
                           config={'displayModeBar': False, 'displaylogo': False, 'showAxisDragHandles': True}),
 
-                dcc.Graph(id="scatter-plot", responsive=True, figure=def_fig, style=plot_layout, config={'displaylogo': False}),
+                dcc.Graph(id="scatter-plot", responsive=True, figure=def_fig, style=plot_layout,
+                          config={'displaylogo': False}),
             ]),
-
-
 
             # Tools
             dbc.Row([
@@ -501,49 +505,49 @@ mc0_landing = html.Div([
     html.Div([html.H1([indent.join('Welcome')], className='greetings'),
               html.H1([indent.join('To')], className='greetings'),
               html.H1([indent.join('MALA')], className='greetings'),
-              html.Div('Upload a .cube-File for MALA to process', className='greetings',),
-              html.Div('Then choose a style for plotting', className='greetings',)]),
+              html.Div('Upload a .cube-File for MALA to process', className='greetings', ),
+              html.Div('Then choose a style for plotting', className='greetings', )]),
 
 ], style={'width': 'content-min', 'margin-top': '20vh'})
 
 skel_layout = [dbc.Row([
-        dbc.Col(
-            [
-                side_l,
-                dbc.Button(">", id="open-offcanvas-l", n_clicks=0, style={'margin-top': '40vh', 'position': 'absolute', 'left': '0'}),
-                bot_button, bot     # it doesn't matter where offcanvasses are placed here - only their "placement"-prop matters
-             ],
-            id="l0", width='auto'),
+    dbc.Col(
+        [
+            side_l,
+            dbc.Button(">", id="open-offcanvas-l", n_clicks=0,
+                       style={'margin-top': '40vh', 'position': 'absolute', 'left': '0'}),
+            bot_button, bot
+            # it doesn't matter where offcanvasses are placed here - only their "placement"-prop matters
+        ],
+        id="l0", width='auto'),
 
-        dbc.Col(mc0_landing, id="mc0", width='auto'),
+    dbc.Col(mc0_landing, id="mc0", width='auto'),
 
-        dbc.Col(
-            [
-                side_r,
-                dbc.Button("<", id="open-settings", n_clicks=0, style={'visibility': 'hidden', 'margin-top': '40vh', 'position': 'absolute', 'right': '0'}),
-             ],
-            id="r0", width='auto')
+    dbc.Col(
+        [
+            side_r,
+            dbc.Button("<", id="open-settings", n_clicks=0,
+                       style={'visibility': 'hidden', 'margin-top': '40vh', 'position': 'absolute', 'right': '0'}),
+        ],
+        id="r0", width='auto')
 
-    ], justify='center')]
-
-
-
+], justify='center')]
 
 # All the previously defined Components are not yet rendered in our app. They have to be inside app.layout
 # app.layouts content gets updated, which makes our app reactive
 
 p_layout_landing = dbc.Container([
-        dcc.Store(id="page_state", data="landing"),
-        dcc.Store(id="df_store", storage_type="session"),
-        dcc.Store(id="choice_store"),
-        dcc.Store(id="sc_settings"),
-        html.Div(skel_layout, id="content-layout")
-    ], fluid=True, style={'height': '100vh', 'width': '100vw', 'background-color': '#023B59'})
+    dcc.Store(id="page_state", data="landing"),
+    dcc.Store(id="df_store", storage_type="session"),
+    dcc.Store(id="UP_STORE", storage_type="session"),
+    dcc.Store(id="choice_store"),
+    dcc.Store(id="sc_settings"),
+    html.Div(skel_layout, id="content-layout")
+], fluid=True, style={'height': '100vh', 'width': '100vw', 'background-color': '#023B59'})
 app.layout = p_layout_landing
 
+
 # The Div in p_layout_plotting will be redefined on page_state-change
-
-
 
 
 # CALLBACKS & FUNCTIONS
@@ -611,6 +615,8 @@ def toggle_bot_button(page_state, canv_open):
 
     else:
         return False
+
+
 # show button if we're plotting and if bot-canvas is closed
 
 @app.callback(
@@ -620,7 +626,6 @@ def toggle_bot_button(page_state, canv_open):
     prevent_initial_call=True,
 )
 def toggle_bot_canv(open_cl, page_state):
-
     if page_state == "plotting":
         if dash.callback_context.triggered_id[0:4] == "open":
             return True
@@ -628,7 +633,6 @@ def toggle_bot_canv(open_cl, page_state):
             return False
     else:
         return False
-
 
 
 # END BOTTOM BAR CALLBACKS
@@ -848,7 +852,54 @@ def updatePageState(trig1, trig2, trig3, state):
 
 
 # dataframes
-# THIS IS RUNNING MALA INFERENCE
+
+
+# DASH-UPLOADER
+    # after file-upload, return upload-status (if successful) and dict with file-path and upload-id (for future verif?)
+
+@du.callback(
+    output=[Output("output-upload-state", "children"), Output("UP_STORE", "data")],
+    id="upload-data-2",
+)
+def callback_on_completion(status):  # <------- NEW: du.UploadStatus
+    """
+    Input
+    :param status: All the info necessary to access (latest) uploaded files
+    """
+
+    # 1 explicit type-check, bc ASE uses a different read function for .cubes
+    if str(status.latest_file.resolve()).endswith(".cube"):
+        read_data, read_atoms = read_cube_data(status.latest_file)
+        UPDATE_TEXT = ".cube file read"
+        print(type(read_data), " and ", type(read_atoms), " read from cube")
+    # ValueError exception for all other kinds of formats (not yet filtered by upload-component)
+    else:
+        try:
+            read_atoms = ase.io.read(status.latest_file)
+            print(type(read_atoms), "data read from non-cube")
+            UPDATE_TEXT = "non-.cube file read"
+
+
+        except ValueError:
+            # FILE NOT SUPPORTED AS ASE INPUT (some formats listed in supported-files for ase are output only. This will only be filtered here)
+            print("oops, file reading unsuccessful")
+            UPDATE_TEXT = "file not read"
+            raise PreventUpdate
+            # prevent return
+
+    UP_STORE = {"ID": status.upload_id, "URL": str(status.latest_file.resolve())}
+    # problem: exception makes changing output-upload-status impossible(?)
+    return UPDATE_TEXT, UP_STORE
+
+
+
+
+
+
+# !!  THIS IS RUNNING MALA INFERENCE  !!
+# AND "PARSING" DATA FOR CONTINUED USE
+
+# INPUT SHOULD BE: UPLOAD_URL_STORE: String
 @app.callback(
     Output("df_store", "data"),
     Output('upload-data', 'contents'),
@@ -857,7 +908,7 @@ def updatePageState(trig1, trig2, trig3, state):
      Input("reset-data", "n_clicks")],
     prevent_initial_call=True)
 def updateDF(f_data, file, reset):
-    '''
+    """
     Input
     :param f_data: uploaded data
     :param file: name of the uploaded file
@@ -873,7 +924,7 @@ def updateDF(f_data, file, reset):
     returns density data and energy values
 
 
-    '''
+    """
 
     # GOAL:
     # f_data = uploaded data -> .npy, containing atom-positions
@@ -888,6 +939,7 @@ def updateDF(f_data, file, reset):
     # Always returning None for the Upload-Component as well, so that it's possible to reupload
     # (-> gotta clear up the space first)
     # reset on wrong filetype
+    print("DEPRECATED CALLBACK WAS CALLED!!")
     if file is not None and not file.endswith('.cube'):
         return None, f_data
 
@@ -899,15 +951,11 @@ def updateDF(f_data, file, reset):
     # --> is implemented and set up to upload to ./upload . Creates an extra folder inside though --> not sure how to identify this for ASE to access it
     # https://github.com/np-8/dash-uploader
 
-    # ASE INPUT
-    # './upload'
-
     # (a) GET DATA FROM MALA (/ inference script)
     print("Running MALA-Inference")
     # TODO: This should pass the (decoded?) data of the uploaded file - WAITING for inference to expect parameters
 
-
-    mala_data = mala_inference.results
+    mala_data = mala_inference.results  # TODO(ASE_RETURNS + cell_choice)
     # contains 'band_energy', 'total_energy', 'density', 'density_of_states', 'energy_grid'
     # mala_data is stored in df_store dict under key 'MALA_DATA'. Additionally,
     density = mala_data['density']
@@ -969,7 +1017,6 @@ def updateDF(f_data, file, reset):
     data_sc.z += y_axis[3] * (data0.y / y_axis[2])
     data_sc.z += x_axis[3] * (data0.x / x_axis[1])
 
-
     '''
            Importing Data 
                Parameters imported from:
@@ -1002,7 +1049,7 @@ def updateDF(f_data, file, reset):
 
     print("DATA IMPORT COMPLETE")
     print("_________________________________________________________________________________________")
-    return df_store, None
+    return [df_store, None]
 
 
 # PLOT-CHOICE STORING
@@ -1105,7 +1152,7 @@ def update_tools(data, plot_choice):
         dense_step = round((max(df['val']) - min(df['val'])) / 30, ndigits=5)
 
         # BUG: have to add another half-step, else rangeslider won't ever be filled and will cut off very last x-column
-        return min(df["x"]), max(df["x"])+0.5*x_step, x_step, \
+        return min(df["x"]), max(df["x"]) + 0.5 * x_step, x_step, \
                min(df["y"]), max(df["y"]), y_step, \
                min(df["z"]), max(df["z"]), z_step, \
                min(df["val"]), max(df["val"]), dense_step
@@ -1192,31 +1239,29 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
         raise PreventUpdate
     dfu = df.copy()
 
-
     # atoms-Dataframe also taken from f_data
     atoms = pd.DataFrame(f_data['INPUT_DF'])
     no_of_atoms = len(atoms)
 
-
     df_bound = df.from_dict({
-        'x': [min(dfu['x']), min(dfu['x']), min(dfu['x']), min(dfu['x']), max(dfu['x']), max(dfu['x']), max(dfu['x']), max(dfu['x'])],
-        'y': [min(dfu['y']), min(dfu['y']), max(dfu['y']), max(dfu['y']), min(dfu['y']), min(dfu['y']), max(dfu['y']), max(dfu['y'])],
-        'z': [min(dfu['z']), max(dfu['z']), min(dfu['z']), max(dfu['z']), min(dfu['z']), max(dfu['z']), min(dfu['z']), max(dfu['z'])]
+        'x': [min(dfu['x']), min(dfu['x']), min(dfu['x']), min(dfu['x']), max(dfu['x']), max(dfu['x']), max(dfu['x']),
+              max(dfu['x'])],
+        'y': [min(dfu['y']), min(dfu['y']), max(dfu['y']), max(dfu['y']), min(dfu['y']), min(dfu['y']), max(dfu['y']),
+              max(dfu['y'])],
+        'z': [min(dfu['z']), max(dfu['z']), min(dfu['z']), max(dfu['z']), min(dfu['z']), max(dfu['z']), min(dfu['z']),
+              max(dfu['z'])]
 
     })
     fig_bound = go.Scatter3d(
         x=df_bound['x'], y=df_bound['y'], z=df_bound['z'], mode='markers',
-        marker=dict(size=0, color='white'), visible=False, showlegend= False,
+        marker=dict(size=0, color='white'), visible=False, showlegend=False,
     )
     # just 8 cornerpoints to keep the camera static when slicing - otherwise it will zoom if f.e. width shrinks
 
-
     # Dataframes are ready now
 
-
-
     # TOOLS
-        # these edit the DF before the figure is built
+    # these edit the DF before the figure is built
     # filter-by-density
     if slider_range is not None and dense_inactive:  # Any slider Input there?
         low, high = slider_range
@@ -1241,8 +1286,6 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
         mask = (dfu['z'] >= low) & (dfu['z'] <= high)
         dfu = dfu[mask]
 
-
-
     # SETTINGS
     # plot-settings
 
@@ -1256,13 +1299,11 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
             else:
                 atom_colors.append("white")
         atoms_fig = go.Scatter3d(name="Atoms", x=atoms['x'], y=atoms['y'], z=atoms['z'], mode='markers',
-                         marker=dict(size=30, color=atom_colors))
+                                 marker=dict(size=30, color=atom_colors))
     else:
         atoms_fig = go.Figure()
 
-
-
-         # creating the figure, updating some things
+        # creating the figure, updating some things
 
     if plots == "scatter":
         # updating fig according to (cs'd) DF
@@ -1289,25 +1330,22 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
 
         fig_upd = go.Figure(
             data=go.Volume(
-            x=dfu.x,
-            y=dfu.y,
-            z=dfu.z,
-            value=dfu.val,
-            opacity=0.3,
-            surface={'count': settings["size"], 'fill': 1}, # fill=0.5 etc adds a nice texture/mesh inside
-            #spaceframe={'fill': 0.5}, # does what exactly?
-            contour={'show': settings["outline"], 'width': 5},
-            colorscale=px.colors.sequential.Inferno_r,
-            cmin=min(df['val']),
-            cmax=max(df['val']),
-            showlegend=False,
-            colorbar={'thickness': 10, 'len': 0.9}
-        ))
+                x=dfu.x,
+                y=dfu.y,
+                z=dfu.z,
+                value=dfu.val,
+                opacity=0.3,
+                surface={'count': settings["size"], 'fill': 1},  # fill=0.5 etc adds a nice texture/mesh inside
+                # spaceframe={'fill': 0.5}, # does what exactly?
+                contour={'show': settings["outline"], 'width': 5},
+                colorscale=px.colors.sequential.Inferno_r,
+                cmin=min(df['val']),
+                cmax=max(df['val']),
+                showlegend=False,
+                colorbar={'thickness': 10, 'len': 0.9}
+            ))
     else:
-        fig_upd=def_fig
-
-
-
+        fig_upd = def_fig
 
     # atoms fig
     if settings["atoms"]:
@@ -1320,30 +1358,30 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
 
     # CAMERA
     if dash.callback_context.triggered_id == "default-cam":
-        new_cam=dict(
+        new_cam = dict(
             up=dict(x=0, y=0, z=1),
             center=dict(x=0, y=0, z=0),
             eye=dict(x=1.5, y=1.5, z=1.5)
         )
     elif dash.callback_context.triggered_id == "x-y-cam":
-        new_cam=dict(
+        new_cam = dict(
             up=dict(x=0, y=0, z=1),
             center=dict(x=0, y=0, z=0),
             eye=dict(x=0, y=0, z=3.00)
         )
     elif dash.callback_context.triggered_id == "x-z-cam":
-        new_cam=dict(
+        new_cam = dict(
             up=dict(x=0, y=0, z=1),
             center=dict(x=0, y=0, z=0),
             eye=dict(x=0, y=3.00, z=0)
         )
     elif dash.callback_context.triggered_id == "y-z-cam":
-        new_cam=dict(
+        new_cam = dict(
             up=dict(x=0, y=0, z=1),
             center=dict(x=0, y=0, z=0),
             eye=dict(x=3.00, y=0, z=0))
-    else: new_cam=stored_cam_settings
-
+    else:
+        new_cam = stored_cam_settings
 
     fig_upd.update_layout(scene_camera=new_cam, template=templ1)
     '''
@@ -1355,7 +1393,6 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
 
     # adding helperfigure to keep camera-zoom the same, regardless of data(-slicing)-changes
     fig_upd.add_trace(fig_bound)
-
 
     return fig_upd
 
@@ -1376,7 +1413,7 @@ Sets transition options used during Plotly.react updates."
     prevent_initial_call=True
 )
 def updateOrientation(saved_cam, fig):
-    fig_upd=orient_fig
+    fig_upd = orient_fig
     fig_upd.update_layout(scene_camera={'up': {'x': 0, 'y': 0, 'z': 1}, 'center': {'x': 0, 'y': 0, 'z': 0},
                                         'eye': saved_cam['eye']}, clickmode="none")
     return fig_upd
@@ -1388,9 +1425,15 @@ def updateOrientation(saved_cam, fig):
     Output("totalEn", "children"),
     Output("fermiEn", "children"),
     [Input("df_store", "data"),
-     Input("page_state", "data")]
+     Input("page_state", "data")],
+    prevent_initial_call=True
 )
 def update_bot_canv(f_data, state):
+    print("oh!", state)
+
+    if state == "landing":
+        raise PreventUpdate
+
     if f_data is not None:
         # PLOT data
         dOs = f_data['MALA_DATA']['density_of_states']
@@ -1400,9 +1443,13 @@ def update_bot_canv(f_data, state):
         fig.add_trace(
             go.Scatter(x=df.index, y=df[0], name='densityOfstate',
                        line=dict(color='#f15e64', width=2, dash='dot')))
-        fig.update_layout(margin=dict(l=0, r=0, b=0, t=0), modebar_remove=["zoom2d", "pan2d", "select2d", "lasso2d", "zoomIn2d", "zoomOut2d", "autoScale2d", "resetScale2d"], paper_bgcolor='#f8f9fa', plot_bgcolor='#f8f9fa',
-                          xaxis={'gridcolor': '#D3D3D3', 'dtick': 1, 'linecolor': 'black'}, yaxis={'gridcolor': '#D3D3D3', 'linecolor': 'black'}
-        )
+        fig.update_layout(margin=dict(l=0, r=0, b=0, t=0),
+                          modebar_remove=["zoom2d", "pan2d", "select2d", "lasso2d", "zoomIn2d", "zoomOut2d",
+                                          "autoScale2d", "resetScale2d"], paper_bgcolor='#f8f9fa',
+                          plot_bgcolor='#f8f9fa',
+                          xaxis={'gridcolor': '#D3D3D3', 'dtick': 1, 'linecolor': 'black'},
+                          yaxis={'gridcolor': '#D3D3D3', 'linecolor': 'black'}
+                          )
 
         # TABLE data
         # take the first
@@ -1420,8 +1467,8 @@ def update_bot_canv(f_data, state):
 
     return fig, band_en, total_en, fermi_en
 
-# END OF CALLBACKS FOR DOS PLOT
 
+# END OF CALLBACKS FOR DOS PLOT
 
 
 # CALLBACKS FOR SIDEBAR
@@ -1443,7 +1490,6 @@ def updateSettings(plot_choice):
         raise PreventUpdate
 
 
-
 @app.callback(  # sidebar_r canvas (1/?)
     Output("offcanvas-r-sc", "is_open"),
     Input("open-settings", "n_clicks"),
@@ -1459,6 +1505,7 @@ def toggle_settings_bar(n1, reset, is_open):
     else:
         return is_open
 
+
 @app.callback(
     Output("open-settings", "style"),
     Input("page_state", "data"),
@@ -1469,7 +1516,6 @@ def toggle_settings_button(state):
         return {'visibility': 'visible', 'margin-top': '40vh', 'position': 'absolute', 'right': '0'}
     else:
         return {'visibility': 'hidden', 'margin-top': '40vh', 'position': 'absolute', 'right': '0'}
-
 
 
 # toggle canvas
@@ -1485,43 +1531,6 @@ def toggle_offcanvas_l(n1, is_open):
     return is_open
 
 
-
-# FILE-UPLOAD-STATUS
-@app.callback(
-    Output('output-upload-state', 'children'),
-    [Input('upload-data', 'filename'),
-     Input('upload-data', 'contents'),
-     Input('df_store', 'data'),
-     Input('reset-data', 'n_clicks')],
-    prevent_initial_call=True,
-)
-def uploadStatus(filename, contents, data, reset):
-    # checks for .cubes for now, as long as im working on visuals
-    # will check for .npy when mala is ready to give .cube output from
-    # is this enough input-sanitization or proper type-check needed?
-    # upload component also has accept property to allow only certain types - might be better
-    if dash.callback_context.triggered_id == "reset-data":
-        status = "Awaiting upload.."
-    elif filename is not None:
-        if filename.endswith('.cube'):
-
-            # USER INPUT ATOM POSITIONS - .cube File Upload
-            # 1. File Upload of .cube File
-            # 2. TODO: parse file with ASE
-            # ase.io.read(contents)
-            # 3. process with MALA
-            # DONE:
-            # receiving MALA Input (from script for now)
-            # 4. contents
-
-            status = 'Upload successful'
-        else:
-            status = 'Wrong file-type. .cube required'
-
-    else:
-        status = 'Awaiting upload..'
-
-    return status
 
 
 # END OF CALLBACKS FOR SIDEBAR
