@@ -20,6 +20,15 @@ import ase.io
 from ase.io.cube import read_cube_data
 import dash_uploader as du
 
+# CONSTANTS
+ATOM_LIMIT = 10
+models = {
+    "Ber (s / RT)": {"temp": "298K", "editable": False},
+    "Al (s / RT)": {"temp": "298K", "editable": False},
+    "Al (s-l / MP)": {"temp": "933K", "editable": False},
+    "Al (s / 100K-933K)": {"temp": "500K", "editable": True},
+}
+
 # PX--Graph Object Theme
 templ1 = dict(layout=go.Layout(
     scene={
@@ -216,35 +225,22 @@ menu = html.Div([
                     trigger="legacy",
                 ),
 
-                dcc.Upload(
-                    id='upload-data',
-                    children=html.Div([
-                        'Drag & Drop', html.Br(), 'or ', html.Br(),
-                        html.A('Click to select')
-                    ]),
-                    style={
-                        'width': '90%',
-                        'height': 'auto',
-                        'lineHeight': '15px',
-                        'borderWidth': '1px',
-                        'borderStyle': 'dashed',
-                        'borderRadius': '5px',
-                        'textAlign': 'center',
-                        'margin-left': "0.5em",
-                        'margin-top': '1em',
-                        'margin-bottom': '1em',
-                        "font-size": "0.85em",
-                    },
-                    # don't allow multiple files to be uploaded
-                    multiple=False
-                ),
-
                 # dash-uploader component (not vanilla)
                 du.Upload(id="upload-data-2", text="Drag & Drop or Click to select",
                           filetypes=list(ase.io.formats.ioformats.keys())),
 
+                dbc.Modal([
+                    dbc.ModalHeader(dbc.ModalTitle("Warning")),
+                    dbc.ModalBody("It seems like the amount of Atoms you want to display exceeds our threshold (" + str(
+                        ATOM_LIMIT) + ") for short render times. Be aware that continuing with the uploaded data might negatively impact waiting times."),
+
+                ], id="upload-warning", is_open=False),
+
                 html.Div("Awaiting upload..", id='output-upload-state',
                          style={'margin': '2px', "font-size": "0.85em", 'textAlign': 'center'}),
+
+                dcc.Dropdown(id="model-choice", options=list(models.keys()), value=None, placeholder="-", optionHeight=45, style={"font-size": "0.85em"}),
+
                 dbc.Button("reset", id="reset-data",
                            style={"line-height": "0.85em", 'height': 'min-content', 'margin-left': "2.2em",
                                   'font-size': '0.85em'})
@@ -664,10 +660,6 @@ def toggle_x_cs(n_x, active, bc):
         return not active, not bc
 
 
-# END OLD SC CS X
-
-
-# OLD SC CS Y
 @app.callback(
     Output("range-slider-cs-y", "disabled"),
     Output("sc-active-y", "active"),
@@ -680,9 +672,6 @@ def toggle_y_cs(n_x, active, bc):
         return not active, not bc
 
 
-# END OLD SC CS Y
-
-# OLD SC CS Z
 @app.callback(
     Output("range-slider-cs-z", "disabled"),
     Output("sc-active-z", "active"),
@@ -695,10 +684,6 @@ def toggle_z_cs(n_x, active, bc):
         return not active, not bc
 
 
-# END OLD SC CS Z
-
-
-# OLD SC DENS
 @app.callback(
     Output("range-slider-dense", "disabled"),
     Output("active-dense", "active"),
@@ -720,9 +705,6 @@ def toggle_density_sc(n_d, active, bc, plot_choice):
     else:
         return True, False, True
     # active actually is the disabled parameter!
-
-
-# END OLD SC DENS
 
 
 @app.callback(
@@ -855,10 +837,10 @@ def updatePageState(trig1, trig2, trig3, state):
 
 
 # DASH-UPLOADER
-    # after file-upload, return upload-status (if successful) and dict with file-path and upload-id (for future verif?)
+# after file-upload, return upload-status (if successful) and dict with file-path and upload-id (for future verif?)
 
 @du.callback(
-    output=[Output("output-upload-state", "children"), Output("UP_STORE", "data")],
+    output=[Output("output-upload-state", "children"), Output("UP_STORE", "data"), Output("upload-warning", "is_open")],
     id="upload-data-2",
 )
 def callback_on_completion(status):  # <------- NEW: du.UploadStatus
@@ -866,64 +848,66 @@ def callback_on_completion(status):  # <------- NEW: du.UploadStatus
     Input
     :param status: All the info necessary to access (latest) uploaded files
     """
+    UP_WARNING = False  # FLAG for opening warning on high atom-nr.
+    UP_STORE = {"ID": status.upload_id, "PATH": str(status.latest_file.resolve())}
 
-    # 1 explicit type-check, bc ASE uses a different read function for .cubes
+    # ASE.reading ONLY TO CHECK IF THE FILE IS SUPPORTED - the data read here is not used anywhere
+    # 1 explicit type-check, bc ASE uses a different read function for .cubes (returns DATA & ATOMS)
     if str(status.latest_file.resolve()).endswith(".cube"):
-        read_data, read_atoms = read_cube_data(status.latest_file)
-        UPDATE_TEXT = ".cube file read"
-        print(type(read_data), " and ", type(read_atoms), " read from cube")
-    # ValueError exception for all other kinds of formats (not yet filtered by upload-component)
+        r_data, r_atoms = read_cube_data(status.latest_file)
+        UPDATE_TEXT = ".cube file recognized"
+        # ValueError exception for all other kinds of formats (not yet filtered by upload-component)
     else:
         try:
-            read_atoms = ase.io.read(status.latest_file)
-            print(type(read_atoms), "data read from non-cube")
-            UPDATE_TEXT = "non-.cube file read"
-
+            r_atoms = ase.io.read(status.latest_file)
+            UPDATE_TEXT = "non-cube file uploaded"
+            if r_atoms.get_global_number_of_atoms() > ATOM_LIMIT:
+                UP_WARNING = True
 
         except ValueError:
-            # FILE NOT SUPPORTED AS ASE INPUT (some formats listed in supported-files for ase are output only. This will only be filtered here)
-            print("oops, file reading unsuccessful")
-            UPDATE_TEXT = "file not read"
-            raise PreventUpdate
-            # prevent return
+            # = FILE NOT SUPPORTED AS ASE INPUT (some formats listed in supported-files for ase are output only. This will only be filtered here)
+            r_atoms = None
+            UPDATE_TEXT = "File not supported"
+            UP_STORE = None
+            # TODO: CSS-Logic to make border go red
 
-    UP_STORE = {"ID": status.upload_id, "URL": str(status.latest_file.resolve())}
-    # problem: exception makes changing output-upload-status impossible(?)
-    return UPDATE_TEXT, UP_STORE
+    # TODO: CSS-Logic to make border go green
+    # display WARNING for long calculation-time
 
-
-
-
+    return UPDATE_TEXT, UP_STORE, UP_WARNING
 
 
 # !!  THIS IS RUNNING MALA INFERENCE  !!
 # AND "PARSING" DATA FOR CONTINUED USE
 
-# INPUT SHOULD BE: UPLOAD_URL_STORE: String
+# INPUT SHOULD BE:
+# UPLOAD_STORE: String
+# &
+# CELL_CHOICE
+# &
+# RESET
+# &
+# RENDER
 @app.callback(
     Output("df_store", "data"),
-    Output('upload-data', 'contents'),
-    [Input('upload-data', 'contents'),
-     Input('upload-data', 'filename'),
+    [Input('UP_STORE', 'data'),
      Input("reset-data", "n_clicks")],
+    [State("model-choice", "value")],
     prevent_initial_call=True)
-def updateDF(f_data, file, reset):
+def updateDF(f_data, reset, cell_choice):
     """
     Input
-    :param f_data: uploaded data
-    :param file: name of the uploaded file
+    :param f_data: dict(upload ID, filepath)
     :param reset: trigger for reset of stored data
-    :return: returns two values: (a) a dictionary with the data necessary to render and (b) None, to reset the upload-component
+    :param cell_choice: info on the cell-system needed by MALA
+    :return: returns a dictionary with the data necessary to render
 
     Output
     df_store[data] = variable where we store the info necessary to render, so that we can use it in other callbacks
-    upload-data[contents] = temporary location of the uploaded data - gets reset after data is stored
 
     NOW:
-    after file-check for .cube-format, run mala inference
-    returns density data and energy values
-
-
+    read file from filepath via ASE -> returns ATOM-obj
+    on MALA-call, give ATOMS-objs -> returns density data and energy values
     """
 
     # GOAL:
@@ -931,33 +915,33 @@ def updateDF(f_data, file, reset):
     # TODO: smth like (mala_data = mala.webAPI(f_data)) (run a mala .getter(uploadedData))
     #  --> mala takes uploaded data (core positions (and atom type?)) and returns calculations
     #  --> waiting for Lenz
-
-    # TODO: check if data is valid before updating
-    #  maybe do this on upload, so this callback isn't even run
-    #  --> raise preventUpdate if not
-
-    # Always returning None for the Upload-Component as well, so that it's possible to reupload
-    # (-> gotta clear up the space first)
-    # reset on wrong filetype
-    print("DEPRECATED CALLBACK WAS CALLED!!")
-    if file is not None and not file.endswith('.cube'):
-        return None, f_data
-
+    if f_data is None:
+        raise PreventUpdate
     if dash.callback_context.triggered_id == "reset-data":
-        return None, None
+        return None
 
-    # f_data so far is an bas64-encoded string -> not helpful
-    # TODO: implement dash-uploader, so that we have actual files we can give to ASE
-    # --> is implemented and set up to upload to ./upload . Creates an extra folder inside though --> not sure how to identify this for ASE to access it
-    # https://github.com/np-8/dash-uploader
+    print(f_data)
+    upID = f_data["ID"]
+    filepath = f_data["PATH"]
+
+    # ASE.reading to receive ATOMS-objs, to pass to MALA-inference
+
+    # 1 explicit type-check, bc ASE uses a different read function for .cubes (returns DATA & ATOMS)
+    if filepath.endswith(".cube"):
+        read_data, read_atoms = read_cube_data(filepath)
+    else:
+        # no ValueError Exception needed, bc this is done directly on upload
+        read_atoms = ase.io.read(filepath)
+
+
 
     # (a) GET DATA FROM MALA (/ inference script)
     print("Running MALA-Inference")
-    # TODO: This should pass the (decoded?) data of the uploaded file - WAITING for inference to expect parameters
-
-    mala_data = mala_inference.results  # TODO(ASE_RETURNS + cell_choice)
-    # contains 'band_energy', 'total_energy', 'density', 'density_of_states', 'energy_grid'
-    # mala_data is stored in df_store dict under key 'MALA_DATA'. Additionally,
+    # TODO: This should pass the ASE-read Atom-objs and the dropdown-chosen Cell-info to MALA
+        # mala_data = mala_inference.results(read_atoms, cell_choice)
+    mala_data = mala_inference.results
+        # contains 'band_energy', 'total_energy', 'density', 'density_of_states', 'energy_grid'
+        # mala_data is stored in df_store dict under key 'MALA_DATA'. (See declaration of df_store below for more info)
     density = mala_data['density']
 
     coord_arr = np.column_stack(
@@ -966,13 +950,13 @@ def updateDF(f_data, file, reset):
 
     atoms = [[], [], [], [], []]
 
+
+
     # Reading .cube-File
-    # TODO: this will be done with .npy instead of .cube and before running mala inference
-
     # (b) GET ATOMPOSITION & AXIS SCALING FROM .cube CREATED BY MALA (located where 'mala-inference-script' is located
+    # TODO: maybe we can get all the info needed from the ASE-Atoms-objs instead?
     atom_data = './Be2_density.cube'
-
-    # 0-1 = Comment, Energy, broadening     //      2 = number of atoms, coord origin
+    # line: 0-1 = Comment, Energy, broadening     //      2 = number of atoms, coord origin
     # 3-5 = number of voxels per Axis (x/y/z), lentgh of axis-vector -> info on cell-warping
     # 6-x = atompositions
 
@@ -1047,9 +1031,9 @@ def updateDF(f_data, file, reset):
                 'INPUT_DF': atoms_data.to_dict("records"),
                 'SCALE': {'x_axis': x_axis, 'y_axis': y_axis, 'z_axis': z_axis}}
 
-    print("DATA IMPORT COMPLETE")
+    print("DATA PROCESSING COMPLETE")
     print("_________________________________________________________________________________________")
-    return [df_store, None]
+    return df_store
 
 
 # PLOT-CHOICE STORING
@@ -1529,8 +1513,6 @@ def toggle_offcanvas_l(n1, is_open):
     if n1:
         return not is_open
     return is_open
-
-
 
 
 # END OF CALLBACKS FOR SIDEBAR
