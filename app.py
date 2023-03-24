@@ -21,12 +21,12 @@ from ase.io.cube import read_cube_data
 import dash_uploader as du
 
 # CONSTANTS
-ATOM_LIMIT = 10
+ATOM_LIMIT = 1
 models = {
-    "Ber (s / RT)": {"temp": "298K", "editable": False},
-    "Al (s / RT)": {"temp": "298K", "editable": False},
-    "Al (s-l / MP)": {"temp": "933K", "editable": False},
-    "Al (s / 100K-933K)": {"temp": "500K", "editable": True},
+    "Beryllium | solid | @298K": {"temp": "298K", "editable": False},
+    "Aluminum | solid | @298K": {"temp": "298K", "editable": False},
+    "Aluminum | solid/liquid | @933K": {"temp": "933K", "editable": False},
+    "Aluminum | solid | @100K-933K": {"temp": "500K", "editable": True},
 }
 
 # PX--Graph Object Theme
@@ -170,7 +170,7 @@ orient_plot = dcc.Graph(id="orientation", responsive=True, figure=orient_fig, st
                         config={'displayModeBar': False, 'displaylogo': False})
 
 # ------------------------------------
-# Table
+# Tables
 
 row1 = html.Tr([html.Td("Band - Energy", style={'text-align': 'center', 'padding': 3, 'font-size': '0.85em'})],
                style={"font-weight": "bold"})
@@ -186,9 +186,25 @@ table_body = [html.Tbody([row1, row2, row3, row4, row5, row6])]
 
 table = dbc.Table(table_body, bordered=True, striped=True, style={'padding': 0, 'margin': 0})
 
-# -----------------
-# Left SIDEBAR content
 
+
+# TODO EDIT
+table_header = [
+    html.Thead(html.Tr([html.Th("Material"), html.Th(" "), html.Th("Use to run MALA")]))
+]
+
+row1 = html.Tr([html.Td("Arthur"), html.Td("Dent")])
+row2 = html.Tr([html.Td("Ford"), html.Td("Dent")])
+row3 = html.Tr([html.Td("Zaphod"), html.Td("Dent")])
+row4 = html.Tr([html.Td("Trillian"), html.Td("Dent")])
+
+table_body = [html.Tbody([row1, row2, row3, row4])]
+atoms_table = dbc.Table(table_header + table_body, bordered=True)
+
+# -----------------
+
+
+# Left SIDEBAR content
 menu = html.Div([
     # Logo Section
     html.Div([
@@ -217,6 +233,8 @@ menu = html.Div([
                             ''', id="supported-files",
                          style={'text-align': 'center', 'font-size': '0.6em', 'text-decoration': 'underline'}),
 
+                html.Br(),
+
                 dbc.Popover(
                     dbc.PopoverBody(
                         "ASE supports the following file-formats: " + str(ase.io.formats.ioformats.keys())[11:-2]),
@@ -229,20 +247,17 @@ menu = html.Div([
                 du.Upload(id="upload-data-2", text="Drag & Drop or Click to select",
                           filetypes=list(ase.io.formats.ioformats.keys())),
 
-                dbc.Modal([
-                    dbc.ModalHeader(dbc.ModalTitle("Warning")),
-                    dbc.ModalBody("It seems like the amount of Atoms you want to display exceeds our threshold (" + str(
-                        ATOM_LIMIT) + ") for short render times. Be aware that continuing with the uploaded data might negatively impact waiting times."),
-
-                ], id="upload-warning", is_open=False),
-
                 html.Div("Awaiting upload..", id='output-upload-state',
                          style={'margin': '2px', "font-size": "0.85em", 'textAlign': 'center'}),
 
-                dcc.Dropdown(id="model-choice", options=list(models.keys()), value=None, placeholder="-", optionHeight=45, style={"font-size": "0.85em"}),
+                html.Hr(style={'margin-bottom': '2rem', 'margin-top': '1rem', 'width': '5rem'}),
 
-                dbc.Button("reset", id="reset-data",
-                           style={"line-height": "0.85em", 'height': 'min-content', 'margin-left': "2.2em",
+                dbc.Button("Edit", id="edit-input", color="success",
+                           style={"line-height": "0.85em", 'height': 'min-content', 'width': '100%',
+                                  'font-size': '0.85em'}),
+
+                dbc.Button("reset", id="reset-data", color="danger",
+                           style={"line-height": "0.85em", 'height': 'min-content',
                                   'font-size': '0.85em'})
 
             ], className="upload-section"
@@ -251,6 +266,52 @@ menu = html.Div([
         id="collapse-upload",
         is_open=True,
     ),
+
+
+
+
+    dbc.Modal([
+        dbc.ModalHeader(dbc.ModalTitle("Your Upload")),
+        dbc.ModalBody([
+            html.H6("The File you uploaded contained information of the following Atoms: "),
+            html.Br(),
+            atoms_table,
+            html.P("Tick all the Atoms you want to use to send to MALA (Default: All checked).\nSee below for a "
+                   "pre-render of the chosen Atom-positions:"),
+            dcc.Graph(id="render-atoms"),
+
+            html.Hr(style={'margin-bottom': '1rem', 'margin-top': '1rem'}),
+
+            html.P("Chose the model that MALA should use for calculations"),
+            dcc.Dropdown(id="model-choice", options=list(models.keys()), value=None, placeholder="-", optionHeight=45, style={"font-size": "0.85em"}),
+
+            html.Br(),
+
+            dbc.Alert(id="atom-limit-warning",
+                      children="The amount of Atoms you want to display exceeds our threshold (" + str(
+                          ATOM_LIMIT) + ") for short render times. Be aware that continuing with the uploaded data may negatively impact waiting times.",
+                      color="warning", ),
+
+        ]),
+        dbc.ModalFooter(
+            dbc.Button(id="run-mala", disabled=True, children=[dbc.Container(dbc.Row(
+                [
+                    dbc.Col(dbc.Spinner(dcc.Store(id="df_store"), size="sm", color="success"), className="run-mala-spin", width=1),
+                    dbc.Col("Run MALA", className="run-mala-but"),
+                    dbc.Col(width=1)
+                ]
+            ))], color="success", outline=True),
+        style={'justify-content': "center"}
+        )
+        # only to be displayed if ATOM_LIMIT is exceeded (maybe as an alert window too)
+        # dbc.ModalFooter("The amount of Atoms you want to display exceeds our threshold (" + str(
+        # ATOM_LIMIT) + ") for short render times. Be aware that continuing with the uploaded data may negatively impact waiting times."),
+
+    ], id="upload-modal", size="lg", is_open=False),
+
+
+
+
 
     dbc.Card(
         html.H6(children='Plot Style', style={'margin': '5px'}, id="open-plot-choice", n_clicks=0),
@@ -320,6 +381,7 @@ bot_content = dbc.Container([
     ], style={'height': 'min-content', 'padding': 0}, justify='center')
 
 ])
+
 
 # --------------------------
 # Filling offcanvasses with respective content
@@ -534,8 +596,8 @@ skel_layout = [dbc.Row([
 
 p_layout_landing = dbc.Container([
     dcc.Store(id="page_state", data="landing"),
-    dcc.Store(id="df_store", storage_type="session"),
-    dcc.Store(id="UP_STORE", storage_type="session"),
+    #dcc.Store(id="df_store", storage_type="session")   moved this to upload-modal, so that the loading-spinner can wait for this component to be initialized
+    dcc.Store(id="UP_STORE"),
     dcc.Store(id="choice_store"),
     dcc.Store(id="sc_settings"),
     html.Div(skel_layout, id="content-layout")
@@ -833,100 +895,142 @@ def updatePageState(trig1, trig2, trig3, state):
         return new_state
 
 
-# dataframes
 
 
 # DASH-UPLOADER
 # after file-upload, return upload-status (if successful) and dict with file-path and upload-id (for future verif?)
 
 @du.callback(
-    output=[Output("output-upload-state", "children"), Output("UP_STORE", "data"), Output("upload-warning", "is_open")],
+    output=[Output("output-upload-state", "children"), Output("UP_STORE", "data"), Output("atom-limit-warning", "is_open")],
     id="upload-data-2",
 )
-def callback_on_completion(status):  # <------- NEW: du.UploadStatus
+def upload_callback(status):  # <------- NEW: du.UploadStatus
     """
     Input
     :param status: All the info necessary to access (latest) uploaded files
     """
-    UP_WARNING = False  # FLAG for opening warning on high atom-nr.
     UP_STORE = {"ID": status.upload_id, "PATH": str(status.latest_file.resolve())}
+    LIMIT_EXCEEDED = False
 
-    # ASE.reading ONLY TO CHECK IF THE FILE IS SUPPORTED - the data read here is not used anywhere
+    # ASE.reading ONLY TO CHECK FOR FILE SUPPORTED - the data read here is not used anywhere
     # 1 explicit type-check, bc ASE uses a different read function for .cubes (returns DATA & ATOMS)
     if str(status.latest_file.resolve()).endswith(".cube"):
         r_data, r_atoms = read_cube_data(status.latest_file)
         UPDATE_TEXT = ".cube file recognized"
+        if r_atoms.get_global_number_of_atoms() > ATOM_LIMIT:
+            LIMIT_EXCEEDED = True
         # ValueError exception for all other kinds of formats (not yet filtered by upload-component)
     else:
         try:
             r_atoms = ase.io.read(status.latest_file)
             UPDATE_TEXT = "non-cube file uploaded"
             if r_atoms.get_global_number_of_atoms() > ATOM_LIMIT:
-                UP_WARNING = True
+                LIMIT_EXCEEDED = True
 
         except ValueError:
             # = FILE NOT SUPPORTED AS ASE INPUT (some formats listed in supported-files for ase are output only. This will only be filtered here)
             r_atoms = None
             UPDATE_TEXT = "File not supported"
-            UP_STORE = None
+            UP_STORE = dash.no_update
             # TODO: CSS-Logic to make border go red
+
 
     # TODO: CSS-Logic to make border go green
     # display WARNING for long calculation-time
 
-    return UPDATE_TEXT, UP_STORE, UP_WARNING
+    return UPDATE_TEXT, UP_STORE, LIMIT_EXCEEDED
+# END DASH UPLOADER
 
 
+
+# CALLBACK TO ACTIVATE RUN-MALA-button
+@app.callback(
+    Output("run-mala", "disabled"),
+    Input("model-choice", "value"),
+    prevent_initial_call=True
+)
+def activate_run_MALA(model):
+    if model is not None:
+        return False
+    else:
+        return True
+# END OF CB
+
+
+# CALLBACK TO OPEN UPLOAD-MODAL
+@app.callback(
+    Output("upload-modal", "is_open"),
+    [
+        Input("UP_STORE", "data"),
+        Input("run-mala", "n_clicks"),
+        Input("edit-input", "n_clicks")
+    ], prevent_initial_call=True
+)
+def open_UP_MODAL(upload, run_mala, edit_input):
+    if dash.callback_context.triggered_id == "run-mala":
+        return False
+
+    elif upload is not None:
+
+        return True
+    else:
+        return False
+# END OF CB
+
+
+
+
+#   UPDATE DF
+
+
+# Trigger: button "run-mala", button "reset"
+# Opens a popup, showing
+#   - the uploaded Atoms with a checkmark;
+#   - possibly giving a prerender of only the atoms;
+#   - giving a warning if more than (ATOM_LIMIT) Atoms are selected
+#   - has a "Start MALA" Button
 # !!  THIS IS RUNNING MALA INFERENCE  !!
 # AND "PARSING" DATA FOR CONTINUED USE
 
-# INPUT SHOULD BE:
-# UPLOAD_STORE: String
-# &
-# CELL_CHOICE
-# &
-# RESET
-# &
-# RENDER
 @app.callback(
     Output("df_store", "data"),
-    [Input('UP_STORE', 'data'),
+    [Input("run-mala", "n_clicks"),
      Input("reset-data", "n_clicks")],
-    [State("model-choice", "value")],
+    [State("model-choice", "value"),
+     State('UP_STORE', 'data')],
     prevent_initial_call=True)
-def updateDF(f_data, reset, cell_choice):
+def updateDF(trig, reset, model_choice, upload):
     """
     Input
-    :param f_data: dict(upload ID, filepath)
-    :param reset: trigger for reset of stored data
-    :param cell_choice: info on the cell-system needed by MALA
-    :return: returns a dictionary with the data necessary to render
+    :param trig: =INPUT -
+    :param reset: =INPUT - trigger for reset of stored data
+    :param model_choice: =STATE - info on the cell-system
+    :param upload: =STATE - dict(upload ID, filepath)
+
+    :return: returns a dictionary with the data necessary to render to store-component
 
     Output
-    df_store[data] = variable where we store the info necessary to render, so that we can use it in other callbacks
+    df_store[data]... variable where we store the info necessary to render, so that we can use it in other callbacks
 
     NOW:
     read file from filepath via ASE -> returns ATOM-obj
-    on MALA-call, give ATOMS-objs -> returns density data and energy values
+    on MALA-call, give ATOMS-objs & model_choice (TODO: in what format?)
+    -> returns density data and energy values +  a .cube-file
     """
 
-    # GOAL:
-    # f_data = uploaded data -> .npy, containing atom-positions
-    # TODO: smth like (mala_data = mala.webAPI(f_data)) (run a mala .getter(uploadedData))
-    #  --> mala takes uploaded data (core positions (and atom type?)) and returns calculations
-    #  --> waiting for Lenz
-    if f_data is None:
+    if upload is None:
         raise PreventUpdate
     if dash.callback_context.triggered_id == "reset-data":
         return None
 
-    print(f_data)
-    upID = f_data["ID"]
-    filepath = f_data["PATH"]
+    print("UpdateDF started")
+    print("f_data is: ", upload)
+    print("model-choice is: ", model_choice)
+    upID = upload["ID"]
+    filepath = upload["PATH"]
 
     # ASE.reading to receive ATOMS-objs, to pass to MALA-inference
-
-    # 1 explicit type-check, bc ASE uses a different read function for .cubes (returns DATA & ATOMS)
+        # 1 explicit type-check, bc ASE uses a different read function for .cubes (returns DATA & ATOMS)
     if filepath.endswith(".cube"):
         read_data, read_atoms = read_cube_data(filepath)
     else:
@@ -938,7 +1042,7 @@ def updateDF(f_data, reset, cell_choice):
     # (a) GET DATA FROM MALA (/ inference script)
     print("Running MALA-Inference")
     # TODO: This should pass the ASE-read Atom-objs and the dropdown-chosen Cell-info to MALA
-        # mala_data = mala_inference.results(read_atoms, cell_choice)
+        # mala_data = mala_inference.results(read_atoms, model_choice)
     mala_data = mala_inference.results
         # contains 'band_energy', 'total_energy', 'density', 'density_of_states', 'energy_grid'
         # mala_data is stored in df_store dict under key 'MALA_DATA'. (See declaration of df_store below for more info)
@@ -1413,7 +1517,6 @@ def updateOrientation(saved_cam, fig):
     prevent_initial_call=True
 )
 def update_bot_canv(f_data, state):
-    print("oh!", state)
 
     if state == "landing":
         raise PreventUpdate
