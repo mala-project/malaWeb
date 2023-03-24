@@ -10,6 +10,7 @@ There is only a file-format-check for .cube happening. If successfull, a hardcod
 - When using Anaconda for MALA:
   - conda install -c conda-forge dash
   - conda install -c conda-forge dash-bootstrap-components
+  - pip install dash-uploader --pre
 
 # Usage:
 - run app.py

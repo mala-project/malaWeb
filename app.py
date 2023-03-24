@@ -3,10 +3,11 @@ import base64
 
 import mala_inference
 import dash
+import dash_bootstrap_components as dbc
+
 from dash.dependencies import Input, Output, State
 from dash import dcc, html
 
-import dash_bootstrap_components as dbc
 from dash.exceptions import PreventUpdate
 
 # visualization
