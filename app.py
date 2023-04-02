@@ -22,14 +22,14 @@ from ase.io.cube import read_cube_data
 import dash_uploader as du
 
 # CONSTANTS
-ATOM_LIMIT = 1
+ATOM_LIMIT = 10
 # TODO need an overhaul
 
 models = [
-    {'label': "Beryllium | solid | @298K", 'value': "Be|298"},
-    {'label': "Aluminum | solid | @298K", 'value': "Al|298"},
-    {'label': "Aluminum | solid/liquid | @933K", 'value': "Al|933"},
-    {'label': "Aluminum | solid | @100K-933K", 'value': "Al|[100,933]"},
+    {'label': "Solid beryllium at room temperature (298K)", 'value': "Be|298"},
+    {'label': "Solid aluminium at room temperature (298K)", 'value': "Al|298"},
+    {'label': "Liquid/solid Aluminium at the melting point (933K)", 'value': "Al|933"},
+    {'label': "Solid Aluminium from 100K to 933K (500K, editable)", 'value': "Al|[100,933]"},
 ]
 
 
@@ -193,16 +193,11 @@ table = dbc.Table(table_body, bordered=True, striped=True, style={'padding': 0, 
 
 
 # TODO EDIT
-table_header = [
-    html.Thead(html.Tr([html.Th("Material"), html.Th(" "), html.Th("Use to run MALA")]))
-]
+table_header = [html.Thead(html.Tr([html.Th("ID"), html.Th("X"), html.Th("Y"), html.Th("Z"), html.Th("Use to run MALA")]), )]
 
-row1 = html.Tr([html.Td("Arthur"), html.Td("Dent")])
-row2 = html.Tr([html.Td("Ford"), html.Td("Dent")])
-row3 = html.Tr([html.Td("Zaphod"), html.Td("Dent")])
-row4 = html.Tr([html.Td("Trillian"), html.Td("Dent")])
+row1 = html.Tr([html.Td("X-default"), html.Td("Y-default"), html.Td("Z-default"), html.Td("checkbox")])
 
-table_body = [html.Tbody([row1, row2, row3, row4])]
+table_body = [html.Tbody([row1], id="atoms_list")]
 atoms_table = dbc.Table(table_header + table_body, bordered=True)
 
 # -----------------
@@ -271,9 +266,6 @@ menu = html.Div([
         is_open=True,
     ),
 
-
-
-
     dbc.Modal([
         dbc.ModalHeader(dbc.ModalTitle("Your Upload")),
         dbc.ModalBody([
@@ -288,15 +280,20 @@ menu = html.Div([
 
             html.P("Chose the model that MALA should use for calculations"),
             dbc.Row([
-                dbc.Col(dcc.Dropdown(id="model-choice", options=models, value=None, placeholder="-", optionHeight=45, style={"font-size": "0.85em"}), width=10),
-                dbc.Col(dbc.Input(id="model-temp", type="number", min=0, max=10, step=1), width=2)
+                dbc.Col(dcc.Dropdown(id="model-choice", options=models, value=None, placeholder="-", optionHeight=45, style={"font-size": "0.95em"}), width=9),
+                dbc.Col(dbc.Input(id="model-temp", disabled=True, type="number", min=0, max=10, step=1), width=2),
+                dbc.Col(html.P("K", style={"margin-top": "0.5rem"}), width=1)
             ], className="g-1"),
             html.Br(),
 
             dbc.Alert(id="atom-limit-warning",
                       children="The amount of Atoms you want to display exceeds our threshold (" + str(
                           ATOM_LIMIT) + ") for short render times. Be aware that continuing with the uploaded data may negatively impact waiting times.",
-                      color="warning", ),
+                      color="warning"),
+            # only to be displayed if ATOM_LIMIT is exceeded (maybe as an alert window too)
+            # dbc.ModalFooter("The amount of Atoms you want to display exceeds our threshold (" + str(
+            # ATOM_LIMIT) + ") for short render times. Be aware that continuing with the uploaded data may negatively impact waiting times."),
+
 
         ]),
         dbc.ModalFooter(
@@ -309,15 +306,7 @@ menu = html.Div([
             ))], color="success", outline=True),
         style={'justify-content': "center"}
         )
-        # only to be displayed if ATOM_LIMIT is exceeded (maybe as an alert window too)
-        # dbc.ModalFooter("The amount of Atoms you want to display exceeds our threshold (" + str(
-        # ATOM_LIMIT) + ") for short render times. Be aware that continuing with the uploaded data may negatively impact waiting times."),
-
     ], id="upload-modal", size="lg", is_open=False),
-
-
-
-
 
     dbc.Card(
         html.H6(children='Plot Style', style={'margin': '5px'}, id="open-plot-choice", n_clicks=0),
@@ -602,7 +591,6 @@ skel_layout = [dbc.Row([
 
 p_layout_landing = dbc.Container([
     dcc.Store(id="page_state", data="landing"),
-    #dcc.Store(id="df_store", storage_type="session")   moved this to upload-modal, so that the loading-spinner can wait for this component to be initialized
     dcc.Store(id="UP_STORE"),
     dcc.Store(id="choice_store"),
     dcc.Store(id="sc_settings"),
@@ -907,24 +895,33 @@ def updatePageState(trig1, trig2, trig3, state):
 # after file-upload, return upload-status (if successful) and dict with file-path and upload-id (for future verif?)
 
 @du.callback(
-    output=[Output("output-upload-state", "children"), Output("UP_STORE", "data"), Output("atom-limit-warning", "is_open")],
+    output=[Output("output-upload-state", "children"), Output("UP_STORE", "data"), Output("atom-limit-warning", "is_open"), Output("atoms_list", "children")],
     id="upload-data-2",
 )
 def upload_callback(status):  # <------- NEW: du.UploadStatus
     """
     Input
     :param status: All the info necessary to access (latest) uploaded files
+
+    Output
+    upload-state: Upload-state below upload-area
+    UP_STORE: dcc.Store-component, storing uploader-ID and path of uploaded file
+    atom-limit-warning: Boolean for displaying long-computation-time-warning
+    atoms_table: Table containing all atoms read by ASE
     """
+
     UP_STORE = {"ID": status.upload_id, "PATH": str(status.latest_file.resolve())}
     LIMIT_EXCEEDED = False
 
-    # ASE.reading ONLY TO CHECK FOR FILE SUPPORTED - the data read here is not used anywhere
+    # ASE.reading to check for file-format support, and to fill atoms_table
     # 1 explicit type-check, bc ASE uses a different read function for .cubes (returns DATA & ATOMS)
     if str(status.latest_file.resolve()).endswith(".cube"):
         r_data, r_atoms = read_cube_data(status.latest_file)
         UPDATE_TEXT = ".cube file recognized"
         if r_atoms.get_global_number_of_atoms() > ATOM_LIMIT:
             LIMIT_EXCEEDED = True
+        table_rows = [html.Tr([html.Td(atom.index), html.Td(atom.x), html.Td(atom.y), html.Td(atom.z), html.Td("checkbox")]) for atom in
+                      r_atoms]
         # ValueError exception for all other kinds of formats (not yet filtered by upload-component)
     else:
         try:
@@ -932,19 +929,22 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
             UPDATE_TEXT = "non-cube file uploaded"
             if r_atoms.get_global_number_of_atoms() > ATOM_LIMIT:
                 LIMIT_EXCEEDED = True
+            table_rows = [
+                html.Tr([html.Td(atom.index), html.Td(atom.x), html.Td(atom.y), html.Td(atom.z), html.Td("checkbox")])
+                for atom in r_atoms]
 
         except ValueError:
             # = FILE NOT SUPPORTED AS ASE INPUT (some formats listed in supported-files for ase are output only. This will only be filtered here)
             r_atoms = None
             UPDATE_TEXT = "File not supported"
             UP_STORE = dash.no_update
+            table_rows = dash.no_update
             # TODO: CSS-Logic to make border go red
-
 
     # TODO: CSS-Logic to make border go green
     # display WARNING for long calculation-time
 
-    return UPDATE_TEXT, UP_STORE, LIMIT_EXCEEDED
+    return UPDATE_TEXT, UP_STORE, LIMIT_EXCEEDED, table_rows
 # END DASH UPLOADER
 
 
@@ -953,10 +953,11 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
 @app.callback(
     Output("run-mala", "disabled"),
     Input("model-choice", "value"),
+    Input("model-temp", "value"),
     prevent_initial_call=True
 )
-def activate_run_MALA(model):
-    if model is not None:
+def activate_run_MALA(model, temp):
+    if model is not None and temp is not None:
         return False
     else:
         return True
@@ -992,11 +993,15 @@ def open_UP_MODAL(upload, run_mala, edit_input):
     prevent_initial_call=True
 )
 def init_temp_choice(model_choice):
+    if model_choice is None:
+        raise PreventUpdate
+    # splitting string input in substance and (possible) temperature(s)
     model, temp = model_choice.split("|")
 
     if "[" in temp:
         min_temp, max_temp = temp.split(",")
-        # TODO ?
+        min_temp = min_temp[1:]
+        max_temp = max_temp[:-1]
         return min_temp, False, min_temp, max_temp
 
     else:
@@ -1021,14 +1026,16 @@ def init_temp_choice(model_choice):
     [Input("run-mala", "n_clicks"),
      Input("reset-data", "n_clicks")],
     [State("model-choice", "value"),
+     State("model-temp", "value"),
      State('UP_STORE', 'data')],
     prevent_initial_call=True)
-def updateDF(trig, reset, model_choice, upload):
+def updateDF(trig, reset, model_choice, temp_choice, upload):
     """
     Input
-    :param trig: =INPUT -
+    :param trig: =INPUT - Pressing button "run-mala" triggers callback
     :param reset: =INPUT - trigger for reset of stored data
-    :param model_choice: =STATE - info on the cell-system
+    :param model_choice: =STATE - info on the cell-system (substance+temp(-range)), separated by |
+    :param temp_choice: =STATE - chosen temperature - either defined by model-choice, or direct input inbetween range
     :param upload: =STATE - dict(upload ID, filepath)
 
     :return: returns a dictionary with the data necessary to render to store-component
@@ -1050,8 +1057,9 @@ def updateDF(trig, reset, model_choice, upload):
     model, temp = model_choice.split("|")
 
     print("UpdateDF started")
-    #print("f_data is: ", upload)
-    print("model-choice is: ", model, "with temp: ", temp)
+
+    model_and_temp = {'name': model, 'temperature': temp_choice}
+    print(model_and_temp)
     upID = upload["ID"]
     filepath = upload["PATH"]
 
