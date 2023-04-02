@@ -175,7 +175,7 @@ orient_plot = dcc.Graph(id="orientation", responsive=True, figure=orient_fig, st
 
 # ------------------------------------
 # Tables
-
+    # Energy table
 row1 = html.Tr([html.Td("Band - Energy", style={'text-align': 'center', 'padding': 3, 'font-size': '0.85em'})],
                style={"font-weight": "bold"})
 row2 = html.Tr([html.Td(0, id="bandEn", style={'text-align': 'right', 'padding': 5, 'font-size': '0.85em'})])
@@ -190,14 +190,9 @@ table_body = [html.Tbody([row1, row2, row3, row4, row5, row6])]
 
 table = dbc.Table(table_body, bordered=True, striped=True, style={'padding': 0, 'margin': 0})
 
-
-
-# TODO EDIT
+    # List of ASE-atoms table
 table_header = [html.Thead(html.Tr([html.Th("ID"), html.Th("X"), html.Th("Y"), html.Th("Z"), html.Th("Use to run MALA")]), )]
-
-row1 = html.Tr([html.Td("X-default"), html.Td("Y-default"), html.Td("Z-default"), html.Td("checkbox")])
-
-table_body = [html.Tbody([row1], id="atoms_list")]
+table_body = [html.Tbody([], id="atoms_list")]
 atoms_table = dbc.Table(table_header + table_body, bordered=True)
 
 # -----------------
