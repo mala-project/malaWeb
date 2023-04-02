@@ -23,12 +23,15 @@ import dash_uploader as du
 
 # CONSTANTS
 ATOM_LIMIT = 1
-models = {
-    "Beryllium | solid | @298K": {"temp": "298K", "editable": False},
-    "Aluminum | solid | @298K": {"temp": "298K", "editable": False},
-    "Aluminum | solid/liquid | @933K": {"temp": "933K", "editable": False},
-    "Aluminum | solid | @100K-933K": {"temp": "500K", "editable": True},
-}
+# TODO need an overhaul
+
+models = [
+    {'label': "Beryllium | solid | @298K", 'value': "Be|298"},
+    {'label': "Aluminum | solid | @298K", 'value': "Al|298"},
+    {'label': "Aluminum | solid/liquid | @933K", 'value': "Al|933"},
+    {'label': "Aluminum | solid | @100K-933K", 'value': "Al|[100,933]"},
+]
+
 
 # PX--Graph Object Theme
 templ1 = dict(layout=go.Layout(
@@ -284,8 +287,10 @@ menu = html.Div([
             html.Hr(style={'margin-bottom': '1rem', 'margin-top': '1rem'}),
 
             html.P("Chose the model that MALA should use for calculations"),
-            dcc.Dropdown(id="model-choice", options=list(models.keys()), value=None, placeholder="-", optionHeight=45, style={"font-size": "0.85em"}),
-
+            dbc.Row([
+                dbc.Col(dcc.Dropdown(id="model-choice", options=models, value=None, placeholder="-", optionHeight=45, style={"font-size": "0.85em"}), width=10),
+                dbc.Col(dbc.Input(id="model-temp", type="number", min=0, max=10, step=1), width=2)
+            ], className="g-1"),
             html.Br(),
 
             dbc.Alert(id="atom-limit-warning",
@@ -978,6 +983,24 @@ def open_UP_MODAL(upload, run_mala, edit_input):
         return False
 # END OF CB
 
+@app.callback(
+    Output("model-temp", "value"),
+    Output("model-temp", "disabled"),
+    Output("model-temp", "min"),
+    Output("model-temp", "max"),
+    Input("model-choice", "value"),
+    prevent_initial_call=True
+)
+def init_temp_choice(model_choice):
+    model, temp = model_choice.split("|")
+
+    if "[" in temp:
+        min_temp, max_temp = temp.split(",")
+        # TODO ?
+        return min_temp, False, min_temp, max_temp
+
+    else:
+        return int(temp), True, None, None
 
 
 
@@ -1024,9 +1047,11 @@ def updateDF(trig, reset, model_choice, upload):
     if dash.callback_context.triggered_id == "reset-data":
         return None
 
+    model, temp = model_choice.split("|")
+
     print("UpdateDF started")
-    print("f_data is: ", upload)
-    print("model-choice is: ", model_choice)
+    #print("f_data is: ", upload)
+    print("model-choice is: ", model, "with temp: ", temp)
     upID = upload["ID"]
     filepath = upload["PATH"]
 
@@ -1311,7 +1336,7 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
     if f_data is None or plots is None:
         raise PreventUpdate
 
-    print("GET DATA from df_store")
+    print("Plot updated")
 
     scale = pd.DataFrame(f_data['SCALE'])
     x_axis, y_axis, z_axis = scale.x_axis, scale.y_axis, scale.z_axis
