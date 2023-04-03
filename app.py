@@ -269,7 +269,7 @@ menu = html.Div([
             atoms_table,
             html.P("Tick all the Atoms you want to use to send to MALA (Default: All checked).\nSee below for a "
                    "pre-render of the chosen Atom-positions:"),
-            dcc.Graph(id="render-atoms"),
+            dcc.Graph(id="atoms-preview"),
 
             html.Hr(style={'margin-bottom': '1rem', 'margin-top': '1rem'}),
 
@@ -890,7 +890,7 @@ def updatePageState(trig1, trig2, trig3, state):
 # after file-upload, return upload-status (if successful) and dict with file-path and upload-id (for future verif?)
 
 @du.callback(
-    output=[Output("output-upload-state", "children"), Output("UP_STORE", "data"), Output("atom-limit-warning", "is_open"), Output("atoms_list", "children")],
+    output=[Output("output-upload-state", "children"), Output("UP_STORE", "data"), Output("atom-limit-warning", "is_open"), Output("atoms_list", "children"), Output("atoms-preview", "figure")],
     id="upload-data-2",
 )
 def upload_callback(status):  # <------- NEW: du.UploadStatus
@@ -907,39 +907,32 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
 
     UP_STORE = {"ID": status.upload_id, "PATH": str(status.latest_file.resolve())}
     LIMIT_EXCEEDED = False
-
-    # ASE.reading to check for file-format support, and to fill atoms_table
-    # 1 explicit type-check, bc ASE uses a different read function for .cubes (returns DATA & ATOMS)
-    if str(status.latest_file.resolve()).endswith(".cube"):
-        r_data, r_atoms = read_cube_data(status.latest_file)
-        UPDATE_TEXT = ".cube file recognized"
+    fig = go.Figure()
+    # ASE.reading to check for file-format support, to fill atoms_table, and to fill atoms-preview
+    try:
+        r_atoms = ase.io.read(status.latest_file)
+        UPDATE_TEXT = "non-cube file uploaded"
         if r_atoms.get_global_number_of_atoms() > ATOM_LIMIT:
             LIMIT_EXCEEDED = True
-        table_rows = [html.Tr([html.Td(atom.index), html.Td(atom.x), html.Td(atom.y), html.Td(atom.z), html.Td("checkbox")]) for atom in
-                      r_atoms]
-        # ValueError exception for all other kinds of formats (not yet filtered by upload-component)
-    else:
-        try:
-            r_atoms = ase.io.read(status.latest_file)
-            UPDATE_TEXT = "non-cube file uploaded"
-            if r_atoms.get_global_number_of_atoms() > ATOM_LIMIT:
-                LIMIT_EXCEEDED = True
-            table_rows = [
-                html.Tr([html.Td(atom.index), html.Td(atom.x), html.Td(atom.y), html.Td(atom.z), html.Td("checkbox")])
-                for atom in r_atoms]
+        table_rows = [
+            html.Tr([html.Td(atom.index), html.Td(atom.x), html.Td(atom.y), html.Td(atom.z), html.Td("checkbox")])
+            for atom in r_atoms]
+        fig = go.Scatter3d(name="Atoms", x=[atom.x for atom in r_atoms], y=[atom.y for atom in r_atoms],
+                           z=[atom.z for atom in r_atoms], mode='markers')
+    # ValueError exception for not supported formats (not yet filtered by upload-component)
+    except ValueError:
+        # = FILE NOT SUPPORTED AS ASE INPUT (some formats listed in supported-files for ase are output only. This will only be filtered here)
+        r_atoms = None
+        UPDATE_TEXT = "File not supported"
+        UP_STORE = dash.no_update
+        table_rows = dash.no_update
+        # TODO: CSS-Logic to make border go red
 
-        except ValueError:
-            # = FILE NOT SUPPORTED AS ASE INPUT (some formats listed in supported-files for ase are output only. This will only be filtered here)
-            r_atoms = None
-            UPDATE_TEXT = "File not supported"
-            UP_STORE = dash.no_update
-            table_rows = dash.no_update
-            # TODO: CSS-Logic to make border go red
 
     # TODO: CSS-Logic to make border go green
     # display WARNING for long calculation-time
 
-    return UPDATE_TEXT, UP_STORE, LIMIT_EXCEEDED, table_rows
+    return UPDATE_TEXT, UP_STORE, LIMIT_EXCEEDED, table_rows, go.Figure(fig)
 # END DASH UPLOADER
 
 
@@ -1040,7 +1033,7 @@ def updateDF(trig, reset, model_choice, temp_choice, upload):
 
     NOW:
     read file from filepath via ASE -> returns ATOM-obj
-    on MALA-call, give ATOMS-objs & model_choice (TODO: in what format?)
+    on MALA-call, give ATOMS-objs & model_choice
     -> returns density data and energy values +  a .cube-file
     """
 
@@ -1069,9 +1062,9 @@ def updateDF(trig, reset, model_choice, temp_choice, upload):
 
 
     # (a) GET DATA FROM MALA (/ inference script)
-    print("Running MALA-Inference")
+    print("Running MALA-Inference. Passing: ", read_atoms, " and model-choice: ", model_and_temp)
     # TODO: This should pass the ASE-read Atom-objs and the dropdown-chosen Cell-info to MALA
-        # mala_data = mala_inference.results(read_atoms, model_choice)
+        # mala_data = mala_inference.results(read_atoms, model_and_temp)
     mala_data = mala_inference.results
         # contains 'band_energy', 'total_energy', 'density', 'density_of_states', 'energy_grid'
         # mala_data is stored in df_store dict under key 'MALA_DATA'. (See declaration of df_store below for more info)
@@ -1090,7 +1083,7 @@ def updateDF(trig, reset, model_choice, temp_choice, upload):
     # TODO: maybe we can get all the info needed from the ASE-Atoms-objs instead?
     atom_data = './Be2_density.cube'
     # line: 0-1 = Comment, Energy, broadening     //      2 = number of atoms, coord origin
-    # 3-5 = number of voxels per Axis (x/y/z), lentgh of axis-vector -> info on cell-warping
+    # 3-5 = number of voxels per Axis (x/y/z), length of axis-vector -> info on cell-warping
     # 6-x = atompositions
 
     with open(atom_data, 'r') as f:
@@ -1102,6 +1095,10 @@ def updateDF(trig, reset, model_choice, temp_choice, upload):
         x_axis = [float(i) for i in lines[3].split()]
         y_axis = [float(i) for i in lines[4].split()]
         z_axis = [float(i) for i in lines[5].split()]
+
+        # TODO: read cell data and atom positions from ASE, not from inference-created .cube-file
+        print("axis' from .cube: X:", x_axis[1:], ", Y:", y_axis[1:], ", Z:", z_axis[1:])
+        print("axis' from atoms-object: X:", read_atoms.cell[0], ", Y:", read_atoms.cell[1], ", Z:", read_atoms.cell[2])
 
     # READING ATOMPOSITIONS
     for i in range(0, int(no_of_atoms)):
