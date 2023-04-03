@@ -1043,11 +1043,8 @@ def updateDF(trig, reset, model_choice, temp_choice, upload):
     if dash.callback_context.triggered_id == "reset-data":
         return None
 
-    model, temp = model_choice.split("|")
-
     print("UpdateDF started")
-
-    model_and_temp = {'name': model, 'temperature': temp_choice}
+    model_and_temp = {'name': model_choice, 'temperature': temp_choice}
     print(model_and_temp)
     upID = upload["ID"]
     filepath = upload["PATH"]
@@ -1097,7 +1094,7 @@ def updateDF(trig, reset, model_choice, temp_choice, upload):
         y_axis = [float(i) for i in lines[4].split()]
         z_axis = [float(i) for i in lines[5].split()]
 
-        # TODO: read cell data and atom positions from ASE, not from inference-created .cube-file
+        # TODO: (next) read cell data and atom positions from ASE, not from inference-created .cube-file
         print("axis' from .cube: X:", x_axis[1:], ", Y:", y_axis[1:], ", Z:", z_axis[1:])
         print("axis' from atoms-object: X:", read_atoms.cell[0], ", Y:", read_atoms.cell[1], ", Z:", read_atoms.cell[2])
 
