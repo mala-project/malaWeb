@@ -1,6 +1,8 @@
 # IMPORTS
 import base64
 
+import dash_uploader
+
 import mala_inference
 import dash
 import dash_bootstrap_components as dbc
@@ -196,8 +198,7 @@ table_body = [html.Tbody([], id="atoms_list")]
 atoms_table = dbc.Table(table_header + table_body, bordered=True)
 
 # -----------------
-
-
+#help(dash_uploader.Upload())
 # Left SIDEBAR content
 menu = html.Div([
     # Logo Section
@@ -238,7 +239,7 @@ menu = html.Div([
                 ),
 
                 # dash-uploader component (not vanilla)
-                du.Upload(id="upload-data-2", text="Drag & Drop or Click to select",
+                du.Upload(id="upload-data", text="Drag & Drop or Click to select",
                           filetypes=list(ase.io.formats.ioformats.keys())),
 
                 html.Div("Awaiting upload..", id='output-upload-state',
@@ -890,8 +891,8 @@ def updatePageState(trig1, trig2, trig3, state):
 # after file-upload, return upload-status (if successful) and dict with file-path and upload-id (for future verif?)
 
 @du.callback(
-    output=[Output("output-upload-state", "children"), Output("UP_STORE", "data"), Output("atom-limit-warning", "is_open"), Output("atoms_list", "children"), Output("atoms-preview", "figure")],
-    id="upload-data-2",
+    output=[Output("output-upload-state", "children"), Output("UP_STORE", "data"), Output("atom-limit-warning", "is_open"), Output("atoms_list", "children"), Output("atoms-preview", "figure"), Output("upload-data", "className")],
+    id="upload-data",
 )
 def upload_callback(status):  # <------- NEW: du.UploadStatus
     """
@@ -902,7 +903,9 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
     upload-state: Upload-state below upload-area
     UP_STORE: dcc.Store-component, storing uploader-ID and path of uploaded file
     atom-limit-warning: Boolean for displaying long-computation-time-warning
-    atoms_table: Table containing all atoms read by ASE
+    atoms_list: Table containing all atoms read by ASE
+    atoms-preview: Figure previewing ASE-read Atoms
+    upload-data: Changing border-color of this component according to upload-status
     """
 
     UP_STORE = {"ID": status.upload_id, "PATH": str(status.latest_file.resolve())}
@@ -911,7 +914,7 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
     # ASE.reading to check for file-format support, to fill atoms_table, and to fill atoms-preview
     try:
         r_atoms = ase.io.read(status.latest_file)
-        UPDATE_TEXT = "non-cube file uploaded"
+        UPDATE_TEXT = "Upload successful"
         if r_atoms.get_global_number_of_atoms() > ATOM_LIMIT:
             LIMIT_EXCEEDED = True
         table_rows = [
@@ -919,6 +922,7 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
             for atom in r_atoms]
         fig = go.Scatter3d(name="Atoms", x=[atom.x for atom in r_atoms], y=[atom.y for atom in r_atoms],
                            z=[atom.z for atom in r_atoms], mode='markers')
+        border_style = "upload-success"
     # ValueError exception for not supported formats (not yet filtered by upload-component)
     except ValueError:
         # = FILE NOT SUPPORTED AS ASE INPUT (some formats listed in supported-files for ase are output only. This will only be filtered here)
@@ -926,13 +930,10 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
         UPDATE_TEXT = "File not supported"
         UP_STORE = dash.no_update
         table_rows = dash.no_update
-        # TODO: CSS-Logic to make border go red
-
-
-    # TODO: CSS-Logic to make border go green
+        border_style = "upload-failure"
     # display WARNING for long calculation-time
 
-    return UPDATE_TEXT, UP_STORE, LIMIT_EXCEEDED, table_rows, go.Figure(fig)
+    return UPDATE_TEXT, UP_STORE, LIMIT_EXCEEDED, table_rows, go.Figure(fig), border_style
 # END DASH UPLOADER
 
 
