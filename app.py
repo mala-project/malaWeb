@@ -3,7 +3,7 @@ import base64
 
 import dash_uploader
 
-import mala_inference
+from mala_inference import run_mala_prediction
 import dash
 import dash_bootstrap_components as dbc
 
@@ -31,7 +31,7 @@ models = [
     {'label': "Solid beryllium at room temperature (298K)", 'value': "Be|298"},
     {'label': "Solid aluminium at room temperature (298K)", 'value': "Al|298"},
     {'label': "Liquid/solid Aluminium at the melting point (933K)", 'value': "Al|933"},
-    {'label': "Solid Aluminium from 100K to 933K (500K, editable)", 'value': "Al|[100,933]"},
+    {'label': "Solid Aluminium from 100K to 933K (100K, editable)", 'value': "Al|[100,933]"},
 ]
 
 
@@ -1060,12 +1060,12 @@ def updateDF(trig, reset, model_choice, temp_choice, upload):
 
 
     # (a) GET DATA FROM MALA (/ inference script)
+
     print("Running MALA-Inference. Passing: ", read_atoms, " and model-choice: ", model_and_temp)
-    # TODO: This should pass the ASE-read Atom-objs and the dropdown-chosen Cell-info to MALA
-        # mala_data = mala_inference.results(read_atoms, model_and_temp)
-    mala_data = mala_inference.results
-        # contains 'band_energy', 'total_energy', 'density', 'density_of_states', 'energy_grid'
-        # mala_data is stored in df_store dict under key 'MALA_DATA'. (See declaration of df_store below for more info)
+    mala_data = run_mala_prediction(read_atoms, model_and_temp)
+
+    # contains 'band_energy', 'total_energy', 'density', 'density_of_states', 'energy_grid'
+    # mala_data is stored in df_store dict under key 'MALA_DATA'. (See declaration of df_store below for more info)
     density = mala_data['density']
 
     coord_arr = np.column_stack(
