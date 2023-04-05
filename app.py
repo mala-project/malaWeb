@@ -554,7 +554,7 @@ mc0_landing = html.Div([
     html.Div([html.H1([indent.join('Welcome')], className='greetings'),
               html.H1([indent.join('To')], className='greetings'),
               html.H1([indent.join('MALA')], className='greetings'),
-              html.Div('Upload a .cube-File for MALA to process', className='greetings', ),
+              html.Div('Upload a file containing atomic positions for MALA to process', className='greetings', ),
               html.Div('Then choose a style for plotting', className='greetings', )]),
 
 ], style={'width': 'content-min', 'margin-top': '20vh'})
@@ -1566,8 +1566,7 @@ def update_bot_canv(f_data, state):
         # take the first
         band_en = f_data['MALA_DATA']['band_energy']
         total_en = f_data['MALA_DATA']['total_energy']
-        fermi_en = 0
-        # TODO: add Fermi-Energy here as soon as MALA's Inference delivers that too
+        fermi_en = f_data['MALA_DATA']['fermi_energy']
 
     else:
         fig = px.scatter()

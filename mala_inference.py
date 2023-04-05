@@ -50,15 +50,20 @@ def run_mala_prediction(atoms_to_predict, model_and_temp):
         model_paths[model_and_temp["name"]], path="./models")
     predicted_ldos = predictor.predict_for_atoms(atoms_to_predict)
 
+    ldos_calculator: mala.LDOS
     ldos_calculator = predictor.target_calculator
     ldos_calculator.read_from_array(predicted_ldos)
 
     results = {
         "band_energy": ldos_calculator.band_energy,
         "total_energy": ldos_calculator.total_energy,
-        "density": ldos_calculator.density,
+
+        # Reshaping for plotting.
+        "density": np.reshape(ldos_calculator.density,
+                              ldos_calculator.grid_dimensions),
         "density_of_states": ldos_calculator.density_of_states,
         "energy_grid": ldos_calculator.energy_grid,
+        "fermi_energy": ldos_calculator.fermi_energy
     }
 
     return results
