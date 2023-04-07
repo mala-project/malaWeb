@@ -1089,12 +1089,9 @@ def updateDF(trig, reset, model_choice, temp_choice, upload):
     filepath = upload["PATH"]
 
     # ASE.reading to receive ATOMS-objs, to pass to MALA-inference
-        # 1 explicit type-check, bc ASE uses a different read function for .cubes (returns DATA & ATOMS)
-    if filepath.endswith(".cube"):
-        read_data, read_atoms = read_cube_data(filepath)
-    else:
+
         # no ValueError Exception needed, bc this is done directly on upload
-        read_atoms = ase.io.read(filepath)
+    read_atoms = ase.io.read(filepath)
 
 
 
