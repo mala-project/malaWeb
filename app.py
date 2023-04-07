@@ -239,8 +239,10 @@ menu = html.Div([
                 ),
 
                 # dash-uploader component (not vanilla)
-                du.Upload(id="upload-data", text="Drag & Drop or Click to select",
-                          filetypes=list(ase.io.formats.ioformats.keys())),
+                du.Upload(id="upload-data", text="Drag & Drop or Click to select"),
+                    # Can't manage to extract list of ASE-supported extensions from these IOFormats in:
+                    # print(ase.io.formats.ioformats),
+                    # -> property "fileformat" could be used in du.Upload() to restrict uploadable extensions (safety-reasons)
 
                 html.Div("Awaiting upload..", id='output-upload-state',
                          style={'margin': '2px', "font-size": "0.85em", 'textAlign': 'center'}),
@@ -267,9 +269,27 @@ menu = html.Div([
         dbc.ModalBody([
             html.H6("The File you uploaded contained information of the following Atoms: "),
             html.Br(),
+
+
+            dbc.Card(html.H6(children=[dbc.Row([dbc.Col(width=1), dbc.Col('List of Atoms', width=10), dbc.Col("⌃", width=1, id="open-atom-list-arrow")])], style={'margin': '5px'}, id="open-atom-list", n_clicks=0),
+                         style={"text-align": "center"}),
+            dbc.Collapse(
+                    dbc.Card(dbc.CardBody(  # Upload Section
+                        [
             atoms_table,
             html.P("Tick all the Atoms you want to use to send to MALA (Default: All checked).\nSee below for a "
                    "pre-render of the chosen Atom-positions:"),
+                        ]
+
+                    )),
+                    id="collapse-atom-list",
+                    style={"max-height": "30rem"},
+                    is_open=True,
+                ),
+
+
+
+
             dcc.Graph(id="atoms-preview"),
 
             html.Hr(style={'margin-bottom': '1rem', 'margin-top': '1rem'}),
@@ -646,6 +666,23 @@ def toggle_plot_choice(n_header, page_state, data, is_open):
 # end of sidebar_l collapses
 
 
+# Modal collapsable
+# sidebar_l collapses
+@app.callback(
+    Output("collapse-atom-list", "is_open"),
+    Output("open-atom-list-arrow", "children"),
+    Input("open-atom-list", "n_clicks"),
+    Input("collapse-atom-list", "is_open"),
+    prevent_initial_call=True,
+)
+def toggle_upload(n_header, is_open):
+    txt = "⌃"
+    if n_header:
+        if is_open:
+            txt = "⌄"
+        return not is_open, txt
+
+
 # BOTTOM bar callbacks
 
 @app.callback(
@@ -889,10 +926,16 @@ def updatePageState(trig1, trig2, trig3, state):
 
 # DASH-UPLOADER
 # after file-upload, return upload-status (if successful) and dict with file-path and upload-id (for future verif?)
+def upload_exception():
+    print("excepted file error")
+    return None, "File not supported", dash.no_update, dash.no_update, "upload-failure"
+    # = FILE NOT SUPPORTED AS ASE INPUT (some formats listed in supported-files for ase are output only. This will only be filtered here)
+
+
 
 @du.callback(
     output=[Output("output-upload-state", "children"), Output("UP_STORE", "data"), Output("atom-limit-warning", "is_open"), Output("atoms_list", "children"), Output("atoms-preview", "figure"), Output("upload-data", "className")],
-    id="upload-data",
+    id="upload-data"
 )
 def upload_callback(status):  # <------- NEW: du.UploadStatus
     """
@@ -907,7 +950,6 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
     atoms-preview: Figure previewing ASE-read Atoms
     upload-data: Changing border-color of this component according to upload-status
     """
-
     UP_STORE = {"ID": status.upload_id, "PATH": str(status.latest_file.resolve())}
     LIMIT_EXCEEDED = False
     fig = go.Figure()
@@ -923,15 +965,12 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
         fig = go.Scatter3d(name="Atoms", x=[atom.x for atom in r_atoms], y=[atom.y for atom in r_atoms],
                            z=[atom.z for atom in r_atoms], mode='markers')
         border_style = "upload-success"
-    # ValueError exception for not supported formats (not yet filtered by upload-component)
+
+    # ValueError or File not sup. - exception for not supported formats (not yet filtered by upload-component)
     except ValueError:
-        # = FILE NOT SUPPORTED AS ASE INPUT (some formats listed in supported-files for ase are output only. This will only be filtered here)
-        r_atoms = None
-        UPDATE_TEXT = "File not supported"
-        UP_STORE = dash.no_update
-        table_rows = dash.no_update
-        border_style = "upload-failure"
-    # display WARNING for long calculation-time
+        r_atoms, UPDATE_TEXT, UP_STORE, table_rows, border_style = upload_exception()
+    except ase.io.formats.UnknownFileTypeError:
+        r_atoms, UPDATE_TEXT, UP_STORE, table_rows, border_style = upload_exception()
 
     return UPDATE_TEXT, UP_STORE, LIMIT_EXCEEDED, table_rows, go.Figure(fig), border_style
 # END DASH UPLOADER
@@ -1644,4 +1683,4 @@ def toggle_offcanvas_l(n1, is_open):
 # END OF CALLBACKS FOR SIDEBAR
 
 if __name__ == '__main__':
-    app.run_server(debug=True, port=8051)
+    app.run_server(debug=True, port=8050)
