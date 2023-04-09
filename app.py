@@ -1,7 +1,4 @@
 # IMPORTS
-import base64
-
-import dash_uploader
 
 from mala_inference import run_mala_prediction
 import dash
@@ -20,7 +17,6 @@ import plotly.graph_objs as go
 
 # I/O
 import ase.io
-from ase.io.cube import read_cube_data
 import dash_uploader as du
 
 # CONSTANTS
@@ -242,7 +238,7 @@ menu = html.Div([
                 du.Upload(id="upload-data", text="Drag & Drop or Click to select"),
                     # Can't manage to extract list of ASE-supported extensions from these IOFormats in:
                     # print(ase.io.formats.ioformats),
-                    # -> property "fileformat" could be used in du.Upload() to restrict uploadable extensions (safety-reasons)
+                    # -> TODO property "fileformat" could be used in du.Upload() to restrict uploadable extensions (safety-reasons)
 
                 html.Div("Awaiting upload..", id='output-upload-state',
                          style={'margin': '2px', "font-size": "0.85em", 'textAlign': 'center'}),
