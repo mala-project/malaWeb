@@ -1079,7 +1079,7 @@ def updateDF(trig, reset, model_choice, temp_choice, upload):
         return None
 
     print("UpdateDF started")
-    model_and_temp = {'name': model_choice, 'temperature': temp_choice}
+    model_and_temp = {'name': model_choice, 'temperature': float(temp_choice)}
     print(model_and_temp)
     upID = upload["ID"]
     filepath = upload["PATH"]

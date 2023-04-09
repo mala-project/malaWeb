@@ -48,8 +48,7 @@ def run_mala_prediction(atoms_to_predict, model_and_temp):
     """
     parameters, network, data_handler, predictor = mala.Predictor.load_run(
         model_paths[model_and_temp["name"]], path="./models")
-    predicted_ldos = predictor.predict_for_atoms(atoms_to_predict)
-
+    predicted_ldos = predictor.predict_for_atoms(atoms_to_predict, temperature=model_and_temp["temperature"])
     ldos_calculator: mala.LDOS
     ldos_calculator = predictor.target_calculator
     ldos_calculator.read_from_array(predicted_ldos)
