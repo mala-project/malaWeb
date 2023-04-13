@@ -1,7 +1,4 @@
 # IMPORTS
-import base64
-
-import dash_uploader
 
 import mala_inference
 import dash
