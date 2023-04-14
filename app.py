@@ -24,7 +24,7 @@ from ase.io.cube import read_cube_data
 import dash_uploader as du
 
 # CONSTANTS
-ATOM_LIMIT = 10
+ATOM_LIMIT = 200
 # TODO need an overhaul
 
 models = [
