@@ -48,6 +48,11 @@ def run_mala_prediction(atoms_to_predict, model_and_temp):
                            to be plotted.
     """
     if model_and_temp["name"] == "Debug|0":
+        params = mala.Parameters()
+        ldos_calculator = mala.LDOS(params)
+        ldos_calculator.read_additional_calculation_data([atoms_to_predict,
+                                                          [20, 20, 20]])
+
         results = {
             "band_energy": 123.0,
             "total_energy": 456.0,
@@ -56,7 +61,9 @@ def run_mala_prediction(atoms_to_predict, model_and_temp):
             "density":  np.random.random([20, 20, 20]),
             "density_of_states": [0.0, 1.0, 2.0, 3.0, 4.0],
             "energy_grid": [0.0, 1.0, 2.0, 3.0, 4.0],
-            "fermi_energy": 789.0
+            "fermi_energy": 789.0,
+            "voxel": ldos_calculator.voxel,
+            "grid_dimensions": ldos_calculator.grid_dimensions
         }
         return results
     else:
@@ -77,7 +84,9 @@ def run_mala_prediction(atoms_to_predict, model_and_temp):
                                   ldos_calculator.grid_dimensions),
             "density_of_states": ldos_calculator.density_of_states,
             "energy_grid": ldos_calculator.energy_grid,
-            "fermi_energy": ldos_calculator.fermi_energy
+            "fermi_energy": ldos_calculator.fermi_energy,
+            "voxel": ldos_calculator.voxel,
+            "grid_dimensions": ldos_calculator.grid_dimensions
         }
 
         return results

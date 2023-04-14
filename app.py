@@ -1111,39 +1111,20 @@ def updateDF(trig, reset, model_choice, temp_choice, upload):
 
     atoms = [[], [], [], [], []]
 
-
-
-    # Reading .cube-File
-    # (b) GET ATOMPOSITION & AXIS SCALING FROM .cube CREATED BY MALA (located where 'mala-inference-script' is located
-    # TODO: maybe we can get all the info needed from the ASE-Atoms-objs instead?
-    atom_data = './Be2_density.cube'
-    # line: 0-1 = Comment, Energy, broadening     //      2 = number of atoms, coord origin
-    # 3-5 = number of voxels per Axis (x/y/z), length of axis-vector -> info on cell-warping
-    # 6-x = atompositions
-
-    with open(atom_data, 'r') as f:
-        lines = f.read().splitlines()
-        no_of_atoms, _, _, _ = lines[2].split()
-
-        # AXIS-SCALING-FACTOR
-        # axis-List-Format: voxelcount[0]   X-Scale[1]     Y-Scale[2]     Z-Scale[3]
-        x_axis = [float(i) for i in lines[3].split()]
-        y_axis = [float(i) for i in lines[4].split()]
-        z_axis = [float(i) for i in lines[5].split()]
-
-        # TODO: (next) read cell data and atom positions from ASE, not from inference-created .cube-file
-        print("axis' from .cube: X:", x_axis[1:], ", Y:", y_axis[1:], ", Z:", z_axis[1:])
-        print("axis' from atoms-object: X:", read_atoms.cell[0], ", Y:", read_atoms.cell[1], ", Z:", read_atoms.cell[2])
+    x_axis = [mala_data["grid_dimensions"][0], mala_data["voxel"][0][0],
+              mala_data["voxel"][0][1], mala_data["voxel"][0][2]]
+    y_axis = [mala_data["grid_dimensions"][1], mala_data["voxel"][1][0],
+              mala_data["voxel"][1][1], mala_data["voxel"][1][2]]
+    z_axis = [mala_data["grid_dimensions"][2], mala_data["voxel"][2][0],
+              mala_data["voxel"][2][1], mala_data["voxel"][2][2]]
 
     # READING ATOMPOSITIONS
-    for i in range(0, int(no_of_atoms)):
-        ordinal_number, charge, x, y, z = lines[6 + i].split()  # atom-data starts @line-index 6
-        # atoms-List-Format: ordinalNumber[0]    charge[1]  x[2]   y[3]   z[4]
-        atoms[0].append(int(ordinal_number))
-        atoms[1].append(float(charge))
-        atoms[2].append(float(x))
-        atoms[3].append(float(y))
-        atoms[4].append(float(z))
+    for i in range(0, len(read_atoms)):
+        atoms[0].append(read_atoms[i].symbol)
+        atoms[1].append(read_atoms[i].charge)
+        atoms[2].append(read_atoms.get_positions()[i,0])
+        atoms[3].append(read_atoms.get_positions()[i,1])
+        atoms[4].append(read_atoms.get_positions()[i,2])
     atoms_data = pd.DataFrame(
         data={'x': atoms[2], 'y': atoms[3], 'z': atoms[4], 'ordinal': atoms[0], 'charge': atoms[1]})
 
@@ -1439,14 +1420,10 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
     # plot-settings
 
     # ADD ATOMS
-    # TODO: COLOR-CODING ATOMS BASED OFF THEIR CHARGE
     if settings["atoms"]:
         atom_colors = []
         for i in range(0, int(no_of_atoms)):
-            if atoms['charge'][i] == 4.0:
-                atom_colors.append("black")
-            else:
-                atom_colors.append("white")
+            atom_colors.append("green")
         atoms_fig = go.Scatter3d(name="Atoms", x=atoms['x'], y=atoms['y'], z=atoms['z'], mode='markers',
                                  marker=dict(size=30, color=atom_colors))
     else:
