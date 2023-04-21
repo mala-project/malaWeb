@@ -175,13 +175,13 @@ orient_plot = dcc.Graph(id="orientation", responsive=True, figure=orient_fig, st
 # ------------------------------------
 # Tables
     # Energy table
-row1 = html.Tr([html.Td("Band - Energy", style={'text-align': 'center', 'padding': 3, 'font-size': '0.85em'})],
+row1 = html.Tr([html.Td("Band energy", style={'text-align': 'center', 'padding': 3, 'font-size': '0.85em'})],
                style={"font-weight": "bold"})
 row2 = html.Tr([html.Td(0, id="bandEn", style={'text-align': 'right', 'padding': 5, 'font-size': '0.85em'})])
-row3 = html.Tr([html.Td('Total - Energy', style={'text-align': 'center', 'padding': 3, 'font-size': '0.85em'})],
+row3 = html.Tr([html.Td('Total energy', style={'text-align': 'center', 'padding': 3, 'font-size': '0.85em'})],
                style={"font-weight": "bold"})
 row4 = html.Tr([html.Td(0, id="totalEn", style={'text-align': 'right', 'padding': 5, 'font-size': '0.85em'})])
-row5 = html.Tr([html.Td("Fermi - Energy", style={'text-align': 'center', 'padding': 3, 'font-size': '0.85em'})],
+row5 = html.Tr([html.Td("Fermi energy", style={'text-align': 'center', 'padding': 3, 'font-size': '0.85em'})],
                style={"font-weight": "bold"})
 row6 = html.Tr(
     [html.Td("placeholder", id='fermiEn', style={'text-align': 'right', 'padding': 5, 'font-size': '0.85em'})])
@@ -268,7 +268,7 @@ menu = html.Div([
             html.Br(),
 
 
-            dbc.Card(html.H6(children=[dbc.Row([dbc.Col(width=1), dbc.Col('List of Atoms', width=10), dbc.Col("⌃", width=1, id="open-atom-list-arrow")])], style={'margin': '5px'}, id="open-atom-list", n_clicks=0),
+            dbc.Card(html.H6(children=[dbc.Row([dbc.Col(width=1), dbc.Col('List of Atoms', width=10), dbc.Col("⌄", width=1, id="open-atom-list-arrow")])], style={'margin': '5px'}, id="open-atom-list", n_clicks=0),
                          style={"text-align": "center"}),
             dbc.Collapse(
                     dbc.Card(dbc.CardBody(  # Upload Section
@@ -281,7 +281,7 @@ menu = html.Div([
                     )),
                     id="collapse-atom-list",
                     style={"max-height": "30rem"},
-                    is_open=True,
+                    is_open=False,
                 ),
 
 
@@ -321,21 +321,10 @@ menu = html.Div([
         )
     ], id="upload-modal", size="lg", is_open=False),
 
-    dbc.Card(
-        html.H6(children='Plot Style', style={'margin': '5px'}, id="open-plot-choice", n_clicks=0),
-        style={"text-align": "center", 'margin-top': '15px'}),
-
-    dbc.Collapse(dbc.Card(dbc.CardBody(
-        html.Div(children=[radioItems]))),
-        id="collapse-plot-choice",
-        is_open=False,
-    ),
-
-    dbc.Popover(
-        dbc.PopoverBody("Skewed cells only supported by Points-style"),
-        target="open-plot-choice",
-        trigger="hover",
-    )
+    # removed components (PLOTSTYLE):
+        # - card "open-plot-choice"
+        # - Collapse "collapse-plot-choice"
+        # - Popover target: "open-plot-choice"
 
 ], className="sidebar")
 
@@ -605,7 +594,7 @@ skel_layout = [dbc.Row([
 p_layout_landing = dbc.Container([
     dcc.Store(id="page_state", data="landing"),
     dcc.Store(id="UP_STORE"),
-    dcc.Store(id="choice_store"),
+    dcc.Store(id="choice_store", data="scatter"),
     dcc.Store(id="sc_settings"),
     html.Div(skel_layout, id="content-layout")
 ], fluid=True, style={'height': '100vh', 'width': '100vw', 'background-color': '#023B59'})
@@ -780,6 +769,7 @@ def toggle_z_cs(n_x, active, bc):
     Input("choice_store", "data"),
     prevent_initial_call=True)
 def toggle_density_sc(n_d, active, bc, plot_choice):
+        # PLOTSTYLE
     # Disabling density-slider for volume-plots
     if dash.callback_context.triggered_id == "choice_store":
         if plot_choice == "scatter":
@@ -1179,7 +1169,7 @@ def updateDF(trig, reset, model_choice, temp_choice, upload):
 
 
 # PLOT-CHOICE STORING
-
+    # PLOTSTYLE
 @app.callback(
     Output("choice_store", "data"),
     [Input('plot-choice', 'value')],
@@ -1259,6 +1249,7 @@ def update_settings_store(size, outline, atoms, opac, saved):
 def update_tools(data, plot_choice):
     if data is None:  # in case of reset:
         raise PreventUpdate
+        # PLOTSTYLE
     else:
         if plot_choice == "scatter":
             df = pd.DataFrame(data['MALA_DF']['scatter'])
@@ -1290,10 +1281,9 @@ def update_tools(data, plot_choice):
 @app.callback(
     Output("mc0", "children"),
     Input("page_state", "data"),
-    State("choice_store", "data"),
     State("df_store", "data"),
     prevent_initial_call=True)
-def updateMC0(state, plots, data):
+def updateMC0(state, data):
     if data is None or state == "landing":
         return mc0_landing
 
@@ -1306,7 +1296,7 @@ def updateMC0(state, plots, data):
 cam_store can't be an input or else it triggers an update everytime the cam is moved
 '''
 
-
+    # PLOTSTYLE
 @app.callback(
     Output("scatter-plot", "figure"),
     [
@@ -1325,7 +1315,7 @@ cam_store can't be an input or else it triggers an update everytime the cam is m
         Input("x-y-cam", "n_clicks"),
         Input("x-z-cam", "n_clicks"),
         Input("y-z-cam", "n_clicks"),
-        Input("choice_store", "data")
+        State("choice_store", "data")
     ],
     [State("scatter-plot", "relayoutData"),
      State("cam_store", "data"),
@@ -1421,7 +1411,7 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
         for i in range(0, int(no_of_atoms)):
             atom_colors.append("green")
         atoms_fig = go.Scatter3d(name="Atoms", x=atoms['x'], y=atoms['y'], z=atoms['z'], mode='markers',
-                                 marker=dict(size=30, color=atom_colors))
+                                 marker=dict(size=30, color=atom_colors, line=dict(width=1, color='DarkSlateGrey')))
     else:
         atoms_fig = go.Figure()
 
@@ -1593,15 +1583,17 @@ def update_bot_canv(f_data, state):
 
 # CALLBACKS FOR SIDEBAR
 
+    # PLOTSTYLE
 # Update settings sidebar
 @app.callback(
     Output("sz/isosurf-label", "children"),
     Output("opac-label", "style"),
     Output("sc-opac", "style"),
-    Input("choice_store", "data"),
+    Input("run-mala", "n_clicks"),
+    State("choice_store", "data"),
     prevent_initial_call=True
 )
-def updateSettings(plot_choice):
+def updateSettings(run_mala, plot_choice):
     if plot_choice == "scatter":
         return "Size", {'visibility': 'visible'}, {'visibility': 'visible', 'width': '5em', 'margin-left': '0.25em'}
     elif plot_choice == "volume":
@@ -1612,13 +1604,16 @@ def updateSettings(plot_choice):
 
 @app.callback(  # sidebar_r canvas (1/?)
     Output("offcanvas-r-sc", "is_open"),
+    Input("run-mala", "n_clicks"),
     Input("open-settings", "n_clicks"),
     Input("reset-data", "n_clicks"),
     [State("offcanvas-r-sc", "is_open")],
     prevent_initial_call=True
 )
-def toggle_settings_bar(n1, reset, is_open):
-    if dash.callback_context.triggered_id[0:4] == "open":
+def toggle_settings_bar(run_mala, n1, reset, is_open):
+    if dash.callback_context.triggered_id == "run-mala":
+        return True
+    elif dash.callback_context.triggered_id[0:4] == "open":
         return not is_open
     elif dash.callback_context.triggered_id == "reset-data":
         return False
