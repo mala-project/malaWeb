@@ -35,16 +35,16 @@ models = [
 # PX--Graph Object Theme
 templ1 = dict(layout=go.Layout(
     scene={
-        'xaxis': {'showbackground': False,
+        'xaxis': {'showbackground': True,
                   'ticks': '',
-                  'visible': False,
+                  'visible': True,
                   },
-        'yaxis': {'showbackground': False,
+        'yaxis': {'showbackground': True,
                   'ticks': '',
-                  'visible': False},
-        'zaxis': {'showbackground': False,
+                  'visible': True},
+        'zaxis': {'showbackground': True,
                   'ticks': '',
-                  'visible': False},
+                  'visible': True},
         'aspectmode': 'data'
     },
     paper_bgcolor='#f8f9fa',
@@ -320,11 +320,6 @@ menu = html.Div([
         style={'justify-content': "center"}
         )
     ], id="upload-modal", size="lg", is_open=False),
-
-    # removed components (PLOTSTYLE):
-        # - card "open-plot-choice"
-        # - Collapse "collapse-plot-choice"
-        # - Popover target: "open-plot-choice"
 
 ], className="sidebar")
 
@@ -766,17 +761,10 @@ def toggle_z_cs(n_x, active, bc):
     Input("active-dense", "n_clicks"),
     State("range-slider-dense", "disabled"),
     State("active-dense", "active"),
-    Input("choice_store", "data"),
     prevent_initial_call=True)
-def toggle_density_sc(n_d, active, bc, plot_choice):
-        # PLOTSTYLE
-    # Disabling density-slider for volume-plots
-    if dash.callback_context.triggered_id == "choice_store":
-        if plot_choice == "scatter":
-            return True, False, False
-        else:
-            return True, False, True
-    elif dash.callback_context.triggered_id == "active-dense":
+def toggle_density_sc(n_d, active, bc):
+
+    if dash.callback_context.triggered_id == "active-dense":
         return not active, not bc, False
     else:
         return True, False, True
@@ -1121,7 +1109,6 @@ def updateDF(trig, reset, model_choice, temp_choice, upload):
     data0['y'] *= y_axis[2]
     data0['z'] *= z_axis[3]
     data_sc = data0.copy()
-    data_vol = data0.copy()
 
     # SHEARING für scatter_3d - linearcombination
     data_sc.x += y_axis[1] * (data0.y / y_axis[2])
@@ -1157,8 +1144,7 @@ def updateDF(trig, reset, model_choice, temp_choice, upload):
 
     # _______________________________________________________________________________________
 
-    df_store = {'MALA_DF': {'default': data0.to_dict("records"), 'scatter': data_sc.to_dict("records"),
-                            'volume': data_vol.to_dict("records")},
+    df_store = {'MALA_DF': {'default': data0.to_dict("records"), 'scatter': data_sc.to_dict("records")},
                 'MALA_DATA': mala_data,
                 'INPUT_DF': atoms_data.to_dict("records"),
                 'SCALE': {'x_axis': x_axis, 'y_axis': y_axis, 'z_axis': z_axis}}
@@ -1168,20 +1154,14 @@ def updateDF(trig, reset, model_choice, temp_choice, upload):
     return df_store
 
 
-# PLOT-CHOICE STORING
-    # PLOTSTYLE
-@app.callback(
-    Output("choice_store", "data"),
-    [Input('plot-choice', 'value')],
-    prevent_initial_call=True)
-def update_choice_store(choice):
-    return choice
+
 
 
 # SC SETTINGS STORING
 # TODO: fix Opacity/Outline (Double Binding?)
 @app.callback(
     Output("sc_settings", "data"),
+    Output("sc-outline", "value"),
     [Input('sc-size', 'value'),
      Input("sc-outline", "value"),
      Input("sc-atoms", "value"),
@@ -1212,7 +1192,7 @@ def update_settings_store(size, outline, atoms, opac, saved):
         settings["outline"] = outline
     elif dash.callback_context.triggered_id == "sc-atoms":
         settings["atoms"] = atoms
-    return settings
+    return settings, settings["outline"]
 
 
 # END UPDATE FOR STORED DATA
@@ -1241,37 +1221,23 @@ def update_settings_store(size, outline, atoms, opac, saved):
     [
         Input("df_store", "data"),
     ],
-    [
-        # as long as volume and scatter don't share their dataset: state instead of input
-        State("choice_store", "data")
-    ],
 )
-def update_tools(data, plot_choice):
+def update_tools(data):
     if data is None:  # in case of reset:
         raise PreventUpdate
-        # PLOTSTYLE
     else:
-        if plot_choice == "scatter":
-            df = pd.DataFrame(data['MALA_DF']['scatter'])
-        elif plot_choice == "volume":
-            df = pd.DataFrame(data['MALA_DF']['volume'])
-        else:
-            # return these default values if we don#t have a plot-choice for some reason
-            return 0, 1, 1, \
-                   0, 1, 1, \
-                   0, 1, 1, \
-                   0, 1, 1,
+        df = pd.DataFrame(data['MALA_DF']['scatter'])
+
 
         scale = pd.DataFrame(data['SCALE'])
-        x_step = scale["x_axis"][1]
-        y_step = scale["y_axis"][2]
-        z_step = scale["z_axis"][3]
+
         dense_step = round((max(df['val']) - min(df['val'])) / 30, ndigits=5)
 
-        # BUG: have to add another half-step, else rangeslider won't ever be filled and will cut off very last x-column
-        return min(df["x"]), max(df["x"]) + 0.5 * x_step, x_step, \
-               min(df["y"]), max(df["y"]), y_step, \
-               min(df["z"]), max(df["z"]), z_step, \
+
+
+        return 0, scale["x_axis"][0]-1, 1, \
+               0, scale["y_axis"][0]-1, 1, \
+               0, scale["z_axis"][0]-1, 1, \
                min(df["val"]), max(df["val"]), dense_step
 
 
@@ -1296,7 +1262,6 @@ def updateMC0(state, data):
 cam_store can't be an input or else it triggers an update everytime the cam is moved
 '''
 
-    # PLOTSTYLE
 @app.callback(
     Output("scatter-plot", "figure"),
     [
@@ -1315,19 +1280,17 @@ cam_store can't be an input or else it triggers an update everytime the cam is m
         Input("x-y-cam", "n_clicks"),
         Input("x-z-cam", "n_clicks"),
         Input("y-z-cam", "n_clicks"),
-        State("choice_store", "data")
     ],
     [State("scatter-plot", "relayoutData"),
      State("cam_store", "data"),
      Input("df_store", "data"),
      State("scatter-plot", "figure")
      ],
-    # prevent_initial_call=True
 )
 def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, slider_range_cs_y, cs_y_inactive,
                slider_range_cs_z, cs_z_inactive,
                settings,
-               cam_default, cam_xy, cam_xz, cam_yz, plots, relayout_data, stored_cam_settings, f_data, fig):
+               cam_default, cam_xy, cam_xz, cam_yz, relayout_data, stored_cam_settings, f_data, fig):
     # TODO: make this function more efficient
     #  - for example on settings-change, only update the settings and take the fig from relayout data instead of redefining it
     # --> most likely only possible with client-side-callbacks
@@ -1335,30 +1298,26 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
     # DATA
     # the density-Dataframe that we're updating, taken from df_store (=f_data)
 
-    if f_data is None or plots is None:
+    if f_data is None:
         raise PreventUpdate
 
-    print("Plot updated")
+    print("Plot update")
+    df = pd.DataFrame(f_data['MALA_DF']['scatter'])
+        # sheared coordinates
+    dfu = df.copy()
 
     scale = pd.DataFrame(f_data['SCALE'])
-    x_axis, y_axis, z_axis = scale.x_axis, scale.y_axis, scale.z_axis
-    # 1 = nr of voxels || 2 = axis scale of x || 3 = axis scale of y || 4 = axis scale of z
 
-    if plots == "scatter":
-        df = pd.DataFrame(f_data['MALA_DF']['scatter'])
-        # sheared coordinates
-    elif plots == "volume":
-        df = pd.DataFrame(f_data['MALA_DF']['volume'])
-        # non-sheared coordinates
-    else:
-        # No Data to plot -> don't update
-        raise PreventUpdate
-    dfu = df.copy()
+    x_step = (abs(max(dfu["x"]))+abs(min(dfu["x"]))) / scale["x_axis"][0]  # BUG CAUSE: second vector not included!
+    y_step = (abs(max(dfu["y"]))+abs(min(dfu["y"]))) / scale["y_axis"][0]
+    z_step = (abs(max(dfu["z"]))+abs(min(dfu["z"]))) / scale["z_axis"][0]
+
 
     # atoms-Dataframe also taken from f_data
     atoms = pd.DataFrame(f_data['INPUT_DF'])
     no_of_atoms = len(atoms)
 
+    # just 8 cornerpoints to keep the camera static when slicing - otherwise it will zoom if f.e. width shrinks
     df_bound = df.from_dict({
         'x': [min(dfu['x']), min(dfu['x']), min(dfu['x']), min(dfu['x']), max(dfu['x']), max(dfu['x']), max(dfu['x']),
               max(dfu['x'])],
@@ -1372,7 +1331,6 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
         x=df_bound['x'], y=df_bound['y'], z=df_bound['z'], mode='markers',
         marker=dict(size=0, color='white'), visible=False, showlegend=False,
     )
-    # just 8 cornerpoints to keep the camera static when slicing - otherwise it will zoom if f.e. width shrinks
 
     # Dataframes are ready now
 
@@ -1387,19 +1345,20 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
     # x-Cross-section
     if slider_range_cs_x is not None and cs_x_inactive:  # Any slider Input there?
         low, high = slider_range_cs_x
-        mask = (dfu['x'] >= low) & (dfu['x'] <= high)
+        print(scale["x_axis"][0]-1-high)
+        mask = (dfu['x'] >= min(dfu["x"])+low*x_step) & (dfu['x'] <= max(dfu["x"])-(scale["x_axis"][0]-1-high)*x_step)
         dfu = dfu[mask]
 
     # Y-Cross-section
     if slider_range_cs_y is not None and cs_y_inactive:  # Any slider Input there?
         low, high = slider_range_cs_y
-        mask = (dfu['y'] >= low) & (dfu['y'] <= high)
+        mask = (dfu['y'] >= min(dfu["y"])+low*y_step) & (dfu['y'] <= max(dfu["y"])-(scale["y_axis"][0]-1-high)*y_step)
         dfu = dfu[mask]
 
     # Z-Cross-section
     if slider_range_cs_z is not None and cs_z_inactive:  # Any slider Input there?
         low, high = slider_range_cs_z
-        mask = (dfu['z'] >= low) & (dfu['z'] <= high)
+        mask = (dfu['z'] >= min(dfu["z"])+low*z_step) & (dfu['z'] <= max(dfu["z"])-(scale["z_axis"][0]-1-high)*z_step)
         dfu = dfu[mask]
 
     # SETTINGS
@@ -1415,49 +1374,27 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
     else:
         atoms_fig = go.Figure()
 
-        # creating the figure, updating some things
+    # creating the figure, updating some things
 
-    if plots == "scatter":
-        # updating fig according to (cs'd) DF
-        fig_upd = px.scatter_3d(
-            dfu, x="x", y="y", z="z",
-            color="val",
-            hover_data=['val'],
-            opacity=settings["opac"],
-            color_continuous_scale=px.colors.sequential.Inferno_r,
-            range_color=[min(df['val']), max(df['val'])],
-            # takes color range from original dataset, so colors don't change
-        )
-        # Outline settings
-        if settings["outline"]:
-            outlined = dict(width=1, color='DarkSlateGrey')
-        else:
-            outlined = dict(width=0, color='DarkSlateGrey')
-
-        # applying marker settings
-        fig_upd.update_traces(marker=dict(size=settings["size"], line=outlined), selector=dict(mode='markers'))
-
-
-    elif plots == "volume":
-
-        fig_upd = go.Figure(
-            data=go.Volume(
-                x=dfu.x,
-                y=dfu.y,
-                z=dfu.z,
-                value=dfu.val,
-                opacity=0.3,
-                surface={'count': settings["size"], 'fill': 1},  # fill=0.5 etc adds a nice texture/mesh inside
-                # spaceframe={'fill': 0.5}, # does what exactly?
-                contour={'show': settings["outline"], 'width': 5},
-                colorscale=px.colors.sequential.Inferno_r,
-                cmin=min(df['val']),
-                cmax=max(df['val']),
-                showlegend=False,
-                colorbar={'thickness': 10, 'len': 0.9}
-            ))
+    # updating fig according to (cs'd) DF
+    fig_upd = px.scatter_3d(
+        dfu, x="x", y="y", z="z",
+        color="val",
+        hover_data=['val'],
+        opacity=settings["opac"],
+        color_continuous_scale=px.colors.sequential.Inferno_r,
+        range_color=[min(df['val']), max(df['val'])],
+        # takes color range from original dataset, so colors don't change
+    )
+    # Outline settings
+    if settings["outline"]:
+        outlined = dict(width=1, color='DarkSlateGrey')
     else:
-        fig_upd = def_fig
+        outlined = dict(width=0, color='DarkSlateGrey')
+
+    # applying marker settings
+    fig_upd.update_traces(marker=dict(size=settings["size"], line=outlined), selector=dict(mode='markers'))
+
 
     # atoms fig
     if settings["atoms"]:
@@ -1583,23 +1520,16 @@ def update_bot_canv(f_data, state):
 
 # CALLBACKS FOR SIDEBAR
 
-    # PLOTSTYLE
 # Update settings sidebar
 @app.callback(
     Output("sz/isosurf-label", "children"),
     Output("opac-label", "style"),
     Output("sc-opac", "style"),
     Input("run-mala", "n_clicks"),
-    State("choice_store", "data"),
     prevent_initial_call=True
 )
-def updateSettings(run_mala, plot_choice):
-    if plot_choice == "scatter":
-        return "Size", {'visibility': 'visible'}, {'visibility': 'visible', 'width': '5em', 'margin-left': '0.25em'}
-    elif plot_choice == "volume":
-        return "Resolution", {'visibility': 'hidden', "font-size": "0.95em"}, {'visibility': 'hidden'}
-    else:
-        raise PreventUpdate
+def updateSettings(run_mala):
+    return "Size", {'visibility': 'visible'}, {'visibility': 'visible', 'width': '5em', 'margin-left': '0.25em'}
 
 
 @app.callback(  # sidebar_r canvas (1/?)
