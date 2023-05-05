@@ -1,4 +1,5 @@
 # IMPORTS
+from collections import Counter
 
 from mala_inference import run_mala_prediction
 import dash
@@ -485,8 +486,9 @@ main_plot = [
                                                                 disabled=True,
                                                                 min=0,
                                                                 max=1,
+                                                                step=None,
                                                                 marks=None,
-                                                                pushable=True,
+                                                                pushable=1,
                                                                 tooltip={"placement": "bottom",
                                                                          "always_visible": False},
                                                                 updatemode='drag')),
@@ -1197,6 +1199,12 @@ def update_settings_store(size, outline, atoms, opac, saved):
 
 # END UPDATE FOR STORED DATA
 
+def average_difference(lst):
+    sorted_lst = sorted(lst)
+    differences = [sorted_lst[i+1] - sorted_lst[i] for i in range(len(sorted_lst)-1)]
+    return sum(differences) / len(differences) if differences else 0
+
+
 
 # TODO: update Tool-Sliders - DENSITY BUG!!
 @app.callback(
@@ -1234,11 +1242,11 @@ def update_tools(data):
         dense_step = round((max(df['val']) - min(df['val'])) / 30, ndigits=5)
 
 
-
-        return 0, scale["x_axis"][0]-1, 1, \
+        return 0, len(np.unique(df['x']))-1, 1, \
                0, scale["y_axis"][0]-1, 1, \
                0, scale["z_axis"][0]-1, 1, \
                min(df["val"]), max(df["val"]), dense_step
+
 
 
 # LAYOUT CALLBACKS
@@ -1345,8 +1353,11 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
     # x-Cross-section
     if slider_range_cs_x is not None and cs_x_inactive:  # Any slider Input there?
         low, high = slider_range_cs_x
-        print(scale["x_axis"][0]-1-high)
-        mask = (dfu['x'] >= min(dfu["x"])+low*x_step) & (dfu['x'] <= max(dfu["x"])-(scale["x_axis"][0]-1-high)*x_step)
+        print("low: ", low, " high: ", high)
+
+
+        print(np.unique(dfu['x'][low]))
+        mask = (dfu['x'] >= np.unique(dfu['x'])[low]) & (dfu['x'] <= np.unique(dfu['x'])[high])
         dfu = dfu[mask]
 
     # Y-Cross-section
@@ -1579,4 +1590,4 @@ def toggle_offcanvas_l(n1, is_open):
 # END OF CALLBACKS FOR SIDEBAR
 
 if __name__ == '__main__':
-    app.run_server(debug=True, port=8050)
+    app.run_server(debug=True, port=8051)
