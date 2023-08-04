@@ -488,7 +488,7 @@ main_plot = [
                                                                 max=1,
                                                                 step=None,
                                                                 marks=None,
-                                                                pushable=1,
+                                                                pushable=10,            # this is a test-value to achieve a roughly 1-Voxel-width-Layer for minimal X-crosssection
                                                                 tooltip={"placement": "bottom",
                                                                          "always_visible": False},
                                                                 updatemode='drag')),
@@ -500,7 +500,7 @@ main_plot = [
                                         dbc.Col(dcc.RangeSlider(
                                             id='range-slider-cs-y',
                                             disabled=True,
-                                            pushable=True,
+                                            pushable=1,
                                             min=0, max=1,
                                             marks=None,
                                             tooltip={"placement": "bottom", "always_visible": False},
@@ -513,7 +513,7 @@ main_plot = [
                                         dbc.Col(dcc.RangeSlider(
                                             id='range-slider-cs-z',
                                             disabled=True,
-                                            pushable=True,
+                                            pushable=1,
                                             min=0, max=1,
                                             marks=None,
                                             tooltip={"placement": "bottom", "always_visible": False},
@@ -1076,7 +1076,6 @@ def updateDF(trig, reset, model_choice, temp_choice, upload):
 
     print("Running MALA-Inference. Passing: ", read_atoms, " and model-choice: ", model_and_temp)
     mala_data = run_mala_prediction(read_atoms, model_and_temp)
-
     # contains 'band_energy', 'total_energy', 'density', 'density_of_states', 'energy_grid'
     # mala_data is stored in df_store dict under key 'MALA_DATA'. (See declaration of df_store below for more info)
     density = mala_data['density']
@@ -1243,7 +1242,7 @@ def update_tools(data):
 
 
         return 0, len(np.unique(df['x']))-1, 1, \
-               0, scale["y_axis"][0]-1, 1, \
+               0, scale["y_axis"][0], 1, \
                0, scale["z_axis"][0]-1, 1, \
                min(df["val"]), max(df["val"]), dense_step
 
