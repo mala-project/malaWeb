@@ -924,6 +924,7 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
     fig = go.Figure()
     # ASE.reading to check for file-format support, to fill atoms_table, and to fill atoms-preview
     try:
+        print("Test")
         r_atoms = ase.io.read(status.latest_file)
         UPDATE_TEXT = "Upload successful"
         if r_atoms.get_global_number_of_atoms() > ATOM_LIMIT:
@@ -931,8 +932,21 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
         table_rows = [
             html.Tr([html.Td(atom.index), html.Td(atom.x), html.Td(atom.y), html.Td(atom.z), html.Td("checkbox")])
             for atom in r_atoms]
-        fig = go.Scatter3d(name="Atoms", x=[atom.x for atom in r_atoms], y=[atom.y for atom in r_atoms],
-                           z=[atom.z for atom in r_atoms], mode='markers')
+
+        print(r_atoms.cell)
+
+        atoms_fig = px.scatter_3d(data_frame=pd.DataFrame([atom.x for atom in r_atoms], [atom.x for atom in r_atoms], [atom.x for atom in r_atoms]), x=[atom.x for atom in r_atoms], y=[atom.y for atom in r_atoms],
+                       z=[atom.z for atom in r_atoms]),
+
+            # sublots to make out the cell
+        #cell_fig = px.line_3d(x="", y="", z="")
+
+        fig = atoms_fig
+
+
+
+
+
         border_style = "upload-success"
 
     # ValueError or File not sup. - exception for not supported formats (not yet filtered by upload-component)
@@ -1189,12 +1203,6 @@ def update_settings_store(size, outline, atoms, opac, saved):
 
 
 # END UPDATE FOR STORED DATA
-
-def average_difference(lst):
-    sorted_lst = sorted(lst)
-    differences = [sorted_lst[i+1] - sorted_lst[i] for i in range(len(sorted_lst)-1)]
-    return sum(differences) / len(differences) if differences else 0
-
 
 
 # TODO: update Tool-Sliders - DENSITY BUG!!
