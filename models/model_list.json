@@ -1,0 +1,7 @@
+[
+  { "label": "Solid beryllium at room temperature (298K)", "value": "Be|298"},
+  { "label": "Solid aluminium at room temperature (298K)", "value": "Al|298"},
+  { "label": "Liquid/solid Aluminium at the melting point (933K)", "value": "Al|933"},
+  { "label": "Solid Aluminium from 100K to 933K (100K, editable)", "value": "Al|[100,933]"},
+  { "label": "Debug", "value": "Debug|0"}
+]

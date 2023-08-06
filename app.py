@@ -1,4 +1,6 @@
 # IMPORTS
+import json
+import os
 from collections import Counter
 
 from mala_inference import run_mala_prediction
@@ -24,27 +26,19 @@ import dash_uploader as du
 ATOM_LIMIT = 200
 # TODO need an overhaul
 
-models = [
-    {'label': "Solid beryllium at room temperature (298K)", 'value': "Be|298"},
-    {'label': "Solid aluminium at room temperature (298K)", 'value': "Al|298"},
-    {'label': "Liquid/solid Aluminium at the melting point (933K)", 'value': "Al|933"},
-    {'label': "Solid Aluminium from 100K to 933K (100K, editable)", 'value': "Al|[100,933]"},
-    {'label': "Debug", 'value': "Debug|0"},
-]
+models = json.load(open("./models/model_list.json"))
+# "label" is the label visible in the apps dropdown ; "value"  is the value passed to the inference script. Ranges are to be surrounded by []
 
 
 # PX--Graph Object Theme
 templ1 = dict(layout=go.Layout(
     scene={
-        'xaxis': {'showbackground': True,
-                  'ticks': '',
+        'xaxis': {'showbackground': False,
                   'visible': True,
                   },
-        'yaxis': {'showbackground': True,
-                  'ticks': '',
+        'yaxis': {'showbackground': False,
                   'visible': True},
-        'zaxis': {'showbackground': True,
-                  'ticks': '',
+        'zaxis': {'showbackground': False,
                   'visible': True},
         'aspectmode': 'data'
     },
@@ -61,7 +55,6 @@ plot_layout = {
     'height': '75vh',
     'width': '80vw',
 
-    'background': '#000',  # not working
 }
 orientation_style = {
     'title': 'x-y-z',
@@ -196,7 +189,6 @@ table_body = [html.Tbody([], id="atoms_list")]
 atoms_table = dbc.Table(table_header + table_body, bordered=True)
 
 # -----------------
-#help(dash_uploader.Upload())
 # Left SIDEBAR content
 menu = html.Div([
     # Logo Section
@@ -780,8 +772,8 @@ def toggle_density_sc(n_d, active, bc):
     prevent_initial_call=True)
 def reset_cs_x(n_clicks, data):
     if data is not None:
-        scatter_df = pd.DataFrame(data['MALA_DF']['scatter'])
-        return [min(scatter_df['x']), max(scatter_df['x'])]
+        df = pd.DataFrame(data['MALA_DF']['scatter'])
+        return [0, len(np.unique(df['x']))-1]
 
 
 @app.callback(
@@ -1354,8 +1346,6 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
         low, high = slider_range_cs_x
         print("low: ", low, " high: ", high)
 
-
-        print(np.unique(dfu['x'][low]))
         mask = (dfu['x'] >= np.unique(dfu['x'])[low]) & (dfu['x'] <= np.unique(dfu['x'])[high])
         dfu = dfu[mask]
 
@@ -1468,13 +1458,13 @@ Sets transition options used during Plotly.react updates."
 @app.callback(
     Output("orientation", "figure"),
     Input("cam_store", "data"),
-    State("scatter-plot", "figure"),
     prevent_initial_call=True
 )
-def updateOrientation(saved_cam, fig):
+def updateOrientation(saved_cam):
     fig_upd = orient_fig
     fig_upd.update_layout(scene_camera={'up': {'x': 0, 'y': 0, 'z': 1}, 'center': {'x': 0, 'y': 0, 'z': 0},
-                                        'eye': saved_cam['eye']}, clickmode="none")
+                                        'eye': saved_cam['eye']}, clickmode="none", dragmode=False)
+    print(saved_cam)
     return fig_upd
 
 
@@ -1589,4 +1579,4 @@ def toggle_offcanvas_l(n1, is_open):
 # END OF CALLBACKS FOR SIDEBAR
 
 if __name__ == '__main__':
-    app.run_server(debug=True, port=8051)
+    app.run_server(debug=True, host="0.0.0.0", port="8050")
