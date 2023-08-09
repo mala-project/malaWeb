@@ -938,7 +938,7 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
         print(r_atoms.cell)
         atoms_fig = go.Scatter3d(name="Atoms", x=[atom.x for atom in r_atoms], y=[atom.y for atom in r_atoms],
                            z=[atom.z for atom in r_atoms], mode='markers')
-
+        # TODO add a 3d mesh / lines out of the cells unit-vectors (r_atoms.cell)
         #cell_fig =
 
         fig.add_trace(atoms_fig)
