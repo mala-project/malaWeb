@@ -284,7 +284,7 @@ menu = html.Div([
 
             html.Hr(style={'margin-bottom': '1rem', 'margin-top': '1rem'}),
 
-            html.P("Chose the model that MALA should use for calculations"),
+            html.P("Choose the model that MALA should use for calculations"),
             dbc.Row([
                 dbc.Col(dcc.Dropdown(id="model-choice", options=models, value=None, placeholder="-", optionHeight=45, style={"font-size": "0.95em"}), width=9),
                 dbc.Col(dbc.Input(id="model-temp", disabled=True, type="number", min=0, max=10, step=1), width=2),
@@ -602,7 +602,8 @@ app.layout = p_layout_landing
     Input("collapse-upload", "is_open"),
     prevent_initial_call=True,
 )
-def toggle_upload(n_header, is_open):
+def toggle_upload_section(n_header, is_open):
+    print("Where??")
     if n_header:
         return not is_open
 
@@ -650,7 +651,7 @@ def toggle_plot_choice(n_header, page_state, data, is_open):
     Input("collapse-atom-list", "is_open"),
     prevent_initial_call=True,
 )
-def toggle_upload(n_header, is_open):
+def toggle_uploaded_atoms(n_header, is_open):
     txt = "⌃"
     if n_header:
         if is_open:
@@ -938,11 +939,36 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
         print(r_atoms.cell)
         atoms_fig = go.Scatter3d(name="Atoms", x=[atom.x for atom in r_atoms], y=[atom.y for atom in r_atoms],
                            z=[atom.z for atom in r_atoms], mode='markers')
+
+
         # TODO add a 3d mesh / lines out of the cells unit-vectors (r_atoms.cell)
-        #cell_fig =
+        OV = [0, 0, 0]
+        # coords of each vector, sorted by x/y/z
+        xCoords = [r_atoms.cell[axis][0] for axis in [0, 1, 2]]
+        yCoords = [r_atoms.cell[axis][1] for axis in [0, 1, 2]]
+        zCoords = [r_atoms.cell[axis][2] for axis in [0, 1, 2]]
+
+        X = [item for sublist in zip(OV, xCoords) for item in sublist]
+        X = X + [xCoords[0], 0, xCoords[1]]
+
+
+        Y = [item for sublist in zip(OV, yCoords) for item in sublist]
+        Y = Y + [yCoords[0], 0, yCoords[1]]
+
+
+        Z = [item for sublist in zip(OV, zCoords) for item in sublist]
+        Z = Z + [zCoords[2], zCoords[2], zCoords[2]]
+
+        print("X: ", X)
+        print("Y: ", Y)
+        print("Z: ", Z)
+
+
+
+        cell_fig = go.Scatter3d(x=X, y=Y, z=Z, mode='lines')
 
         fig.add_trace(atoms_fig)
-        #fig.add_trace(cell_fig)
+        fig.add_trace(cell_fig)
 
 
         border_style = "upload-success"
@@ -1065,7 +1091,6 @@ def updateDF(trig, reset, model_choice, temp_choice, upload):
 
     print("UpdateDF started")
     model_and_temp = {'name': model_choice, 'temperature': float(temp_choice)}
-    print(model_and_temp)
     upID = upload["ID"]
     filepath = upload["PATH"]
 
