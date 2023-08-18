@@ -305,7 +305,8 @@ menu = html.Div([
         dbc.ModalFooter(
             dbc.Button(id="run-mala", disabled=True, children=[dbc.Container(dbc.Row(
                 [
-                    dbc.Col(dbc.Spinner(dcc.Store(id="df_store"), size="sm", color="success"), className="run-mala-spin", width=1),
+                        #TODO: fix position of spinner
+                    dbc.Col(dbc.Spinner(dcc.Store(id="df_store"), size="sm", color="success"), className="run-mala-spin", width=5),
                     dbc.Col("Run MALA", className="run-mala-but"),
                     dbc.Col(width=1)
                 ]
@@ -991,7 +992,7 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
     Input("model-temp", "value"),
     prevent_initial_call=True
 )
-def activate_run_MALA(model, temp):
+def activate_runMALA_button(model, temp):
     if model is not None and temp is not None:
         return False
     else:
@@ -1004,16 +1005,15 @@ def activate_run_MALA(model, temp):
     Output("upload-modal", "is_open"),
     [
         Input("UP_STORE", "data"),
-        Input("run-mala", "n_clicks"),
-        Input("edit-input", "n_clicks")
+        Input("edit-input", "n_clicks"),
+        Input("page_state", "data")
     ], prevent_initial_call=True
 )
-def open_UP_MODAL(upload, run_mala, edit_input):
-    if dash.callback_context.triggered_id == "run-mala":
+def open_UP_MODAL(upload, edit_input, page_state):
+    if page_state == "plotting":
         return False
 
-    elif upload is not None:
-
+    if upload is not None:
         return True
     else:
         return False

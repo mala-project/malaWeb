@@ -1,4 +1,5 @@
 """Script for single MALA inference."""
+import time
 
 import mala
 import numpy as np
@@ -65,6 +66,8 @@ def run_mala_prediction(atoms_to_predict, model_and_temp):
             "voxel": ldos_calculator.voxel,
             "grid_dimensions": ldos_calculator.grid_dimensions
         }
+        # for testing visual loading process
+        time.sleep(10)
         return results
     else:
         parameters, network, data_handler, predictor = mala.Predictor.load_run(
@@ -88,5 +91,4 @@ def run_mala_prediction(atoms_to_predict, model_and_temp):
             "voxel": ldos_calculator.voxel,
             "grid_dimensions": ldos_calculator.grid_dimensions
         }
-
         return results
