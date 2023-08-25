@@ -937,39 +937,46 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
 
 
 
-        print(r_atoms.cell)
         atoms_fig = go.Scatter3d(name="Atoms", x=[atom.x for atom in r_atoms], y=[atom.y for atom in r_atoms],
                            z=[atom.z for atom in r_atoms], mode='markers')
 
-
-        # TODO add a 3d mesh / lines out of the cells unit-vectors (r_atoms.cell)
-        OV = [0, 0, 0]
-        # coords of each vector, sorted by x/y/z
-        xCoords = [r_atoms.cell[axis][0] for axis in [0, 1, 2]]
-        yCoords = [r_atoms.cell[axis][1] for axis in [0, 1, 2]]
-        zCoords = [r_atoms.cell[axis][2] for axis in [0, 1, 2]]
-
-        X = [item for sublist in zip(OV, xCoords) for item in sublist]
-        X = X + [xCoords[0], 0, xCoords[1]]
-
-
-        Y = [item for sublist in zip(OV, yCoords) for item in sublist]
-        Y = Y + [yCoords[0], 0, yCoords[1]]
-
-
-        Z = [item for sublist in zip(OV, zCoords) for item in sublist]
-        Z = Z + [zCoords[2], zCoords[2], zCoords[2]]
-
-        print("X: ", X)
-        print("Y: ", Y)
-        print("Z: ", Z)
-
-
-
-        cell_fig = go.Scatter3d(x=X, y=Y, z=Z, mode='lines')
-
         fig.add_trace(atoms_fig)
-        fig.add_trace(cell_fig)
+
+
+        # Draw the outline of 4 planes and add them as individual traces
+        # (2 / 6 Planes will be obvious by the 4 surrounding them)
+        X_axis = r_atoms.cell[0]
+        Y_axis = r_atoms.cell[1]
+        Z_axis = r_atoms.cell[2]
+
+            # Plane 1: X-Z-1
+        x_points = [0, X_axis[0], X_axis[0]+Z_axis[0], Z_axis[0], 0]
+        y_points = [0, X_axis[1], X_axis[1]+Z_axis[1], Z_axis[1], 0]
+        z_points = [0, X_axis[2], X_axis[2]+Z_axis[2], Z_axis[2], 0]
+        fig.add_trace(go.Scatter3d(x=x_points, y=y_points, z=z_points, mode='lines', marker={'color': 'black'}, name="Cell"))
+
+            # Plane 2: X-Z-2
+        x_points = [0+Y_axis[0], X_axis[0]+Y_axis[0], X_axis[0]+Z_axis[0]+Y_axis[0], Z_axis[0]+Y_axis[0], 0+Y_axis[0]]
+        y_points = [0+Y_axis[1], X_axis[1]+Y_axis[1], X_axis[1]+Z_axis[1]+Y_axis[1], Z_axis[1]+Y_axis[1], 0+Y_axis[1]]
+        z_points = [0, X_axis[2], X_axis[2]+Z_axis[2], Z_axis[2], 0]
+        fig.add_trace(go.Scatter3d(x=x_points, y=y_points, z=z_points, mode='lines', marker={'color': 'black'}, showlegend=False))
+
+            # Plane 3: X-Y-1
+        x_points = [0, X_axis[0], X_axis[0]+Y_axis[0], Y_axis[0], 0]
+        y_points = [0, X_axis[1], X_axis[1]+Y_axis[1], Y_axis[1], 0]
+        z_points = [0, X_axis[2], X_axis[2]+Y_axis[2], Y_axis[2], 0]
+        fig.add_trace(go.Scatter3d(x=x_points, y=y_points, z=z_points, mode='lines', marker={'color': 'black'}, showlegend=False))
+
+            # Plane 4: X-Y-2
+        x_points = [0, X_axis[0], X_axis[0]+Y_axis[0], Y_axis[0], 0]
+        y_points = [0, X_axis[1], X_axis[1]+Y_axis[1], Y_axis[1], 0]
+        z_points = [0+Z_axis[2], X_axis[2]+Z_axis[2], X_axis[2]+Y_axis[2]+Z_axis[2], Y_axis[2]+Z_axis[2], 0+Z_axis[2]]
+        fig.add_trace(go.Scatter3d(x=x_points, y=y_points, z=z_points, mode='lines', marker={'color': 'black'}, showlegend=False))
+
+
+
+
+
 
 
         border_style = "upload-success"
