@@ -50,6 +50,7 @@ default_scatter_marker = dict(marker=dict(
     opacity=1,
     line=dict(width=1, color='DarkSlateGrey')),
 )
+
 plot_layout = {
     'title': 'Plot',
     'height': '75vh',
@@ -65,6 +66,12 @@ orientation_style = {
     'margin-top': '75vh',
     'margin-right': '0.5vw'
 }
+
+removeHoverLines = go.layout.Scene(
+            xaxis=go.layout.scene.XAxis(spikethickness=0),
+            yaxis=go.layout.scene.YAxis(spikethickness=0),
+            zaxis=go.layout.scene.ZAxis(spikethickness=0),
+        )
 
 # Graph-Object Scene
 orient_template = {
@@ -938,7 +945,7 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
 
 
         atoms_fig = go.Scatter3d(name="Atoms", x=[atom.x for atom in r_atoms], y=[atom.y for atom in r_atoms],
-                           z=[atom.z for atom in r_atoms], mode='markers')
+                           z=[atom.z for atom in r_atoms], mode='markers', hovertemplate='X: %{x}</br></br>Y: %{y}</br>Z: %{z}<extra></extra>')
 
         fig.add_trace(atoms_fig)
 
@@ -953,26 +960,27 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
         x_points = [0, X_axis[0], X_axis[0]+Z_axis[0], Z_axis[0], 0]
         y_points = [0, X_axis[1], X_axis[1]+Z_axis[1], Z_axis[1], 0]
         z_points = [0, X_axis[2], X_axis[2]+Z_axis[2], Z_axis[2], 0]
-        fig.add_trace(go.Scatter3d(x=x_points, y=y_points, z=z_points, mode='lines', marker={'color': 'black'}, name="Cell"))
+        fig.add_trace(go.Scatter3d(x=x_points, y=y_points, z=z_points, hoverinfo='skip', mode='lines', marker={'color': 'black'}, name="Cell"))
 
             # Plane 2: X-Z-2
         x_points = [0+Y_axis[0], X_axis[0]+Y_axis[0], X_axis[0]+Z_axis[0]+Y_axis[0], Z_axis[0]+Y_axis[0], 0+Y_axis[0]]
         y_points = [0+Y_axis[1], X_axis[1]+Y_axis[1], X_axis[1]+Z_axis[1]+Y_axis[1], Z_axis[1]+Y_axis[1], 0+Y_axis[1]]
         z_points = [0, X_axis[2], X_axis[2]+Z_axis[2], Z_axis[2], 0]
-        fig.add_trace(go.Scatter3d(x=x_points, y=y_points, z=z_points, mode='lines', marker={'color': 'black'}, showlegend=False))
+        fig.add_trace(go.Scatter3d(x=x_points, y=y_points, z=z_points, hoverinfo='skip', mode='lines', marker={'color': 'black'}, showlegend=False))
 
             # Plane 3: X-Y-1
         x_points = [0, X_axis[0], X_axis[0]+Y_axis[0], Y_axis[0], 0]
         y_points = [0, X_axis[1], X_axis[1]+Y_axis[1], Y_axis[1], 0]
         z_points = [0, X_axis[2], X_axis[2]+Y_axis[2], Y_axis[2], 0]
-        fig.add_trace(go.Scatter3d(x=x_points, y=y_points, z=z_points, mode='lines', marker={'color': 'black'}, showlegend=False))
+        fig.add_trace(go.Scatter3d(x=x_points, y=y_points, z=z_points, hoverinfo='skip', mode='lines', marker={'color': 'black'}, showlegend=False))
 
             # Plane 4: X-Y-2
         x_points = [0, X_axis[0], X_axis[0]+Y_axis[0], Y_axis[0], 0]
         y_points = [0, X_axis[1], X_axis[1]+Y_axis[1], Y_axis[1], 0]
         z_points = [0+Z_axis[2], X_axis[2]+Z_axis[2], X_axis[2]+Y_axis[2]+Z_axis[2], Y_axis[2]+Z_axis[2], 0+Z_axis[2]]
-        fig.add_trace(go.Scatter3d(x=x_points, y=y_points, z=z_points, mode='lines', marker={'color': 'black'}, showlegend=False))
+        fig.add_trace(go.Scatter3d(x=x_points, y=y_points, z=z_points, hoverinfo='skip', mode='lines', marker={'color': 'black'}, showlegend=False))
 
+        fig.update_scenes(removeHoverLines)
 
 
 
@@ -1480,6 +1488,7 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
 
     # adding helperfigure to keep camera-zoom the same, regardless of data(-slicing)-changes
     fig_upd.add_trace(fig_bound)
+    fig_upd.update_scenes(removeHoverLines)
 
     return fig_upd
 
