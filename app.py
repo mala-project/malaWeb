@@ -481,20 +481,22 @@ main_plot = [
 
                                 # Sliders
                                 dbc.Col([
+                                    # TODO: Triggers need work
                                     dbc.Row([
                                         dbc.Col(dcc.RangeSlider(id='range-slider-cs-x',
                                                                 disabled=True,
                                                                 min=0,
                                                                 max=1,
-                                                                step=None,
+                                                                #step=None,
                                                                 marks=None,
                                                                 pushable=10,            # this is a test-value to achieve a roughly 1-Voxel-width-Layer for minimal X-crosssection
-                                                                tooltip={"placement": "bottom",
-                                                                         "always_visible": False},
                                                                 updatemode='drag')),
                                         dbc.Col(html.Img(id="reset-cs-x", src="/assets/x.svg", n_clicks=0,
                                                          style={'width': '1.25em'}), width=1)
                                     ], style={"margin-top": "7px"}),  # X-Axis
+                                    dbc.Tooltip(id="x-lower-bound", target="range-slider-cs-x", trigger="hover focus", placement="left"),
+                                    dbc.Tooltip(id="x-higher-bound", target="range-slider-cs-x", trigger="hover focus", placement="right"),
+
 
                                     dbc.Row([
                                         dbc.Col(dcc.RangeSlider(
@@ -503,11 +505,12 @@ main_plot = [
                                             pushable=1,
                                             min=0, max=1,
                                             marks=None,
-                                            tooltip={"placement": "bottom", "always_visible": False},
                                             updatemode='drag')),
                                         dbc.Col(html.Img(id="reset-cs-y", src="/assets/x.svg", n_clicks=0,
                                                          style={'width': '1.25em'}), width=1)
                                     ]),  # Y-Axis
+                                    dbc.Tooltip(id="y-lower-bound", target="range-slider-cs-y", trigger="hover focus", placement="left"),
+                                    dbc.Tooltip(id="y-higher-bound", target="range-slider-cs-y", trigger="hover focus", placement="right"),
 
                                     dbc.Row([
                                         dbc.Col(dcc.RangeSlider(
@@ -516,12 +519,13 @@ main_plot = [
                                             pushable=1,
                                             min=0, max=1,
                                             marks=None,
-                                            tooltip={"placement": "bottom", "always_visible": False},
                                             updatemode='drag')),
                                         dbc.Col(html.Img(id="reset-cs-z", src="/assets/x.svg", n_clicks=0,
                                                          style={'width': '1.25em'}), width=1)
 
                                     ]),  # Z-Axis
+                                    dbc.Tooltip(id="z-lower-bound", target="range-slider-cs-z", trigger="hover", placement="left"),
+                                    dbc.Tooltip(id="z-higher-bound", target="range-slider-cs-z", trigger="hover", placement="right"),
 
                                     dbc.Row([
 
@@ -531,13 +535,14 @@ main_plot = [
                                             pushable=True,
                                             min=0, max=1,
                                             marks=None,
-                                            tooltip={"placement": "bottom", "always_visible": False},
                                             updatemode='drag')),
                                         dbc.Col(html.Img(id="reset-dense", src="/assets/x.svg", n_clicks=0,
                                                          style={'width': '1.25em', 'position': 'float'}),
                                                 width=1),
 
                                     ]),  # Density
+                                    dbc.Tooltip(id="dense-lower-bound", target="range-slider-dense", trigger="hover", placement="left"),
+                                    dbc.Tooltip(id="dense-higher-bound", target="range-slider-dense", trigger="hover", placement="right"),
                                 ], width=11),
                             ]),
                         ]
@@ -1278,13 +1283,39 @@ def update_tools(data):
 
         dense_step = round((max(df['val']) - min(df['val'])) / 30, ndigits=5)
 
-
         return 0, len(np.unique(df['x']))-1, 1, \
-               0, scale["y_axis"][0], 1, \
-               0, scale["z_axis"][0]-1, 1, \
+               0, len(np.unique(df['y']))-1, 1, \
+               0, len(np.unique(df['z']))-1, 1, \
                min(df["val"]), max(df["val"]), dense_step
 
+@app.callback(
+    Output("x-lower-bound", "children"),
+    Output("x-higher-bound", "children"),
+    Output("x-lower-bound", "trigger"),
+    Input("range-slider-cs-x", "value"),
+    Input("sc-active-x", "active"),
+    State("df_store", "data"),
+)
+def update_slider_bound_indicators(value, active, data):
+    if data is None:  # in case of reset:
+        raise PreventUpdate
+    print(active)
+    if active:
+        trigger = "hover"
+    else:
+        trigger = "click"
 
+    dfX = pd.DataFrame(data['MALA_DF']['scatter'])['x']
+
+    if value is None:
+        lower = min(dfX)
+        higher = max(dfX)
+    else:
+        lowB, highB = value
+        lower = np.unique(dfX)[lowB]
+        higher = np.unique(dfX)[highB]
+    print(trigger)
+    return lower, higher, trigger
 
 # LAYOUT CALLBACKS
 # UPDATING CONTENT-CELL 0
@@ -1382,29 +1413,27 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
     # TOOLS
     # these edit the DF before the figure is built
     # filter-by-density
-    if slider_range is not None and dense_inactive:  # Any slider Input there?
+    if slider_range is not None and dense_inactive:  # Any slider Input there? Do:
         low, high = slider_range
         mask = (dfu['val'] >= low) & (dfu['val'] <= high)
         dfu = dfu[mask]
 
     # x-Cross-section
-    if slider_range_cs_x is not None and cs_x_inactive:  # Any slider Input there?
+    if slider_range_cs_x is not None and cs_x_inactive:  # Any slider Input there? Do:
         low, high = slider_range_cs_x
-        print("low: ", low, " high: ", high)
-
-        mask = (dfu['x'] >= np.unique(dfu['x'])[low]) & (dfu['x'] <= np.unique(dfu['x'])[high])
+        mask = (dfu['x'] >= np.unique(df['x'])[low]) & (dfu['x'] <= np.unique(df['x'])[high])
         dfu = dfu[mask]
 
     # Y-Cross-section
-    if slider_range_cs_y is not None and cs_y_inactive:  # Any slider Input there?
+    if slider_range_cs_y is not None and cs_y_inactive:  # Any slider Input there? Do:
         low, high = slider_range_cs_y
-        mask = (dfu['y'] >= min(dfu["y"])+low*y_step) & (dfu['y'] <= max(dfu["y"])-(scale["y_axis"][0]-1-high)*y_step)
+        mask = mask = (dfu['y'] >= np.unique(df['y'])[low]) & (dfu['y'] <= np.unique(df['y'])[high])
         dfu = dfu[mask]
 
     # Z-Cross-section
-    if slider_range_cs_z is not None and cs_z_inactive:  # Any slider Input there?
+    if slider_range_cs_z is not None and cs_z_inactive:  # Any slider Input there? Do:
         low, high = slider_range_cs_z
-        mask = (dfu['z'] >= min(dfu["z"])+low*z_step) & (dfu['z'] <= max(dfu["z"])-(scale["z_axis"][0]-1-high)*z_step)
+        mask = mask = (dfu['z'] >= np.unique(df['z'])[low]) & (dfu['z'] <= np.unique(df['z'])[high])
         dfu = dfu[mask]
 
     # SETTINGS
