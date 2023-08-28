@@ -24,7 +24,11 @@ import dash_uploader as du
 
 # CONSTANTS
 ATOM_LIMIT = 200
-# TODO need an overhaul
+# TODO implement caching of the dataset to improve performance
+# as in: https://dash.plotly.com/performance
+
+# TODO: implement patching so that figures are updated, nor recreated
+# as in: https://dash.plotly.com/partial-properties
 
 models = json.load(open("./models/model_list.json"))
 # "label" is the label visible in the apps dropdown ; "value"  is the value passed to the inference script. Ranges are to be surrounded by []
@@ -524,8 +528,8 @@ main_plot = [
                                                          style={'width': '1.25em'}), width=1)
 
                                     ]),  # Z-Axis
-                                    dbc.Tooltip(id="z-lower-bound", target="range-slider-cs-z", trigger="hover", placement="left"),
-                                    dbc.Tooltip(id="z-higher-bound", target="range-slider-cs-z", trigger="hover", placement="right"),
+                                    dbc.Tooltip(id="z-lower-bound", target="range-slider-cs-z", trigger="hover focus", placement="left"),
+                                    dbc.Tooltip(id="z-higher-bound", target="range-slider-cs-z", trigger="hover focus", placement="right"),
 
                                     dbc.Row([
 
@@ -541,8 +545,8 @@ main_plot = [
                                                 width=1),
 
                                     ]),  # Density
-                                    dbc.Tooltip(id="dense-lower-bound", target="range-slider-dense", trigger="hover", placement="left"),
-                                    dbc.Tooltip(id="dense-higher-bound", target="range-slider-dense", trigger="hover", placement="right"),
+                                    dbc.Tooltip(id="dense-lower-bound", target="range-slider-dense", trigger="hover focus", placement="left"),
+                                    dbc.Tooltip(id="dense-higher-bound", target="range-slider-dense", trigger="hover focus", placement="right"),
                                 ], width=11),
                             ]),
                         ]
@@ -1208,7 +1212,6 @@ def updateDF(trig, reset, model_choice, temp_choice, upload):
 
 
 # SC SETTINGS STORING
-# TODO: fix Opacity/Outline (Double Binding?)
 @app.callback(
     Output("sc_settings", "data"),
     Output("sc-outline", "value"),
@@ -1288,22 +1291,25 @@ def update_tools(data):
                0, len(np.unique(df['z']))-1, 1, \
                min(df["val"]), max(df["val"]), dense_step
 
+# TODO: maybe use popover instead of tooltip
+# Updating slider-range indicators X
 @app.callback(
     Output("x-lower-bound", "children"),
     Output("x-higher-bound", "children"),
     Output("x-lower-bound", "trigger"),
     Input("range-slider-cs-x", "value"),
-    Input("sc-active-x", "active"),
-    State("df_store", "data"),
+    Input("range-slider-cs-x", "disabled"),
+    State("df_store", "data"),State("x-lower-bound", "trigger")
 )
-def update_slider_bound_indicators(value, active, data):
+def update_slider_bound_indicators_X(value, disabled, data, trigger):
     if data is None:  # in case of reset:
         raise PreventUpdate
-    print(active)
-    if active:
-        trigger = "hover"
+
+    # TODO: enabling/disabling hovermode of indicator doesn't work - doesn't seem to overwrite init-param
+    if disabled:
+        trigger = None
     else:
-        trigger = "click"
+        trigger = "hover"
 
     dfX = pd.DataFrame(data['MALA_DF']['scatter'])['x']
 
@@ -1314,8 +1320,71 @@ def update_slider_bound_indicators(value, active, data):
         lowB, highB = value
         lower = np.unique(dfX)[lowB]
         higher = np.unique(dfX)[highB]
-    print(trigger)
     return lower, higher, trigger
+
+
+# Updating slider-range indicators Y
+@app.callback(
+    Output("y-lower-bound", "children"),
+    Output("y-higher-bound", "children"),
+    Output("y-lower-bound", "trigger"),
+    Input("range-slider-cs-y", "value"),
+    Input("range-slider-cs-y", "disabled"),
+    State("df_store", "data"),State("x-lower-bound", "trigger")
+)
+def update_slider_bound_indicators_Y(value, disabled, data, trigger):
+    if data is None:  # in case of reset:
+        raise PreventUpdate
+
+    # TODO: enabling/disabling hovermode of indicator doesn't work - doesn't seem to overwrite init-param
+    if disabled:
+        trigger = None
+    else:
+        trigger = "hover"
+
+    dfY = pd.DataFrame(data['MALA_DF']['scatter'])['y']
+
+    if value is None:
+        lower = min(dfY)
+        higher = max(dfY)
+    else:
+        lowB, highB = value
+        lower = np.unique(dfY)[lowB]
+        higher = np.unique(dfY)[highB]
+    return lower, higher, trigger
+
+
+# Updating slider-range indicators Z
+@app.callback(
+    Output("z-lower-bound", "children"),
+    Output("z-higher-bound", "children"),
+    Output("z-lower-bound", "trigger"),
+    Input("range-slider-cs-z", "value"),
+    Input("range-slider-cs-z", "disabled"),
+    State("df_store", "data"),State("x-lower-bound", "trigger")
+)
+def update_slider_bound_indicators_Z(value, disabled, data, trigger):
+    if data is None:  # in case of reset:
+        raise PreventUpdate
+
+    # TODO: enabling/disabling hovermode of indicator doesn't work - doesn't seem to overwrite init-param
+    if disabled:
+        trigger = None
+    else:
+        trigger = "hover"
+
+    dfZ = pd.DataFrame(data['MALA_DF']['scatter'])['z']
+
+    if value is None:
+        lower = min(dfZ)
+        higher = max(dfZ)
+    else:
+        lowB, highB = value
+        lower = np.unique(dfZ)[lowB]
+        higher = np.unique(dfZ)[highB]
+    return lower, higher, trigger
+
+
 
 # LAYOUT CALLBACKS
 # UPDATING CONTENT-CELL 0
