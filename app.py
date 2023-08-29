@@ -8,8 +8,7 @@ import dash
 import dash_bootstrap_components as dbc
 
 from dash.dependencies import Input, Output, State
-from dash import dcc, html
-
+from dash import dcc, html, Patch
 from dash.exceptions import PreventUpdate
 
 # visualization
@@ -1379,17 +1378,9 @@ cam_store can't be an input or else it triggers an update everytime the cam is m
 '''
 
 @app.callback(
-    Output("scatter-plot", "figure"),
+    Output("scatter-plot", "figure", allow_duplicate=True),
     [
-        # Tools
-        Input("range-slider-dense", "value"),
-        Input("active-dense", "active"),
-        Input("range-slider-cs-x", "value"),
-        Input("sc-active-x", "active"),
-        Input("range-slider-cs-y", "value"),
-        Input("sc-active-y", "active"),
-        Input("range-slider-cs-z", "value"),
-        Input("sc-active-z", "active"),
+
         # Settings
         Input("sc_settings", "data"),
         Input("default-cam", "n_clicks"),
@@ -1402,18 +1393,16 @@ cam_store can't be an input or else it triggers an update everytime the cam is m
         State("scatter-plot", "figure"),
         State("BOUNDARIES_STORE", "data")
     ],
+    prevent_initial_call = 'initial_duplicate',
 )
-def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, slider_range_cs_y, cs_y_inactive,
-               slider_range_cs_z, cs_z_inactive,
+def updatePlot(
                settings,
                cam_default, cam_xy, cam_xz, cam_yz, stored_cam_settings, f_data, fig, boundaries_fig):
     # TODO: make this function more efficient
-    #  - for example on settings-change, only update the settings and take the fig from relayout data instead of redefining it
-    # --> most likely only possible with client-side-callbacks
+    patched_fig = Patch()
 
     # DATA
     # the density-Dataframe that we're updating, taken from df_store (=f_data)
-
     if f_data is None:
         raise PreventUpdate
 
@@ -1435,81 +1424,67 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
 
 
 
-    fig_bound=boundaries_fig
+    #fig_bound = boundaries_fig
 
     # Dataframes are ready now
+    fig_bound=boundaries_fig
+    fig_upd = go.Figure()
+    # INIT PLOT
+    if dash.callback_context.triggered[0]['prop_id'] == ".":
+        print("InIT")
+        patched_fig = px.scatter_3d(
+            dfu, x="x", y="y", z="z",
+            color="val",
+            hover_data=['val'],
+            color_continuous_scale=px.colors.sequential.Inferno_r,
+            range_color=[min(df['val']), max(df['val'])],
+            # takes color range from original dataset, so colors don't change
+        )
+        patched_fig.update_layout(margin=dict(l=0, r=0, b=0, t=0), paper_bgcolor="#f8f9fa", showlegend=False,
+                          modebar_remove=["zoom", "resetcameradefault", "resetcameralastsave"], template=templ1)
 
-    # TOOLS
-    # these edit the DF before the figure is built
-    # filter-by-density
-    if slider_range is not None and dense_inactive:  # Any slider Input there? Do:
-        low, high = slider_range
-        mask = (dfu['val'] >= low) & (dfu['val'] <= high)
-        dfu = dfu[mask]
+        patched_fig.update_coloraxes(colorbar={'thickness': 10, 'title': '', 'len': 0.9})
 
-    # x-Cross-section
-    if slider_range_cs_x is not None and cs_x_inactive:  # Any slider Input there? Do:
-        low, high = slider_range_cs_x
-        mask = (dfu['x'] >= np.unique(df['x'])[low]) & (dfu['x'] <= np.unique(df['x'])[high])
-        print("low: ", low),
-        print(min(dfu['x']))
-        dfu = dfu[mask]
+        # adding helperfigure to keep camera-zoom the same, regardless of data(-slicing)-changes
+        for i in fig_bound:
+           patched_fig.add_trace(i)
+        patched_fig.update_traces(patch=dict(line={'width': settings['cell']}), selector=dict(name="cell"))
+        patched_fig.update_scenes(removeHoverLines)
 
-    # Y-Cross-section
-    if slider_range_cs_y is not None and cs_y_inactive:  # Any slider Input there? Do:
-        low, high = slider_range_cs_y
-        mask = (dfu['y'] >= np.unique(df['y'])[low]) & (dfu['y'] <= np.unique(df['y'])[high])
-        dfu = dfu[mask]
 
-    # Z-Cross-section
-    if slider_range_cs_z is not None and cs_z_inactive:  # Any slider Input there? Do:
-        low, high = slider_range_cs_z
-        mask = (dfu['z'] >= np.unique(df['z'])[low]) & (dfu['z'] <= np.unique(df['z'])[high])
-        dfu = dfu[mask]
 
     # SETTINGS
-    # plot-settings
+    elif dash.callback_context.triggered_id == "sc_settings":
 
-    # ADD ATOMS
-    if settings["atoms"]:
-        atom_colors = []
-        for i in range(0, int(no_of_atoms)):
-            atom_colors.append("green")
-        atoms_fig = go.Scatter3d(name="Atoms", x=atoms['x'], y=atoms['y'], z=atoms['z'], mode='markers',
-                                 marker=dict(size=30, color=atom_colors, line=dict(width=1, color='DarkSlateGrey')))
-    else:
-        atoms_fig = go.Figure()
+        # Define outline settings
+        if settings["outline"]:
+            outlined = dict(width=1, color='DarkSlateGrey')
+        else:
+            outlined = dict(width=0, color='DarkSlateGrey')
 
-    # creating the figure, updating some things
-
-    # updating fig according to (cs'd) DF
-    fig_upd = px.scatter_3d(
-        dfu, x="x", y="y", z="z",
-        color="val",
-        hover_data=['val'],
-        opacity=settings["opac"],
-        color_continuous_scale=px.colors.sequential.Inferno_r,
-        range_color=[min(df['val']), max(df['val'])],
-        # takes color range from original dataset, so colors don't change
-    )
-    # Outline settings
-    if settings["outline"]:
-        outlined = dict(width=1, color='DarkSlateGrey')
-    else:
-        outlined = dict(width=0, color='DarkSlateGrey')
-
-    # applying marker settings
-    fig_upd.update_traces(marker=dict(size=settings["size"], line=outlined), selector=dict(mode='markers'))
+        # Define ATOMS-fig
+        if settings["atoms"]:
+            atom_colors = []
+            for i in range(0, int(no_of_atoms)):
+                atom_colors.append("green")
+            atoms_fig = go.Scatter3d(name="Atoms", x=atoms['x'], y=atoms['y'], z=atoms['z'], mode='markers',
+                                     marker=dict(size=30, color=atom_colors,
+                                                 line=dict(width=1, color='DarkSlateGrey')))
+        else:
+            atoms_fig = go.Figure()
 
 
-    # atoms fig
-    if settings["atoms"]:
-        fig_upd.add_trace(atoms_fig)
 
-    # UPDATING FIG-SCENE- and Layout- PROPERTIES
-    fig_upd.update_layout(margin=dict(l=0, r=0, b=0, t=0), paper_bgcolor="#f8f9fa", showlegend=False,
-                          modebar_remove=["zoom", "resetcameradefault", "resetcameralastsave"])
-    fig_upd.update_coloraxes(colorbar={'thickness': 10, 'title': '', 'len': 0.9})
+        patched_fig['data'][0]['marker']['line'] = outlined
+        patched_fig['data'][0]['marker']['size'] = settings["size"]
+        patched_fig['data'][0]['marker']['opacity'] = settings["opac"]
+
+        patched_fig['data'][4] = atoms_fig
+
+
+    # updating fig according to (cs'd) DF (TO BE DEPRECATED)
+
+
 
     # CAMERA
     if dash.callback_context.triggered_id == "default-cam":
@@ -1546,14 +1521,9 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
     to the most recently stored manually adjusted camera position
     '''
 
-    # adding helperfigure to keep camera-zoom the same, regardless of data(-slicing)-changes
-    for i in fig_bound:
-        fig_upd.add_trace(i)
-    print(type(settings['cell']))
-    fig_upd.update_traces(patch=dict(line={'width': settings['cell']}), selector=dict(name="cell"))
-    fig_upd.update_scenes(removeHoverLines)
-    # TODO cell visibility (line width) needs work
-    return fig_upd
+
+
+    return patched_fig
 
 
 ''' maybe interesting: animations on plot change:
@@ -1563,6 +1533,59 @@ https://plotly.com/python-api-reference/generated/plotly.graph_objects.Figure.ht
 Sets transition options used during Plotly.react updates."
 
 '''
+
+@app.callback(
+    Output("scatter-plot", "figure"),
+           # Tools
+    Input("range-slider-dense", "value"),
+    Input("active-dense", "active"),
+    Input("range-slider-cs-x", "value"),
+    Input("sc-active-x", "active"),
+    Input("range-slider-cs-y", "value"),
+    Input("sc-active-y", "active"),
+    Input("range-slider-cs-z", "value"),
+    Input("sc-active-z", "active"),
+            # Data
+    State("df_store", "data"),
+    prevent_initial_call=True,
+           )
+def slicePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, slider_range_cs_y, cs_y_inactive,
+               slider_range_cs_z, cs_z_inactive, f_data):
+    df = pd.DataFrame(f_data['MALA_DF']['scatter'])
+    dfu = df.copy()
+
+    # TOOLS
+    # filter-by-density
+    if slider_range is not None and dense_inactive:  # Any slider Input there? Do:
+        low, high = slider_range
+        mask = (dfu['val'] >= low) & (dfu['val'] <= high)
+        dfu = dfu[mask]
+
+    # slice X
+    if slider_range_cs_x is not None and cs_x_inactive:  # Any slider Input there? Do:
+        low, high = slider_range_cs_x
+        mask = (dfu['x'] >= np.unique(df['x'])[low]) & (dfu['x'] <= np.unique(df['x'])[high])
+        dfu = dfu[mask]
+
+    # slice Y
+    if slider_range_cs_y is not None and cs_y_inactive:  # Any slider Input there? Do:
+        low, high = slider_range_cs_y
+        mask = (dfu['y'] >= np.unique(df['y'])[low]) & (dfu['y'] <= np.unique(df['y'])[high])
+        dfu = dfu[mask]
+
+    # slice Z
+    if slider_range_cs_z is not None and cs_z_inactive:  # Any slider Input there? Do:
+        low, high = slider_range_cs_z
+        mask = (dfu['z'] >= np.unique(df['z'])[low]) & (dfu['z'] <= np.unique(df['z'])[high])
+        dfu = dfu[mask]
+
+    patched_fig = Patch()
+    patched_fig['data'][0]['x'] = dfu['x']
+    patched_fig['data'][0]['y'] = dfu['y']
+    patched_fig['data'][0]['z'] = dfu['z']
+    patched_fig['data'][0]['marker']['color'] = dfu['val']
+
+    return patched_fig
 
 
 @app.callback(
