@@ -348,6 +348,7 @@ r_content = html.Div([
             dbc.Checkbox(label='Outline', value=True, id='sc-outline',
                          style={'text-align': 'left', "font-size": "0.85em"}),
             dbc.Checkbox(label='Atoms', value=True, id='sc-atoms', style={'text-align': 'left', "font-size": "0.85em"}),
+            dbc.Checkbox(label='Cell', value=True, id='cell-boundaries', style={'text-align': 'left', "font-size": "0.85em"}),
 
             html.Hr(),
 
@@ -493,7 +494,7 @@ main_plot = [
                                                                 max=1,
                                                                 #step=None,
                                                                 marks=None,
-                                                                pushable=10,            # this is a test-value to achieve a roughly 1-Voxel-width-Layer for minimal X-crosssection
+                                                                pushable=10,            # the sheared plane needs a range of values to be able to slice down to approx. 1 layer
                                                                 updatemode='drag')),
                                         dbc.Col(html.Img(id="reset-cs-x", src="/assets/x.svg", n_clicks=0,
                                                          style={'width': '1.25em'}), width=1)
@@ -600,6 +601,7 @@ skel_layout = [dbc.Row([
 p_layout_landing = dbc.Container([
     dcc.Store(id="page_state", data="landing"),
     dcc.Store(id="UP_STORE"),
+    dcc.Store(id="BOUNDARIES_STORE"),
     dcc.Store(id="choice_store", data="scatter"),
     dcc.Store(id="sc_settings"),
     html.Div(skel_layout, id="content-layout")
@@ -620,7 +622,6 @@ app.layout = p_layout_landing
     prevent_initial_call=True,
 )
 def toggle_upload_section(n_header, is_open):
-    print("Where??")
     if n_header:
         return not is_open
 
@@ -921,7 +922,7 @@ def upload_exception():
 
 
 @du.callback(
-    output=[Output("output-upload-state", "children"), Output("UP_STORE", "data"), Output("atom-limit-warning", "is_open"), Output("atoms_list", "children"), Output("atoms-preview", "figure"), Output("upload-data", "className")],
+    output=[Output("output-upload-state", "children"), Output("UP_STORE", "data"), Output("atom-limit-warning", "is_open"), Output("atoms_list", "children"), Output("atoms-preview", "figure"), Output("upload-data", "className"), Output("BOUNDARIES_STORE", "data")],
     id="upload-data"
 )
 def upload_callback(status):  # <------- NEW: du.UploadStatus
@@ -940,6 +941,7 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
     UP_STORE = {"ID": status.upload_id, "PATH": str(status.latest_file.resolve())}
     LIMIT_EXCEEDED = False
     fig = px.scatter_3d()
+    boundaries = []
     # ASE.reading to check for file-format support, to fill atoms_table, and to fill atoms-preview
     try:
         print("Trying upload")
@@ -956,7 +958,7 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
         atoms_fig = go.Scatter3d(name="Atoms", x=[atom.x for atom in r_atoms], y=[atom.y for atom in r_atoms],
                            z=[atom.z for atom in r_atoms], mode='markers', hovertemplate='X: %{x}</br></br>Y: %{y}</br>Z: %{z}<extra></extra>')
 
-        fig.add_trace(atoms_fig)
+
 
 
         # Draw the outline of 4 planes and add them as individual traces
@@ -970,29 +972,30 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
         y_points = [0, X_axis[1], X_axis[1]+Z_axis[1], Z_axis[1], 0]
         z_points = [0, X_axis[2], X_axis[2]+Z_axis[2], Z_axis[2], 0]
         fig.add_trace(go.Scatter3d(x=x_points, y=y_points, z=z_points, hoverinfo='skip', mode='lines', marker={'color': 'black'}, name="Cell"))
-
+        boundarie1 = go.Scatter3d(name="cell", x=x_points, y=y_points, z=z_points, hoverinfo='skip', mode='lines', marker={'color': 'black'})
             # Plane 2: X-Z-2
         x_points = [0+Y_axis[0], X_axis[0]+Y_axis[0], X_axis[0]+Z_axis[0]+Y_axis[0], Z_axis[0]+Y_axis[0], 0+Y_axis[0]]
         y_points = [0+Y_axis[1], X_axis[1]+Y_axis[1], X_axis[1]+Z_axis[1]+Y_axis[1], Z_axis[1]+Y_axis[1], 0+Y_axis[1]]
         z_points = [0, X_axis[2], X_axis[2]+Z_axis[2], Z_axis[2], 0]
         fig.add_trace(go.Scatter3d(x=x_points, y=y_points, z=z_points, hoverinfo='skip', mode='lines', marker={'color': 'black'}, showlegend=False))
+        boundarie2 = go.Scatter3d(name="cell", x=x_points, y=y_points, z=z_points, hoverinfo='skip', mode='lines', marker={'color': 'black'}, showlegend=False)
 
             # Plane 3: X-Y-1
         x_points = [0, X_axis[0], X_axis[0]+Y_axis[0], Y_axis[0], 0]
         y_points = [0, X_axis[1], X_axis[1]+Y_axis[1], Y_axis[1], 0]
         z_points = [0, X_axis[2], X_axis[2]+Y_axis[2], Y_axis[2], 0]
         fig.add_trace(go.Scatter3d(x=x_points, y=y_points, z=z_points, hoverinfo='skip', mode='lines', marker={'color': 'black'}, showlegend=False))
-
+        boundarie3 = go.Scatter3d(name="cell", x=x_points, y=y_points, z=z_points, hoverinfo='skip', mode='lines', marker={'color': 'black'}, showlegend=False)
             # Plane 4: X-Y-2
         x_points = [0, X_axis[0], X_axis[0]+Y_axis[0], Y_axis[0], 0]
         y_points = [0, X_axis[1], X_axis[1]+Y_axis[1], Y_axis[1], 0]
         z_points = [0+Z_axis[2], X_axis[2]+Z_axis[2], X_axis[2]+Y_axis[2]+Z_axis[2], Y_axis[2]+Z_axis[2], 0+Z_axis[2]]
         fig.add_trace(go.Scatter3d(x=x_points, y=y_points, z=z_points, hoverinfo='skip', mode='lines', marker={'color': 'black'}, showlegend=False))
+        boundarie4 = go.Scatter3d(name="cell", x=x_points, y=y_points, z=z_points, hoverinfo='skip', mode='lines', marker={'color': 'black'}, showlegend=False)
 
+        boundaries = [boundarie1, boundarie2, boundarie3, boundarie4]
         fig.update_scenes(removeHoverLines)
-
-
-
+        fig.add_trace(atoms_fig)
 
 
 
@@ -1004,7 +1007,7 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
     except ase.io.formats.UnknownFileTypeError:
         r_atoms, UPDATE_TEXT, UP_STORE, table_rows, border_style = upload_exception()
 
-    return UPDATE_TEXT, UP_STORE, LIMIT_EXCEEDED, table_rows, go.Figure(fig), border_style
+    return UPDATE_TEXT, UP_STORE, LIMIT_EXCEEDED, table_rows, go.Figure(fig), border_style, boundaries
 # END DASH UPLOADER
 
 
@@ -1215,22 +1218,24 @@ def updateDF(trig, reset, model_choice, temp_choice, upload):
 @app.callback(
     Output("sc_settings", "data"),
     Output("sc-outline", "value"),
-    [Input('sc-size', 'value'),
-     Input("sc-outline", "value"),
-     Input("sc-atoms", "value"),
-     Input("sc-opac", "value")
-     ],
+    Input('sc-size', 'value'),
+    Input("sc-outline", "value"),
+    Input("sc-atoms", "value"),
+    Input("sc-opac", "value"),
     State("sc_settings", "data"),
+    Input("cell-boundaries", "value")
 )
-def update_settings_store(size, outline, atoms, opac, saved):
+def update_settings_store(size, outline, atoms, opac, saved, cell):
     if saved is None:
         # default settings
         settings = {
-            "size": 12,
-            "opac": 1,
-            "outline": True,
+            "size": 12,     # particle size
+            "opac": 1,      # particle opacity
+            "outline": True,    # particle outline
             "atoms": True,
+            "cell": 5     # cell boundaries (color)
         }
+
     else:
         settings = saved
     if dash.callback_context.triggered_id == "sc-size":
@@ -1245,6 +1250,12 @@ def update_settings_store(size, outline, atoms, opac, saved):
         settings["outline"] = outline
     elif dash.callback_context.triggered_id == "sc-atoms":
         settings["atoms"] = atoms
+    elif dash.callback_context.triggered_id == "cell-boundaries":
+        if cell:
+            settings["cell"] = 5
+        else:
+            settings["cell"] = 0.01
+            # for disabling cell-boundaries, we just show them in white for now - should reduce lines thickness
     return settings, settings["outline"]
 
 
@@ -1429,13 +1440,14 @@ cam_store can't be an input or else it triggers an update everytime the cam is m
     [State("scatter-plot", "relayoutData"),
      State("cam_store", "data"),
      Input("df_store", "data"),
-     State("scatter-plot", "figure")
+     State("scatter-plot", "figure"),
+     State("BOUNDARIES_STORE", "data")
      ],
 )
 def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, slider_range_cs_y, cs_y_inactive,
                slider_range_cs_z, cs_z_inactive,
                settings,
-               cam_default, cam_xy, cam_xz, cam_yz, relayout_data, stored_cam_settings, f_data, fig):
+               cam_default, cam_xy, cam_xz, cam_yz, relayout_data, stored_cam_settings, f_data, fig, boundaries_fig):
     # TODO: make this function more efficient
     #  - for example on settings-change, only update the settings and take the fig from relayout data instead of redefining it
     # --> most likely only possible with client-side-callbacks
@@ -1462,20 +1474,9 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
     atoms = pd.DataFrame(f_data['INPUT_DF'])
     no_of_atoms = len(atoms)
 
-    # just 8 cornerpoints to keep the camera static when slicing - otherwise it will zoom if f.e. width shrinks
-    df_bound = df.from_dict({
-        'x': [min(dfu['x']), min(dfu['x']), min(dfu['x']), min(dfu['x']), max(dfu['x']), max(dfu['x']), max(dfu['x']),
-              max(dfu['x'])],
-        'y': [min(dfu['y']), min(dfu['y']), max(dfu['y']), max(dfu['y']), min(dfu['y']), min(dfu['y']), max(dfu['y']),
-              max(dfu['y'])],
-        'z': [min(dfu['z']), max(dfu['z']), min(dfu['z']), max(dfu['z']), min(dfu['z']), max(dfu['z']), min(dfu['z']),
-              max(dfu['z'])]
 
-    })
-    fig_bound = go.Scatter3d(
-        x=df_bound['x'], y=df_bound['y'], z=df_bound['z'], mode='markers',
-        marker=dict(size=0, color='white'), visible=False, showlegend=False,
-    )
+
+    fig_bound=boundaries_fig
 
     # Dataframes are ready now
 
@@ -1490,19 +1491,19 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
     # x-Cross-section
     if slider_range_cs_x is not None and cs_x_inactive:  # Any slider Input there? Do:
         low, high = slider_range_cs_x
-        mask = (dfu['x'] >= np.unique(df['x'])[low]) & (dfu['x'] <= np.unique(df['x'])[high])
+        mask = (dfu['x'] >= np.unique(df['x'])[low]) & (dfu['x'] < np.unique(df['x'])[high])
         dfu = dfu[mask]
 
     # Y-Cross-section
     if slider_range_cs_y is not None and cs_y_inactive:  # Any slider Input there? Do:
         low, high = slider_range_cs_y
-        mask = mask = (dfu['y'] >= np.unique(df['y'])[low]) & (dfu['y'] <= np.unique(df['y'])[high])
+        mask = (dfu['y'] >= np.unique(df['y'])[low]) & (dfu['y'] < np.unique(df['y'])[high])
         dfu = dfu[mask]
 
     # Z-Cross-section
     if slider_range_cs_z is not None and cs_z_inactive:  # Any slider Input there? Do:
         low, high = slider_range_cs_z
-        mask = mask = (dfu['z'] >= np.unique(df['z'])[low]) & (dfu['z'] <= np.unique(df['z'])[high])
+        mask = (dfu['z'] >= np.unique(df['z'])[low]) & (dfu['z'] < np.unique(df['z'])[high])
         dfu = dfu[mask]
 
     # SETTINGS
@@ -1585,9 +1586,12 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
     '''
 
     # adding helperfigure to keep camera-zoom the same, regardless of data(-slicing)-changes
-    fig_upd.add_trace(fig_bound)
+    for i in fig_bound:
+        fig_upd.add_trace(i)
+    print(type(settings['cell']))
+    fig_upd.update_traces(patch=dict(line={'width': settings['cell']}), selector=dict(name="cell"))
     fig_upd.update_scenes(removeHoverLines)
-
+    # TODO cell visibility (line width) needs work
     return fig_upd
 
 
@@ -1609,7 +1613,6 @@ def updateOrientation(saved_cam):
     fig_upd = orient_fig
     fig_upd.update_layout(scene_camera={'up': {'x': 0, 'y': 0, 'z': 1}, 'center': {'x': 0, 'y': 0, 'z': 0},
                                         'eye': saved_cam['eye']}, clickmode="none", dragmode=False)
-    print(saved_cam)
     return fig_upd
 
 
