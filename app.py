@@ -145,16 +145,6 @@ du.configure_upload(app, r"./upload", http_request_handler=None)
 # just needed for styling of some headings
 indent = '      '
 
-# defining plot-choice-items
-radioItems = dbc.RadioItems(
-    options=[
-        {"label": "Points", "value": "scatter"},
-        {"label": "Volume", "value": "volume", 'id': 'vol-warn'},
-    ], style={"font-size": "0.85em"},
-    inline=True,
-    id="plot-choice",
-)
-
 # -------------------------------
 # Figs
 def_fig = go.Figure(go.Scatter3d(x=[1], y=[1], z=[1], showlegend=False))
@@ -487,6 +477,7 @@ main_plot = [
                                 # Sliders
                                 dbc.Col([
                                     # TODO: Triggers need work
+                                    # TODO: rangesliders are only optimized with the example cell used in current models. Differently sheared planes will mess things up, as will cells with bigger datasets (minimum slice will grow/shrink)
                                     dbc.Row([
                                         dbc.Col(dcc.RangeSlider(id='range-slider-cs-x',
                                                                 disabled=True,
@@ -507,7 +498,7 @@ main_plot = [
                                         dbc.Col(dcc.RangeSlider(
                                             id='range-slider-cs-y',
                                             disabled=True,
-                                            pushable=1,
+                                            pushable=0,
                                             min=0, max=1,
                                             marks=None,
                                             updatemode='drag')),
@@ -521,7 +512,7 @@ main_plot = [
                                         dbc.Col(dcc.RangeSlider(
                                             id='range-slider-cs-z',
                                             disabled=True,
-                                            pushable=1,
+                                            pushable=0,
                                             min=0, max=1,
                                             marks=None,
                                             updatemode='drag')),
@@ -624,37 +615,6 @@ app.layout = p_layout_landing
 def toggle_upload_section(n_header, is_open):
     if n_header:
         return not is_open
-
-
-# this callback is totally optional and only decides if the reset-button should also reset plot-choice
-# turned off for development by PreventingUpdate for now
-@app.callback(
-    Output("plot-choice", "value"),
-    Input("reset-data", "n_clicks"),
-    prevent_initial_call=True,
-)
-def resetPlotChoice(trigger_reset):
-    raise PreventUpdate
-    return []
-
-
-@app.callback(
-    Output("collapse-plot-choice", "is_open"),
-    [Input("open-plot-choice", "n_clicks"),
-     Input("page_state", "data"),
-     Input("df_store", "data"),
-     Input("collapse-plot-choice", "is_open")],
-    prevent_initial_call=True,
-)
-def toggle_plot_choice(n_header, page_state, data, is_open):
-    # open plot-style-chooser when state is uploaded
-    if dash.callback_context.triggered_id == "open-plot-choice":
-        return not is_open
-    elif dash.callback_context.triggered_id == "page_state" or "df_store":
-        if data is not None:
-            return True
-        else:
-            return False
 
 
 # end of sidebar_l collapses
@@ -1436,18 +1396,17 @@ cam_store can't be an input or else it triggers an update everytime the cam is m
         Input("x-y-cam", "n_clicks"),
         Input("x-z-cam", "n_clicks"),
         Input("y-z-cam", "n_clicks"),
+
+        State("cam_store", "data"),
+        Input("df_store", "data"),
+        State("scatter-plot", "figure"),
+        State("BOUNDARIES_STORE", "data")
     ],
-    [State("scatter-plot", "relayoutData"),
-     State("cam_store", "data"),
-     Input("df_store", "data"),
-     State("scatter-plot", "figure"),
-     State("BOUNDARIES_STORE", "data")
-     ],
 )
 def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, slider_range_cs_y, cs_y_inactive,
                slider_range_cs_z, cs_z_inactive,
                settings,
-               cam_default, cam_xy, cam_xz, cam_yz, relayout_data, stored_cam_settings, f_data, fig, boundaries_fig):
+               cam_default, cam_xy, cam_xz, cam_yz, stored_cam_settings, f_data, fig, boundaries_fig):
     # TODO: make this function more efficient
     #  - for example on settings-change, only update the settings and take the fig from relayout data instead of redefining it
     # --> most likely only possible with client-side-callbacks
@@ -1491,19 +1450,21 @@ def updatePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, s
     # x-Cross-section
     if slider_range_cs_x is not None and cs_x_inactive:  # Any slider Input there? Do:
         low, high = slider_range_cs_x
-        mask = (dfu['x'] >= np.unique(df['x'])[low]) & (dfu['x'] < np.unique(df['x'])[high])
+        mask = (dfu['x'] >= np.unique(df['x'])[low]) & (dfu['x'] <= np.unique(df['x'])[high])
+        print("low: ", low),
+        print(min(dfu['x']))
         dfu = dfu[mask]
 
     # Y-Cross-section
     if slider_range_cs_y is not None and cs_y_inactive:  # Any slider Input there? Do:
         low, high = slider_range_cs_y
-        mask = (dfu['y'] >= np.unique(df['y'])[low]) & (dfu['y'] < np.unique(df['y'])[high])
+        mask = (dfu['y'] >= np.unique(df['y'])[low]) & (dfu['y'] <= np.unique(df['y'])[high])
         dfu = dfu[mask]
 
     # Z-Cross-section
     if slider_range_cs_z is not None and cs_z_inactive:  # Any slider Input there? Do:
         low, high = slider_range_cs_z
-        mask = (dfu['z'] >= np.unique(df['z'])[low]) & (dfu['z'] < np.unique(df['z'])[high])
+        mask = (dfu['z'] >= np.unique(df['z'])[low]) & (dfu['z'] <= np.unique(df['z'])[high])
         dfu = dfu[mask]
 
     # SETTINGS

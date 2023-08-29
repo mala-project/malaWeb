@@ -67,7 +67,7 @@ def run_mala_prediction(atoms_to_predict, model_and_temp):
             "grid_dimensions": ldos_calculator.grid_dimensions
         }
         # for testing visual loading process
-        time.sleep(10)
+        #time.sleep(10)
         return results
     else:
         parameters, network, data_handler, predictor = mala.Predictor.load_run(
