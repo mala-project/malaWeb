@@ -11,13 +11,6 @@
     justify-content: center;
 }
 
-.run-mala-spin {
-}
-
-.run-mala-but {
-    align: center;
-    display: inline;
-}
 
 .upload-failure {
     border-color: red;

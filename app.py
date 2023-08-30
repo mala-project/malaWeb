@@ -146,12 +146,12 @@ indent = '      '
 
 # -------------------------------
 # Figs
+    # Default fig for the main plot - gets overwritten on initial plot update, after that it gets patched on update
 def_fig = go.Figure(go.Scatter3d(x=[1], y=[1], z=[1], showlegend=False))
 def_fig.update_scenes(xaxis_visible=False, yaxis_visible=False, zaxis_visible=False, xaxis_showgrid=False,
                       yaxis_showgrid=False, zaxis_showgrid=False)
 
 orient_fig = go.Figure()
-
 orient_fig.update_scenes(orient_template)
 orient_fig.update_layout(margin=dict(l=0, r=0, b=0, t=0), title=dict(text="test"))
 orient_fig.add_trace(
@@ -297,23 +297,37 @@ menu = html.Div([
                           ATOM_LIMIT) + ") for short render times. Be aware that continuing with the uploaded data may negatively impact waiting times.",
                       color="warning"),
             # only to be displayed if ATOM_LIMIT is exceeded (maybe as an alert window too)
-            # dbc.ModalFooter("The amount of Atoms you want to display exceeds our threshold (" + str(
-            # ATOM_LIMIT) + ") for short render times. Be aware that continuing with the uploaded data may negatively impact waiting times."),
 
 
         ]),
         dbc.ModalFooter(
-            dbc.Button(id="run-mala", disabled=True, children=[dbc.Container(dbc.Row(
-                [
-                        #TODO: fix position of spinner
-                    dbc.Col(dbc.Spinner(dcc.Store(id="df_store"), size="sm", color="success"), className="run-mala-spin", width=5),
-                    dbc.Col("Run MALA", className="run-mala-but"),
-                    dbc.Col(width=1)
-                ]
-            ))], color="success", outline=True),
+            dbc.Button(id="run-mala", disabled=True, children=[
+
+                html.Div(dbc.Spinner(dcc.Store(id="df_store"), size="sm", color="success")),
+                html.Div("Run MALA", className="run-mala-but")
+
+                    #dbc.Container(
+                    #dbc.Row(
+
+
+                        #[
+                                #TODO: fix position of spinner
+                            #dbc.Col(dbc.Spinner(dcc.Store(id="df_store"), size="sm", color="success"), className="run-mala-spin", width=5),
+                            #dbc.Col("Run MALA", className="run-mala-but", width=6),
+                            #dbc.Col(width=1)
+                        #]
+
+
+                    #)
+                    #)
+
+            ], color="success", outline=True),
         style={'justify-content': "center"}
         )
     ], id="upload-modal", size="lg", is_open=False),
+
+
+    # TODO: Extract Inference to another Collapse below upload section. Have a reset for both upload and inference
 
 ], className="sidebar")
 
@@ -589,11 +603,11 @@ skel_layout = [dbc.Row([
 # app.layouts content gets updated, which makes our app reactive
 
 p_layout_landing = dbc.Container([
-    dcc.Store(id="page_state", data="landing"),
-    dcc.Store(id="UP_STORE"),
+    dcc.Store(id="page_state", data="landing"),     # determines what is rendered as main content (among other things?)
+    dcc.Store(id="UP_STORE"),       # Info on uploaded file (path, ...)
     dcc.Store(id="BOUNDARIES_STORE"),
-    dcc.Store(id="choice_store", data="scatter"),
-    dcc.Store(id="sc_settings"),
+    #dcc.Store(id="choice_store", data="scatter"),       # unused right now (for multiple vis-options)
+    dcc.Store(id="sc_settings"),        # parameters of the righthand sidebar, used to update plot
     html.Div(skel_layout, id="content-layout")
 ], fluid=True, style={'height': '100vh', 'width': '100vw', 'background-color': '#023B59'})
 app.layout = p_layout_landing
@@ -641,7 +655,7 @@ def toggle_uploaded_atoms(n_header, is_open):
 @app.callback(
     Output("open-bot-canv", "is_open"),
     Input("page_state", "data"),
-    Input("offcanvas-bot", "is_open"),
+    State("offcanvas-bot", "is_open"),
     prevent_initial_call=True,
 )
 def toggle_bot_button(page_state, canv_open):
@@ -652,7 +666,7 @@ def toggle_bot_button(page_state, canv_open):
             return False
 
     else:
-        return False
+        return dash.no_update
 
 
 # show button if we're plotting and if bot-canvas is closed
@@ -745,46 +759,28 @@ def toggle_density_sc(n_d, active, bc):
 
 @app.callback(
     Output("range-slider-cs-x", "value"),
-    Input("reset-cs-x", "n_clicks"),
-    Input("df_store", "data"),
-    prevent_initial_call=True)
-def reset_cs_x(n_clicks, data):
-    if data is not None:
-        df = pd.DataFrame(data['MALA_DF']['scatter'])
-        return [0, len(np.unique(df['x']))-1]
-
-
-@app.callback(
     Output("range-slider-cs-y", "value"),
-    Input("reset-cs-y", "n_clicks"),
-    Input("df_store", "data"),
-    prevent_initial_call=True)
-def reset_cs_y(n_clicks, data):
-    if data is not None:
-        scatter_df = pd.DataFrame(data['MALA_DF']['scatter'])
-        return [min(scatter_df['y']), max(scatter_df['y'])]
-
-
-@app.callback(
     Output("range-slider-cs-z", "value"),
-    Input("reset-cs-z", "n_clicks"),
-    Input("df_store", "data"),
-    prevent_initial_call=True)
-def reset_cs_z(n_clicks, data):
-    if data is not None:
-        scatter_df = pd.DataFrame(data['MALA_DF']['scatter'])
-        return [min(scatter_df['z']), max(scatter_df['z'])]
-
-
-@app.callback(
     Output("range-slider-dense", "value"),
+    Input("reset-cs-x", "n_clicks"),
+    Input("reset-cs-y", "n_clicks"),
+    Input("reset-cs-z", "n_clicks"),
     Input("reset-dense", "n_clicks"),
-    Input("df_store", "data"),
+    State("df_store", "data"),
     prevent_initial_call=True)
-def reset_cs_dense(n_clicks, data):
-    if data is not None:
-        scatter_df = pd.DataFrame(data['MALA_DF']['scatter'])
-        return [min(scatter_df['val']), max(scatter_df['val'])]
+def reset_sliders(n_clicks_x, n_clicks_y, n_clicks_z, n_clicks_dense, data):
+    df = pd.DataFrame(data['MALA_DF']['scatter'])
+    if dash.callback_context.triggered_id == 'reset-cs-x':
+        return [0, len(np.unique(df['x']))-1], dash.no_update, dash.no_update, dash.no_update
+    elif dash.callback_context.triggered_id == 'reset-cs-y':
+        return dash.no_update, [0, len(np.unique(df['y']))-1], dash.no_update, dash.no_update
+    elif dash.callback_context.triggered_id == 'reset-cs-z':
+        return dash.no_update, dash.no_update, [0, len(np.unique(df['z']))-1], dash.no_update
+    elif dash.callback_context.triggered_id == 'reset-dense':
+        return dash.no_update, dash.no_update, dash.no_update, [0, len(np.unique(df['val']))-1]
+    else:
+        print("STATUS: something unknown triggered slider reset")
+        raise PreventUpdate
 
 
 # end of collapsable cross-section settings
@@ -847,17 +843,17 @@ def store_cam(default_clicks, x_y_clicks, x_z_clicks, y_z_clicks, user_in):
 # UPDATE STORED DATA
 
 # page state
+# TODO this should be optimized to not transfer the all the data everytime
 @app.callback(
     Output("page_state", "data"),
     [Input("df_store", "data"),
-     Input("choice_store", "data"),
      Input("reset-data", "n_clicks"),
      State("page_state", "data")],
     prevent_initial_call=True)
-def updatePageState(trig1, trig2, trig3, state):
+def updatePageState(trig1, trig3, state):
     new_state = "landing"
-    if dash.callback_context.triggered_id == "df_store" or "choice_store":
-        if trig1 is not None and trig2 is not None:
+    if dash.callback_context.triggered_id == "df_store":
+        if trig1 is not None :
             new_state = "plotting"
     elif dash.callback_context.triggered_id == "reset-data":
         new_state = "landing"
@@ -1034,7 +1030,7 @@ def init_temp_choice(model_choice):
 
 
 # Trigger: button "run-mala", button "reset"
-# Opens a popup, showing
+# (indirectly) Opens a popup, showing
 #   - the uploaded Atoms with a checkmark;
 #   - possibly giving a prerender of only the atoms;
 #   - giving a warning if more than (ATOM_LIMIT) Atoms are selected
@@ -1170,9 +1166,6 @@ def updateDF(trig, reset, model_choice, temp_choice, upload):
     return df_store
 
 
-
-
-
 # SC SETTINGS STORING
 @app.callback(
     Output("sc_settings", "data"),
@@ -1190,7 +1183,7 @@ def update_settings_store(size, outline, atoms, opac, saved, cell):
         settings = {
             "size": 12,     # particle size
             "opac": 1,      # particle opacity
-            "outline": True,    # particle outline
+            "outline": dict(width=1, color='DarkSlateGrey'),    # particle outline
             "atoms": True,
             "cell": 5     # cell boundaries (color)
         }
@@ -1206,7 +1199,11 @@ def update_settings_store(size, outline, atoms, opac, saved, cell):
         if opac < 1:
             settings["outline"] = False
     elif dash.callback_context.triggered_id == "sc-outline":
-        settings["outline"] = outline
+        # Define outline settings
+        if outline:
+            settings["outline"] = dict(width=1, color='DarkSlateGrey')
+        else:
+            settings["outline"] = dict(width=0, color='DarkSlateGrey')
     elif dash.callback_context.triggered_id == "sc-atoms":
         settings["atoms"] = atoms
     elif dash.callback_context.triggered_id == "cell-boundaries":
@@ -1246,20 +1243,16 @@ def update_settings_store(size, outline, atoms, opac, saved, cell):
     ],
 )
 def update_tools(data):
+    print("STATUS: Tool-Update")
     if data is None:  # in case of reset:
         raise PreventUpdate
     else:
         df = pd.DataFrame(data['MALA_DF']['scatter'])
 
-
-        scale = pd.DataFrame(data['SCALE'])
-
-        dense_step = round((max(df['val']) - min(df['val'])) / 30, ndigits=5)
-
         return 0, len(np.unique(df['x']))-1, 1, \
                0, len(np.unique(df['y']))-1, 1, \
                0, len(np.unique(df['z']))-1, 1, \
-               min(df["val"]), max(df["val"]), dense_step
+               0, len(np.unique(df['val']))-1, 1
 
 # TODO: maybe use popover instead of tooltip
 # Updating slider-range indicators X
@@ -1284,12 +1277,12 @@ def update_slider_bound_indicators_X(value, disabled, data, trigger):
     dfX = pd.DataFrame(data['MALA_DF']['scatter'])['x']
 
     if value is None:
-        lower = min(dfX)
-        higher = max(dfX)
+        lower = round(min(dfX), ndigits=5)
+        higher = round(max(dfX), ndigits=5)
     else:
         lowB, highB = value
-        lower = np.unique(dfX)[lowB]
-        higher = np.unique(dfX)[highB]
+        lower = round(np.unique(dfX)[lowB], ndigits=5)
+        higher = round(np.unique(dfX)[highB], ndigits=5)
     return lower, higher, trigger
 
 
@@ -1315,12 +1308,12 @@ def update_slider_bound_indicators_Y(value, disabled, data, trigger):
     dfY = pd.DataFrame(data['MALA_DF']['scatter'])['y']
 
     if value is None:
-        lower = min(dfY)
-        higher = max(dfY)
+        lower = round(min(dfY), ndigits=5)
+        higher = round(max(dfY), ndigits=5)
     else:
         lowB, highB = value
-        lower = np.unique(dfY)[lowB]
-        higher = np.unique(dfY)[highB]
+        lower = round(np.unique(dfY)[lowB], ndigits=5)
+        higher = round(np.unique(dfY)[highB], ndigits=5)
     return lower, higher, trigger
 
 
@@ -1346,12 +1339,12 @@ def update_slider_bound_indicators_Z(value, disabled, data, trigger):
     dfZ = pd.DataFrame(data['MALA_DF']['scatter'])['z']
 
     if value is None:
-        lower = min(dfZ)
-        higher = max(dfZ)
+        lower = round(min(dfZ), ndigits=5)
+        higher = round(max(dfZ), ndigits=5)
     else:
         lowB, highB = value
-        lower = np.unique(dfZ)[lowB]
-        higher = np.unique(dfZ)[highB]
+        lower = round(np.unique(dfZ)[lowB], ndigits=5)
+        higher = round(np.unique(dfZ)[highB], ndigits=5)
     return lower, higher, trigger
 
 
@@ -1409,118 +1402,110 @@ def updatePlot(
     print("Plot update")
     df = pd.DataFrame(f_data['MALA_DF']['scatter'])
         # sheared coordinates
-    dfu = df.copy()
-
-    scale = pd.DataFrame(f_data['SCALE'])
-
-    x_step = (abs(max(dfu["x"]))+abs(min(dfu["x"]))) / scale["x_axis"][0]  # BUG CAUSE: second vector not included!
-    y_step = (abs(max(dfu["y"]))+abs(min(dfu["y"]))) / scale["y_axis"][0]
-    z_step = (abs(max(dfu["z"]))+abs(min(dfu["z"]))) / scale["z_axis"][0]
-
 
     # atoms-Dataframe also taken from f_data
     atoms = pd.DataFrame(f_data['INPUT_DF'])
     no_of_atoms = len(atoms)
 
-
-
-    #fig_bound = boundaries_fig
-
     # Dataframes are ready now
     fig_bound=boundaries_fig
-    fig_upd = go.Figure()
+
+    new_cam = stored_cam_settings
+
+
+
     # INIT PLOT
     if dash.callback_context.triggered[0]['prop_id'] == ".":
-        print("InIT")
+        print("Init")
+            # Our main figure = scatter plot
         patched_fig = px.scatter_3d(
-            dfu, x="x", y="y", z="z",
+            df, x="x", y="y", z="z",
             color="val",
             hover_data=['val'],
             color_continuous_scale=px.colors.sequential.Inferno_r,
             range_color=[min(df['val']), max(df['val'])],
-            # takes color range from original dataset, so colors don't change
         )
         patched_fig.update_layout(margin=dict(l=0, r=0, b=0, t=0), paper_bgcolor="#f8f9fa", showlegend=False,
                           modebar_remove=["zoom", "resetcameradefault", "resetcameralastsave"], template=templ1)
 
         patched_fig.update_coloraxes(colorbar={'thickness': 10, 'title': '', 'len': 0.9})
+        patched_fig.update_traces(patch={'marker':{'size': settings['size'], 'line': settings['outline']}})
 
-        # adding helperfigure to keep camera-zoom the same, regardless of data(-slicing)-changes
+        # adding helper-figure to keep camera-zoom the same, regardless of data(-slicing)-changes
+        # equals the cell boundaries, but has slight offset to the main plot (due to not voxels, but ertices being scatter plotted)
         for i in fig_bound:
            patched_fig.add_trace(i)
-        patched_fig.update_traces(patch=dict(line={'width': settings['cell']}), selector=dict(name="cell"))
+        patched_fig.update_traces(patch={'line': {'width': settings['cell']}}, selector=dict(name="cell"))
         patched_fig.update_scenes(removeHoverLines)
+
+        atom_colors = []
+        for i in range(0, int(no_of_atoms)):
+            atom_colors.append("green")
+        patched_fig.add_trace(go.Scatter3d(name="Atoms", x=atoms['x'], y=atoms['y'], z=atoms['z'], mode='markers',
+                                 marker=dict(size=30, color=atom_colors, line=dict(width=1, color='DarkSlateGrey'))))
 
 
 
     # SETTINGS
     elif dash.callback_context.triggered_id == "sc_settings":
 
-        # Define outline settings
-        if settings["outline"]:
-            outlined = dict(width=1, color='DarkSlateGrey')
-        else:
-            outlined = dict(width=0, color='DarkSlateGrey')
-
-        # Define ATOMS-fig
-        if settings["atoms"]:
-            atom_colors = []
-            for i in range(0, int(no_of_atoms)):
-                atom_colors.append("green")
-            atoms_fig = go.Scatter3d(name="Atoms", x=atoms['x'], y=atoms['y'], z=atoms['z'], mode='markers',
-                                     marker=dict(size=30, color=atom_colors,
-                                                 line=dict(width=1, color='DarkSlateGrey')))
-        else:
-            atoms_fig = go.Figure()
-
-
-
-        patched_fig['data'][0]['marker']['line'] = outlined
+        patched_fig['data'][0]['marker']['line'] = settings["outline"]
         patched_fig['data'][0]['marker']['size'] = settings["size"]
         patched_fig['data'][0]['marker']['opacity'] = settings["opac"]
-
-        patched_fig['data'][4] = atoms_fig
-
-
-    # updating fig according to (cs'd) DF (TO BE DEPRECATED)
-
-
+        for i in [1,2,3,4]:
+            patched_fig['data'][i]['line']['width'] = settings["cell"]
+        patched_fig['data'][5]['visible'] = settings["atoms"]
 
     # CAMERA
-    if dash.callback_context.triggered_id == "default-cam":
-        new_cam = dict(
-            up=dict(x=0, y=0, z=1),
-            center=dict(x=0, y=0, z=0),
-            eye=dict(x=1.5, y=1.5, z=1.5)
-        )
-    elif dash.callback_context.triggered_id == "x-y-cam":
-        new_cam = dict(
-            up=dict(x=0, y=0, z=1),
-            center=dict(x=0, y=0, z=0),
-            eye=dict(x=0, y=0, z=3.00)
-        )
-    elif dash.callback_context.triggered_id == "x-z-cam":
-        new_cam = dict(
-            up=dict(x=0, y=0, z=1),
-            center=dict(x=0, y=0, z=0),
-            eye=dict(x=0, y=3.00, z=0)
-        )
-    elif dash.callback_context.triggered_id == "y-z-cam":
-        new_cam = dict(
-            up=dict(x=0, y=0, z=1),
-            center=dict(x=0, y=0, z=0),
-            eye=dict(x=3.00, y=0, z=0))
-    else:
-        new_cam = stored_cam_settings
 
-    fig_upd.update_layout(scene_camera=new_cam, template=templ1)
-    '''
-    set camera-position according to the clicked button, 
-                                OR 
-                - if no button has been clicked - 
-    to the most recently stored manually adjusted camera position
-    '''
+    elif "cam" in dash.callback_context.triggered_id:
+        print(dash.callback_context.triggered_id)
+        if dash.callback_context.triggered_id == "default-cam":
+            new_cam = dict(
+                up=dict(x=0, y=0, z=1),
+                center=dict(x=0, y=0, z=0),
+                eye=dict(x=1.5, y=1.5, z=1.5)
+            )
+        elif dash.callback_context.triggered_id == "x-y-cam":
+            new_cam = dict(
+                up=dict(x=0, y=0, z=1),
+                center=dict(x=0, y=0, z=0),
+                eye=dict(x=0, y=0, z=3.00)
+            )
+        elif dash.callback_context.triggered_id == "x-z-cam":
+            new_cam = dict(
+                up=dict(x=0, y=0, z=1),
+                center=dict(x=0, y=0, z=0),
+                eye=dict(x=0, y=3.00, z=0)
+            )
+        elif dash.callback_context.triggered_id == "y-z-cam":
+            new_cam = dict(
+                up=dict(x=0, y=0, z=1),
+                center=dict(x=0, y=0, z=0),
+                eye=dict(x=3.00, y=0, z=0))
+    patched_fig['layout']['scene']['camera']= new_cam
 
+    '''
+    INIT PLOT
+        Create a Figure that overwrites the default figure (a single blue dot)
+        This is only run on the initial call of this callback (id ".")
+        All following operations are optional and only triggered if their parameters change (they are trigger of this CB)
+        They do not overwrite the figure, but patch their respective parameters of the initialised figure
+        -> better performance
+    
+    SETTINGS
+        Set:
+            outline (width), 
+            size (in px), opacity (0.1 - 1), 
+            visibility of cell boundaries (width 1 / 0) and 
+            visibility of atoms
+    
+    CAMERA
+        set camera-position according to the clicked button, 
+                                    OR 
+                    - if no button has been clicked - 
+        to the most recently stored manually adjusted camera position
+    '''
 
 
     return patched_fig
@@ -1534,6 +1519,7 @@ Sets transition options used during Plotly.react updates."
 
 '''
 
+# TODO optimize by using relayout to update camera instead of cam_store (or smth else entirely)
 @app.callback(
     Output("scatter-plot", "figure"),
            # Tools
@@ -1547,18 +1533,22 @@ Sets transition options used during Plotly.react updates."
     Input("sc-active-z", "active"),
             # Data
     State("df_store", "data"),
+    State("cam_store", "data"),
     prevent_initial_call=True,
            )
 def slicePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, slider_range_cs_y, cs_y_inactive,
-               slider_range_cs_z, cs_z_inactive, f_data):
+               slider_range_cs_z, cs_z_inactive, f_data, cam):
+    if f_data is None:
+        raise PreventUpdate
+
     df = pd.DataFrame(f_data['MALA_DF']['scatter'])
-    dfu = df.copy()
+    dfu = df.copy()     # this is a subset of df after one if-case is run. For every if-case, we need the subset+the original
 
     # TOOLS
     # filter-by-density
     if slider_range is not None and dense_inactive:  # Any slider Input there? Do:
         low, high = slider_range
-        mask = (dfu['val'] >= low) & (dfu['val'] <= high)
+        mask = (dfu['val'] >= np.unique(df['val'])[low]) & (dfu['val'] <= np.unique(df['val'])[high])
         dfu = dfu[mask]
 
     # slice X
@@ -1584,10 +1574,13 @@ def slicePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, sl
     patched_fig['data'][0]['y'] = dfu['y']
     patched_fig['data'][0]['z'] = dfu['z']
     patched_fig['data'][0]['marker']['color'] = dfu['val']
+    # sadly the patch overwrites our cam positioning, which is why we have to re-patch it everytime
+    patched_fig['layout']['scene']['camera'] = cam
 
     return patched_fig
 
 
+# TODO this can be optimized (link womewhere)
 @app.callback(
     Output("orientation", "figure"),
     Input("cam_store", "data"),
@@ -1599,7 +1592,7 @@ def updateOrientation(saved_cam):
                                         'eye': saved_cam['eye']}, clickmode="none", dragmode=False)
     return fig_upd
 
-
+# TODO this can be optimized by patching
 @app.callback(
     Output("dos-plot", "figure"),
     Output("bandEn", "children"),
