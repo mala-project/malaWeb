@@ -184,7 +184,7 @@ table_body = [html.Tbody([row1, row2, row3, row4, row5, row6])]
 table = dbc.Table(table_body, bordered=True, striped=True, style={'padding': 0, 'margin': 0})
 
     # List of ASE-atoms table
-table_header = [html.Thead(html.Tr([html.Th("ID"), html.Th("X"), html.Th("Y"), html.Th("Z"), html.Th("Use to run MALA")]), )]
+table_header = [html.Thead(html.Tr([html.Th("ID"), html.Th("X"), html.Th("Y"), html.Th("Z")]), )]   # , html.Th("Use to run MALA")
 table_body = [html.Tbody([], id="atoms_list")]
 atoms_table = dbc.Table(table_header + table_body, bordered=True)
 
@@ -257,7 +257,7 @@ menu = html.Div([
     dbc.Modal([
         dbc.ModalHeader(dbc.ModalTitle("Your Upload")),
         dbc.ModalBody([
-            html.H6("The File you uploaded contained information of the following Atoms: "),
+            html.H6("The uploaded File contained the following atoms positions: "),
             html.Br(),
 
 
@@ -267,8 +267,7 @@ menu = html.Div([
                     dbc.Card(dbc.CardBody(  # Upload Section
                         [
             atoms_table,
-            html.P("Tick all the Atoms you want to use to send to MALA (Default: All checked).\nSee below for a "
-                   "pre-render of the chosen Atom-positions:"),
+            #html.P("Tick all the Atoms you want to use to send to MALA (Default: All checked).\nSee below for a pre-render of the chosen Atom-positions:"),
                         ]
 
                     )),
@@ -276,9 +275,6 @@ menu = html.Div([
                     style={"max-height": "30rem"},
                     is_open=False,
                 ),
-
-
-
 
             dcc.Graph(id="atoms-preview"),
 
@@ -301,29 +297,16 @@ menu = html.Div([
 
         ]),
         dbc.ModalFooter(
-            dbc.Button(id="run-mala", disabled=True, children=[
-
-                html.Div(dbc.Spinner(dcc.Store(id="df_store"), size="sm", color="success")),
-                html.Div("Run MALA", className="run-mala-but")
-
-                    #dbc.Container(
-                    #dbc.Row(
-
-
-                        #[
-                                #TODO: fix position of spinner
-                            #dbc.Col(dbc.Spinner(dcc.Store(id="df_store"), size="sm", color="success"), className="run-mala-spin", width=5),
-                            #dbc.Col("Run MALA", className="run-mala-but", width=6),
-                            #dbc.Col(width=1)
-                        #]
-
-
-                    #)
-                    #)
-
-            ], color="success", outline=True),
-        style={'justify-content': "center"}
-        )
+            dbc.Button(id="run-mala", style={'width': 'min-content'}, disabled=True, children=[
+                dbc.Stack([
+                        html.Div(dbc.Spinner(
+                            dcc.Store(id="df_store"), size="sm", color="success"    # Spinner awaits change here
+                                            ), style={'width': '40px'}),
+                        html.Div("Run MALA"),
+                        html.Div(style={'width': '40px'})
+                    ], direction="horizontal"
+                )
+            ], color="success", outline=True), style={'justify-content': 'center'})
     ], id="upload-modal", size="lg", is_open=False),
 
 
@@ -905,7 +888,7 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
         if r_atoms.get_global_number_of_atoms() > ATOM_LIMIT:
             LIMIT_EXCEEDED = True
         table_rows = [
-            html.Tr([html.Td(atom.index), html.Td(atom.x), html.Td(atom.y), html.Td(atom.z), html.Td("checkbox")])
+            html.Tr([html.Td(atom.index), html.Td(atom.x), html.Td(atom.y), html.Td(atom.z)])       #, html.Td("checkbox")
             for atom in r_atoms]
 
 
@@ -969,7 +952,7 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
 
 # CALLBACK TO ACTIVATE RUN-MALA-button
 @app.callback(
-    Output("run-mala", "disabled"),
+    Output("run-mala", "disabled", allow_duplicate=True),
     Input("model-choice", "value"),
     Input("model-temp", "value"),
     prevent_initial_call=True
@@ -979,6 +962,8 @@ def activate_runMALA_button(model, temp):
         return False
     else:
         return True
+
+
 # END OF CB
 
 
@@ -1197,13 +1182,16 @@ def update_settings_store(size, outline, atoms, opac, saved, cell):
             raise PreventUpdate
         settings["opac"] = opac
         if opac < 1:
-            settings["outline"] = False
+            outline = False
+            settings["outline"] = dict(width=0, color='DarkSlateGrey')
     elif dash.callback_context.triggered_id == "sc-outline":
         # Define outline settings
+        print("Outline: ", outline)
         if outline:
             settings["outline"] = dict(width=1, color='DarkSlateGrey')
         else:
             settings["outline"] = dict(width=0, color='DarkSlateGrey')
+        print("Saved outline setting: ", settings['outline'])
     elif dash.callback_context.triggered_id == "sc-atoms":
         settings["atoms"] = atoms
     elif dash.callback_context.triggered_id == "cell-boundaries":
@@ -1212,7 +1200,7 @@ def update_settings_store(size, outline, atoms, opac, saved, cell):
         else:
             settings["cell"] = 0.01
             # for disabling cell-boundaries, we just show them in white for now - should reduce lines thickness
-    return settings, settings["outline"]
+    return settings, outline
 
 
 # END UPDATE FOR STORED DATA
@@ -1389,8 +1377,7 @@ cam_store can't be an input or else it triggers an update everytime the cam is m
     prevent_initial_call = 'initial_duplicate',
 )
 def updatePlot(
-               settings,
-               cam_default, cam_xy, cam_xz, cam_yz, stored_cam_settings, f_data, fig, boundaries_fig):
+               settings, cam_default, cam_xy, cam_xz, cam_yz, stored_cam_settings, f_data, fig, boundaries_fig):
     # TODO: make this function more efficient
     patched_fig = Patch()
 
@@ -1416,7 +1403,6 @@ def updatePlot(
 
     # INIT PLOT
     if dash.callback_context.triggered[0]['prop_id'] == ".":
-        print("Init")
             # Our main figure = scatter plot
         patched_fig = px.scatter_3d(
             df, x="x", y="y", z="z",
@@ -1659,14 +1645,14 @@ def updateSettings(run_mala):
 
 @app.callback(  # sidebar_r canvas (1/?)
     Output("offcanvas-r-sc", "is_open"),
-    Input("run-mala", "n_clicks"),
+    Input("page_state", "data"),
     Input("open-settings", "n_clicks"),
     Input("reset-data", "n_clicks"),
     [State("offcanvas-r-sc", "is_open")],
     prevent_initial_call=True
 )
-def toggle_settings_bar(run_mala, n1, reset, is_open):
-    if dash.callback_context.triggered_id == "run-mala":
+def toggle_settings_bar(page_state, n1, reset, is_open):
+    if dash.callback_context.triggered_id == "page_state" and page_state == "plotting":
         return True
     elif dash.callback_context.triggered_id[0:4] == "open":
         return not is_open
