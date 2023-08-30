@@ -37,6 +37,20 @@ models = json.load(open("./models/model_list.json"))
 templ1 = dict(layout=go.Layout(
     scene={
         'xaxis': {'showbackground': False,
+                  'visible': False,
+                  },
+        'yaxis': {'showbackground': False,
+                  'visible': False},
+        'zaxis': {'showbackground': False,
+                  'visible': False},
+        'aspectmode': 'data'
+    },
+    paper_bgcolor='#f8f9fa',
+))
+
+templ2 = dict(layout=go.Layout(
+    scene={
+        'xaxis': {'showbackground': False,
                   'visible': True,
                   },
         'yaxis': {'showbackground': False,
@@ -45,7 +59,7 @@ templ1 = dict(layout=go.Layout(
                   'visible': True},
         'aspectmode': 'data'
     },
-    paper_bgcolor='#f8f9fa',
+    paper_bgcolor='#fff',
 ))
 
 default_scatter_marker = dict(marker=dict(
@@ -879,6 +893,7 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
     UP_STORE = {"ID": status.upload_id, "PATH": str(status.latest_file.resolve())}
     LIMIT_EXCEEDED = False
     fig = px.scatter_3d()
+    fig.update_layout(templ2['layout'])
     boundaries = []
     # ASE.reading to check for file-format support, to fill atoms_table, and to fill atoms-preview
     try:
