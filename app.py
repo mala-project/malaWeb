@@ -1262,10 +1262,11 @@ def update_tools(data):
 @app.callback(
     Output("x-lower-bound", "children"),
     Output("x-higher-bound", "children"),
-    Output("x-lower-bound", "trigger"),
+    Output("x-lower-bound", "trigger"),     # unused - doesn't seem to be editable on CB
     Input("range-slider-cs-x", "value"),
     Input("range-slider-cs-x", "disabled"),
-    State("df_store", "data"),State("x-lower-bound", "trigger")
+    State("df_store", "data")
+    ,State("x-lower-bound", "trigger")      # unused - needed for see above
 )
 def update_slider_bound_indicators_X(value, disabled, data, trigger):
     if data is None:  # in case of reset:
@@ -1296,7 +1297,8 @@ def update_slider_bound_indicators_X(value, disabled, data, trigger):
     Output("y-lower-bound", "trigger"),
     Input("range-slider-cs-y", "value"),
     Input("range-slider-cs-y", "disabled"),
-    State("df_store", "data"),State("x-lower-bound", "trigger")
+    State("df_store", "data")
+    ,State("y-lower-bound", "trigger")
 )
 def update_slider_bound_indicators_Y(value, disabled, data, trigger):
     if data is None:  # in case of reset:
@@ -1327,7 +1329,8 @@ def update_slider_bound_indicators_Y(value, disabled, data, trigger):
     Output("z-lower-bound", "trigger"),
     Input("range-slider-cs-z", "value"),
     Input("range-slider-cs-z", "disabled"),
-    State("df_store", "data"),State("x-lower-bound", "trigger")
+    State("df_store", "data")
+    ,State("z-lower-bound", "trigger")
 )
 def update_slider_bound_indicators_Z(value, disabled, data, trigger):
     if data is None:  # in case of reset:
@@ -1348,6 +1351,38 @@ def update_slider_bound_indicators_Z(value, disabled, data, trigger):
         lowB, highB = value
         lower = round(np.unique(dfZ)[lowB], ndigits=5)
         higher = round(np.unique(dfZ)[highB], ndigits=5)
+    return lower, higher, trigger
+
+
+# Updating slider-range indicators density
+@app.callback(
+    Output("dense-lower-bound", "children"),
+    Output("dense-higher-bound", "children"),
+    Output("dense-lower-bound", "trigger"),
+    Input("range-slider-dense", "value"),
+    Input("range-slider-dense", "disabled"),
+    State("df_store", "data")
+    ,State("dense-lower-bound", "trigger")
+)
+def update_slider_bound_indicators_density(value, disabled, data, trigger):
+    if data is None:  # in case of reset:
+        raise PreventUpdate
+
+    # TODO: enabling/disabling hovermode of indicator doesn't work - doesn't seem to overwrite init-param
+    if disabled:
+        trigger = None
+    else:
+        trigger = "hover"
+
+    dfDense = pd.DataFrame(data['MALA_DF']['scatter'])['val']
+
+    if value is None:
+        lower = round(min(dfDense), ndigits=5)
+        higher = round(max(dfDense), ndigits=5)
+    else:
+        lowB, highB = value
+        lower = round(np.unique(dfDense)[lowB], ndigits=5)
+        higher = round(np.unique(dfDense)[highB], ndigits=5)
     return lower, higher, trigger
 
 
