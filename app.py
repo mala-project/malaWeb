@@ -1478,7 +1478,7 @@ def updatePlot(
         for i in range(0, int(no_of_atoms)):
             atom_colors.append("green")
         patched_fig.add_trace(go.Scatter3d(name="Atoms", x=atoms['x'], y=atoms['y'], z=atoms['z'], mode='markers',
-                                 marker=dict(size=30, color=atom_colors, line=dict(width=1, color='DarkSlateGrey'))))
+                                 marker=dict(size=15, color=atom_colors, line=dict(width=1, color='DarkSlateGrey'))))
 
 
 
