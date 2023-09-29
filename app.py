@@ -29,7 +29,7 @@ ATOM_LIMIT = 200
 # TODO: implement patching so that figures are updated, nor recreated
 # as in: https://dash.plotly.com/partial-properties
 
-models = json.load(open("./models/model_list.json"))
+models = json.load(open("models/model_list.json"))
 # "label" is the label visible in the apps dropdown ; "value"  is the value passed to the inference script. Ranges are to be surrounded by []
 
 

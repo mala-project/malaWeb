@@ -66,12 +66,10 @@ def run_mala_prediction(atoms_to_predict, model_and_temp):
             "voxel": ldos_calculator.voxel,
             "grid_dimensions": ldos_calculator.grid_dimensions
         }
-        # for testing visual loading process
-        #time.sleep(10)
         return results
     else:
         parameters, network, data_handler, predictor = mala.Predictor.load_run(
-            model_paths[model_and_temp["name"]], path="./models")
+            model_paths[model_and_temp["name"]], path="models")
         predicted_ldos = predictor.predict_for_atoms(atoms_to_predict)
 
         ldos_calculator: mala.LDOS
