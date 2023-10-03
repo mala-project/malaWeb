@@ -6,7 +6,7 @@ malaWeb is a Plotly Dash based web application used for the visualization of 3D 
 By inputting atom positions and cell information in ASE-accepted data formats, MALA can be run to make predictions on the volumetric data inside the given cell.
 It is currently made to be run on a local machine with its own MALA installation. Be aware that larger model predictions will take a lot of time.
 
-# Installation:
+# Installation
 Running a MALA inference requires a working installation of MALA and its dependencies (torch, LAMMPS, QuantumEspresso, ..), as well as model data.
 See https://github.com/mala-project/mala/blob/develop/docs/source/install/installing_mala.rst on how to install.
 The model data is currently included in this malaWeb repository, stored in "models"-folder and listed in "model_list.json".
@@ -22,7 +22,7 @@ https://github.com/fohrloop/dash-uploader#-dash-uploader-070-pre-release-availab
 Make sure the installed version of packaging is not higher than 21. For a version check, the dash uploader component uses an attribute "LegacyVersion" that has been deprecated in later versions.
 See this thread: https://github.com/pypa/packaging/issues/321
 
-# Usage:
+# Usage
 After installing dependencies, run app.py.
 In the File-Upload section, upload an ASE-readable file (See: https://wiki.fysik.dtu.dk/ase/ase/io/io.html - Table - Formats with either R or RW capabilities).
 The data read by ASE will be displayed in a popup window.
@@ -37,6 +37,6 @@ The bottom of the page has a button for opening up information on different ener
 
 
 
-# Todo:
+# Todos
 - Create an environment.yml, as the app will most likely be installed in conda venv
 - Rework "edit" and "reset" button
