@@ -31,10 +31,11 @@ The data read by ASE will be displayed in a popup window.
 - A model has to be chosen for running the MALA inference. Some models support varying temperatures, so make sure to edit if necessary, before running (calculation heavy) predictions
 - Run MALA
 
-- The visualization will open up. The settings panel on the right hand side gives options for predefined camera angles, rendering options for the voxels and their size, opacity and outlines as well as atoms and cell boundaries.
-The Tools panel just below the visualization lets you render layers in all 3 axis, as well as filter voxels by their density value.
-Layer settings can quickly be en- and disabled by pressing the respective axis button and reset by pressing X to the sliders right.
-The bottom of the page has a button for opening up information on different energies and a graph of the density of state.
+- The interactive visualization will open up. 
+  - The settings panel on the right hand side gives options for predefined camera angles, rendering options for the voxels and their size, opacity and outlines as well as atoms and cell boundaries.
+  - The Tools panel just below the visualization lets you render layers in all 3 axis, as well as filter voxels by their density value.
+  Layer settings can quickly be en- and disabled by pressing the respective axis button and reset by pressing X to the sliders right.
+  - The bottom of the page has a button for opening up information on different energies and a graph of the density of state.
 
 
 
