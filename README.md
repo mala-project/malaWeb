@@ -5,11 +5,12 @@ Web app to visualize on-the-fly MALA predictions.
 malaWeb is a Plotly Dash based web application used for the visualization of 3D volumetric data.
 By inputting atom positions and cell information in ASE-accepted data formats, MALA can be run to make predictions on the volumetric data inside the given cell.
 It is currently made to be run on a local machine with its own MALA installation. Be aware that larger model predictions will take a lot of time.
+The default atom limit for predictions is 200.
 
 # Installation
-Running a MALA inference requires a working installation of MALA and its dependencies (torch, LAMMPS, QuantumEspresso, ..), as well as model data.
-See https://github.com/mala-project/mala/blob/develop/docs/source/install/installing_mala.rst on how to install.
-The model data is currently included in this malaWeb repository, stored in "models"-folder and listed in "model_list.json".
+Running a MALA inference requires a working installation of MALA and its dependencies (torch, LAMMPS, QuantumEspresso, ..), as well as model data.\
+See https://github.com/mala-project/mala/blob/develop/docs/source/install/installing_mala.rst on how to install.\
+Some model data is currently included in this malaWeb repository, stored in "models"-folder and listed in "model_list.json".
 It is recommended to install MALA in an anaconda virtual environment.
 
 After MALA is installed, just run the setup.py file to install malaWebs dependencies.
@@ -23,8 +24,9 @@ Make sure the installed version of packaging is not higher than 21. For a versio
 See this thread: https://github.com/pypa/packaging/issues/321
 
 # Usage
-After installing dependencies, run app.py.
-In the File-Upload section, upload an ASE-readable file (See: https://wiki.fysik.dtu.dk/ase/ase/io/io.html - Table - Formats with either R or RW capabilities).
+After installing dependencies, run app.py.\
+The app will be accessible locally under http://0.0.0.0:8050/.\
+In the File-Upload section, upload an ASE-readable file (See: https://wiki.fysik.dtu.dk/ase/ase/io/io.html - Table - Formats with either R or RW capabilities).\
 The data read by ASE will be displayed in a popup window.
 - A dropdown contains all uploaded atom positions
 - The given cell is rendered with given atom positions inside
@@ -40,5 +42,9 @@ The data read by ASE will be displayed in a popup window.
 
 
 # Todos
+Goals for V1.1 are:
 - Create an environment.yml, as the app will most likely be installed in conda venv
 - Rework "edit" and "reset" button
+- Implement a different visualization (opposed to plotlys 3D scatter plot) like CrystalToolkit (https://github.com/materialsproject/crystaltoolkit). Scatterplots have their limits f.e. in accuracy (not voxel) and performance of big datasets
+- optimize Dash callbacks --> f.e. further implement the newly introduced patch-methods; 
+- reduce Panda Dataframe iterations f.e. in Plot-Slicing --> better DF filtering
