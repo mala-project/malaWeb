@@ -615,6 +615,26 @@ app.layout = p_layout_landing
 
 # CALLBACKS & FUNCTIONS
 
+    # Reworked Functions making use of duplicate Outputs
+    # TODO: update upload-section (Text, Umrandung, Text im upload)
+@app.callback(
+    Output("page_state", "data", allow_duplicate=True),
+    Output("df_store", "data", allow_duplicate=True),
+    Output("offcanvas-r-sc", "is_open", allow_duplicate=True),
+    Output("offcanvas-bot", "is_open", allow_duplicate=True),
+    Output("UP_STORE", "data", allow_duplicate=True),
+    Input("reset-data", "n_clicks"),
+    prevent_initial_call = True
+)
+def click_reset(click):
+    return "landing", None, False, False, None
+
+
+
+    # End of reworked functions
+
+
+
 # sidebar_l collapses
 @app.callback(
     Output("collapse-upload", "is_open"),
@@ -844,10 +864,9 @@ def store_cam(default_clicks, x_y_clicks, x_z_clicks, y_z_clicks, user_in):
 @app.callback(
     Output("page_state", "data"),
     [Input("df_store", "data"),
-     Input("reset-data", "n_clicks"),
      State("page_state", "data")],
     prevent_initial_call=True)
-def updatePageState(trig1, trig3, state):
+def updatePageState(trig1, state):
     new_state = "landing"
     if dash.callback_context.triggered_id == "df_store":
         if trig1 is not None :
@@ -992,10 +1011,11 @@ def activate_runMALA_button(model, temp):
     ], prevent_initial_call=True
 )
 def open_UP_MODAL(upload, edit_input, page_state):
-    if page_state == "plotting":
+    if dash.callback_context.triggered_id == "page_state" and page_state == "plotting":
         return False
-
-    if upload is not None:
+    elif dash.callback_context.triggered_id == "UP_STORE" and upload is not None:
+        return True
+    elif dash.callback_context.triggered_id == "edit-input" and upload is not None:
         return True
     else:
         return False
@@ -1040,13 +1060,12 @@ def init_temp_choice(model_choice):
 
 @app.callback(
     Output("df_store", "data"),
-    [Input("run-mala", "n_clicks"),
-     Input("reset-data", "n_clicks")],
-    [State("model-choice", "value"),
-     State("model-temp", "value"),
-     State('UP_STORE', 'data')],
+    Input("run-mala", "n_clicks"),
+    State("model-choice", "value"),
+    State("model-temp", "value"),
+    State('UP_STORE', 'data'),
     prevent_initial_call=True)
-def updateDF(trig, reset, model_choice, temp_choice, upload):
+def updateDF(trig, model_choice, temp_choice, upload):
     """
     Input
     :param trig: =INPUT - Pressing button "run-mala" triggers callback
@@ -1697,11 +1716,10 @@ def updateSettings(run_mala):
     Output("offcanvas-r-sc", "is_open"),
     Input("page_state", "data"),
     Input("open-settings", "n_clicks"),
-    Input("reset-data", "n_clicks"),
     [State("offcanvas-r-sc", "is_open")],
     prevent_initial_call=True
 )
-def toggle_settings_bar(page_state, n1, reset, is_open):
+def toggle_settings_bar(page_state, n1, is_open):
     if dash.callback_context.triggered_id == "page_state" and page_state == "plotting":
         return True
     elif dash.callback_context.triggered_id[0:4] == "open":
