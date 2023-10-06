@@ -32,7 +32,7 @@ In the File-Upload section, upload an ASE-readable file\
 (See: https://wiki.fysik.dtu.dk/ase/ase/io/io.html -> Table -> Formats with either R or RW capabilities).\
 The data read by ASE will be displayed in a popup window for running an Inference
 
-<figure><img src=".gitbook/assets/Screenshot from 2023-10-06 14-37-27.png" alt=""><figcaption><p>Inference popup</p></figcaption></figure>
+<figure><img src=".assets/inference-popup.png" alt=""><figcaption><p>Inference popup</p></figcaption></figure>
 
 * A dropdown lists all uploaded atom positions
 * The given cell is rendered with given atom positions inside
@@ -41,7 +41,7 @@ The data read by ASE will be displayed in a popup window for running an Inferenc
 
 
 
-<figure><img src=".gitbook/assets/webapp overview.png" alt=""><figcaption><p>Overview of malaWeb</p></figcaption></figure>
+<figure><img src=".assets/webapp-overview.png" alt=""><figcaption><p>Overview of malaWeb</p></figcaption></figure>
 
 * (1) The interactive visualization will open up.
 * (2) The Sidebar to the left contains:
