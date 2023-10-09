@@ -683,7 +683,7 @@ def toggle_bot_button(page_state, canv_open):
             return False
 
     else:
-        return dash.no_update
+        return False
 
 
 # show button if we're plotting and if bot-canvas is closed
@@ -871,8 +871,6 @@ def updatePageState(trig1, state):
     if dash.callback_context.triggered_id == "df_store":
         if trig1 is not None :
             new_state = "plotting"
-    elif dash.callback_context.triggered_id == "reset-data":
-        new_state = "landing"
 
     # prevent unnecessary updates
     if state == new_state:
@@ -1002,24 +1000,24 @@ def activate_runMALA_button(model, temp):
 
 
 # CALLBACK TO OPEN UPLOAD-MODAL
+# TODO: Add df_store as input? To fix bug: modal not closing when rerunning mala, while page state is already plotting
 @app.callback(
     Output("upload-modal", "is_open"),
     [
         Input("UP_STORE", "data"),
         Input("edit-input", "n_clicks"),
-        Input("page_state", "data")
+        Input("page_state", "data"),
     ], prevent_initial_call=True
 )
 def open_UP_MODAL(upload, edit_input, page_state):
     if dash.callback_context.triggered_id == "page_state" and page_state == "plotting":
         return False
-    elif dash.callback_context.triggered_id == "UP_STORE" and upload is not None:
-        return True
-    elif dash.callback_context.triggered_id == "edit-input" and upload is not None:
+    elif (dash.callback_context.triggered_id == "UP_STORE" or dash.callback_context.triggered_id == "edit-input") and upload is not None:
         return True
     else:
         return False
 # END OF CB
+
 
 @app.callback(
     Output("model-temp", "value"),
@@ -1087,8 +1085,6 @@ def updateDF(trig, model_choice, temp_choice, upload):
 
     if upload is None:
         raise PreventUpdate
-    if dash.callback_context.triggered_id == "reset-data":
-        return None
 
     print("UpdateDF started")
     model_and_temp = {'name': model_choice, 'temperature': float(temp_choice)}
@@ -1724,8 +1720,6 @@ def toggle_settings_bar(page_state, n1, is_open):
         return True
     elif dash.callback_context.triggered_id[0:4] == "open":
         return not is_open
-    elif dash.callback_context.triggered_id == "reset-data":
-        return False
     else:
         return is_open
 
