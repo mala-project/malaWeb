@@ -251,14 +251,14 @@ menu = html.Div([
                 html.Div("Awaiting upload..", id='output-upload-state',
                          style={'margin': '2px', "font-size": "0.85em", 'textAlign': 'center'}),
 
-                html.Hr(style={'margin-bottom': '2rem', 'margin-top': '1rem', 'width': '5rem'}),
+                html.Hr(style={'margin-bottom': '1rem', 'margin-top': '1rem', 'width': '5rem'}),
 
                 dbc.Button("Edit", id="edit-input", color="success",
                            style={"line-height": "0.85em", 'height': 'min-content', 'width': '100%',
                                   'font-size': '0.85em'}),
 
-                dbc.Button("reset", id="reset-data", color="danger",
-                           style={"line-height": "0.85em", 'height': 'min-content',
+                dbc.Button("Reset", id="reset-data", color="danger",
+                           style={"line-height": "0.85em", 'height': 'min-content', 'width': '100%',
                                   'font-size': '0.85em'})
 
             ], className="upload-section"
@@ -324,7 +324,6 @@ menu = html.Div([
     ], id="upload-modal", size="lg", is_open=False),
 
 
-    # TODO: Extract Inference to another Collapse below upload section. Have a reset for both upload and inference
 
 ], className="sidebar")
 
@@ -353,7 +352,7 @@ r_content = html.Div([
             html.Hr(),
 
             html.H6("", id="sz/isosurf-label", style={"font-size": "0.95em"}),
-            html.Div(dcc.Slider(6, 18, 2, value=12, id='sc-size', vertical=True, verticalHeight=150),
+            html.Div(dcc.Slider(4, 16, 2, value=10, id='sc-size', vertical=True, verticalHeight=150),
                      style={'margin-left': '1.2em'}),
 
             html.Hr(),
@@ -624,7 +623,7 @@ app.layout = p_layout_landing
     Output("offcanvas-bot", "is_open", allow_duplicate=True),
     Output("UP_STORE", "data", allow_duplicate=True),
     Input("reset-data", "n_clicks"),
-    prevent_initial_call = True
+    prevent_initial_call=True
 )
 def click_reset(click):
     return "landing", None, False, False, None
@@ -1000,17 +999,18 @@ def activate_runMALA_button(model, temp):
 
 
 # CALLBACK TO OPEN UPLOAD-MODAL
-# TODO: Add df_store as input? To fix bug: modal not closing when rerunning mala, while page state is already plotting
+# BUG: modal immediately closes after reuploading
 @app.callback(
     Output("upload-modal", "is_open"),
     [
         Input("UP_STORE", "data"),
         Input("edit-input", "n_clicks"),
         Input("page_state", "data"),
+        Input("df_store", "data")
     ], prevent_initial_call=True
 )
-def open_UP_MODAL(upload, edit_input, page_state):
-    if dash.callback_context.triggered_id == "page_state" and page_state == "plotting":
+def open_UP_MODAL(upload, edit_input, page_state, data):
+    if (dash.callback_context.triggered_id == "page_state" and page_state == "plotting") or dash.callback_context.triggered_id == "df_store":
         return False
     elif (dash.callback_context.triggered_id == "UP_STORE" or dash.callback_context.triggered_id == "edit-input") and upload is not None:
         return True
@@ -1196,7 +1196,7 @@ def update_settings_store(size, outline, atoms, opac, saved, cell):
     if saved is None:
         # default settings
         settings = {
-            "size": 12,     # particle size
+            "size": 10,     # particle size
             "opac": 1,      # particle opacity
             "outline": dict(width=1, color='DarkSlateGrey'),    # particle outline
             "atoms": True,
@@ -1236,7 +1236,6 @@ def update_settings_store(size, outline, atoms, opac, saved, cell):
 # END UPDATE FOR STORED DATA
 
 
-# TODO: update Tool-Sliders - DENSITY BUG!!
 @app.callback(
     [
 
@@ -1493,7 +1492,7 @@ def updatePlot(
         for i in range(0, int(no_of_atoms)):
             atom_colors.append("green")
         patched_fig.add_trace(go.Scatter3d(name="Atoms", x=atoms['x'], y=atoms['y'], z=atoms['z'], mode='markers',
-                                 marker=dict(size=15, color=atom_colors, line=dict(width=1, color='DarkSlateGrey'))))
+                                 marker=dict(size=10, color=atom_colors, line=dict(width=1, color='DarkSlateGrey'))))
 
 
 
