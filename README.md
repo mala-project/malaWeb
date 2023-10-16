@@ -44,8 +44,8 @@ The data read by ASE will be displayed in a popup window for running an Inferenc
 * (1) The interactive visualization will open up.
 * (2) The Sidebar to the left contains:
   * Upload section
-  * The edit button for opening up the Inference pop up again, to enable running another inference (f.e. same data, different model) (TODO)
-  * The reset button to delete the uploaded data and reset the visualization (TODO)
+  * The edit button for opening up the Inference pop up again, to enable running another inference (f.e. same data, different model)
+  * The reset button to delete the uploaded data and reset the visualization
 * (3) The Settings panel on the right hand side gives options for:
   * &#x20;Predefined camera angles
   * Rendering options for the 'voxels' and their size, opacity and outlines as well as atoms and cell boundaries.
