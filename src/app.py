@@ -1,11 +1,12 @@
 # IMPORTS
 import json
-import os
-from collections import Counter
 
-from mala_inference import run_mala_prediction
+from src.assets.mala_inference import run_mala_prediction
+
+# Components
 import dash
 import dash_bootstrap_components as dbc
+
 
 from dash.dependencies import Input, Output, State
 from dash import dcc, html, Patch
@@ -29,7 +30,7 @@ ATOM_LIMIT = 200
 # TODO: implement patching so that figures are updated, nor recreated
 # as in: https://dash.plotly.com/partial-properties
 
-models = json.load(open("models/model_list.json"))
+models = json.load(open("./models/model_list.json"))
 # "label" is the label visible in the apps dropdown ; "value"  is the value passed to the inference script. Ranges are to be surrounded by []
 
 
@@ -1751,4 +1752,5 @@ def toggle_offcanvas_l(n1, is_open):
 # END OF CALLBACKS FOR SIDEBAR
 
 if __name__ == '__main__':
-    app.run_server(debug=True, host="0.0.0.0", port="8050")
+    app.run_server(debug=True)
+    #, host="0.0.0.0", port="8050"
