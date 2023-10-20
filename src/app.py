@@ -149,7 +149,7 @@ server = app.server
 app.title = 'MALAweb'
 
 # configure upload folder
-du.configure_upload(app, r"./upload", http_request_handler=None)
+du.configure_upload(app, r"./src/upload", http_request_handler=None)
 # for publicly hosting this app, add http_request_handler=True and implement as in:
 # https://github.com/np-8/dash-uploader/blob/dev/docs/dash-uploader.md
 
