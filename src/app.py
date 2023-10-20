@@ -1078,7 +1078,7 @@ def updateDF(trig, model_choice, temp_choice, upload):
     df_store[data]... variable where we store the info necessary to render, so that we can use it in other callbacks
 
     NOW:
-    read file from filepath via ASE -> returns ATOM-obj
+    read file from dict stored in UP_STORE['ATOMS']
     on MALA-call, give ATOMS-objs & model_choice
     -> returns density data and energy values +  a .cube-file
     """
