@@ -1,5 +1,6 @@
 # IMPORTS
 import json
+import pathlib
 
 from assets.mala_inference import run_mala_prediction
 import dash
@@ -904,6 +905,7 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
     atoms-preview: Figure previewing ASE-read Atoms
     upload-data: Changing border-color of this component according to upload-status
     """
+    print((status.latest_file.resolve()))
     UP_STORE = {"ID": status.upload_id, "PATH": str(status.latest_file.resolve()), "ATOMS": None}
     LIMIT_EXCEEDED = False
     fig = px.scatter_3d()
@@ -915,6 +917,8 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
         r_atoms = ase.io.read(status.latest_file)
         UPDATE_TEXT = "Upload successful"
         UP_STORE["ATOMS"] = r_atoms.todict()
+        # delete uploaded file right after it's read by ASE - could be problematic, will see
+        pathlib.Path(str(status.latest_file.resolve())).unlink()
 
         if r_atoms.get_global_number_of_atoms() > ATOM_LIMIT:
             LIMIT_EXCEEDED = True
