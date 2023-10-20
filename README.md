@@ -1,4 +1,4 @@
-# malaWeb
+# malaWeb (for local hosting)
 
 Web app to visualize on-the-fly MALA predictions.
 
