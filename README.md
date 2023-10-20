@@ -23,7 +23,7 @@ Make sure the installed version of packaging is not higher than 21. For a versio
 ## Usage
 
 After installing dependencies, run app.py.\
-The app will be accessible locally under http://0.0.0.0:8050/.
+The app will be accessible locally under http://0.0.0.0:8050/. This can be changed at the very end of app.py.
 
 \
 In the File-Upload section, upload an ASE-readable file\
