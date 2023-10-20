@@ -27,7 +27,7 @@ ATOM_LIMIT = 200
 # TODO: implement patching so that figures are updated, nor recreated
 # as in: https://dash.plotly.com/partial-properties
 
-models = json.load(open("assets/models/model_list.json"))
+models = json.load(open("./src/assets/models/model_list.json"))
 # "label" is the label visible in the apps dropdown ; "value"  is the value passed to the inference script. Ranges are to be surrounded by []
 
 
@@ -904,7 +904,7 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
     atoms-preview: Figure previewing ASE-read Atoms
     upload-data: Changing border-color of this component according to upload-status
     """
-    UP_STORE = {"ID": status.upload_id, "PATH": str(status.latest_file.resolve())}
+    UP_STORE = {"ID": status.upload_id, "PATH": str(status.latest_file.resolve()), "ATOMS": None}
     LIMIT_EXCEEDED = False
     fig = px.scatter_3d()
     fig.update_layout(templ2['layout'])
@@ -914,6 +914,8 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
         print("Trying upload")
         r_atoms = ase.io.read(status.latest_file)
         UPDATE_TEXT = "Upload successful"
+        UP_STORE["ATOMS"] = r_atoms.todict()
+
         if r_atoms.get_global_number_of_atoms() > ATOM_LIMIT:
             LIMIT_EXCEEDED = True
         table_rows = [
@@ -1068,7 +1070,7 @@ def updateDF(trig, model_choice, temp_choice, upload):
     :param reset: =INPUT - trigger for reset of stored data
     :param model_choice: =STATE - info on the cell-system (substance+temp(-range)), separated by |
     :param temp_choice: =STATE - chosen temperature - either defined by model-choice, or direct input inbetween range
-    :param upload: =STATE - dict(upload ID, filepath)
+    :param upload: =STATE - dict(upload ID, filepath, ASE-Atoms-Obj as dict)
 
     :return: returns a dictionary with the data necessary to render to store-component
 
@@ -1086,13 +1088,10 @@ def updateDF(trig, model_choice, temp_choice, upload):
 
     print("UpdateDF started")
     model_and_temp = {'name': model_choice, 'temperature': float(temp_choice)}
-    upID = upload["ID"]
-    filepath = upload["PATH"]
 
     # ASE.reading to receive ATOMS-objs, to pass to MALA-inference
-
         # no ValueError Exception needed, bc this is done directly on upload
-    read_atoms = ase.io.read(filepath)
+    read_atoms = ase.Atoms.fromdict (upload["ATOMS"])
 
 
 
