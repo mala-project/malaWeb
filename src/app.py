@@ -32,7 +32,7 @@ models = json.load(open("./src/assets/models/model_list.json"))
 # "label" is the label visible in the apps dropdown ; "value"  is the value passed to the inference script. Ranges are to be surrounded by []
 
 
-# PX--Graph Object Theme
+    # Scene-templates for PX-Objects (our 2 plots (1=main, 2=cell-preview))
 templ1 = dict(layout=go.Layout(
     scene={
         'xaxis': {'showbackground': False,
@@ -46,7 +46,6 @@ templ1 = dict(layout=go.Layout(
     },
     paper_bgcolor='#f8f9fa',
 ))
-
 templ2 = dict(layout=go.Layout(
     scene={
         'xaxis': {'showbackground': False,
@@ -61,35 +60,7 @@ templ2 = dict(layout=go.Layout(
     paper_bgcolor='#fff',
 ))
 
-default_scatter_marker = dict(marker=dict(
-    size=12,
-    opacity=1,
-    line=dict(width=1, color='DarkSlateGrey')),
-)
-
-plot_layout = {
-    'title': 'Plot',
-    'height': '75vh',
-    'width': '80vw',
-
-}
-orientation_style = {
-    'title': 'x-y-z',
-    'height': '3em',
-    'width': '3em',
-    'background': '#f8f9fa',
-    'position': 'fixed',
-    'margin-top': '75vh',
-    'margin-right': '0.5vw'
-}
-
-removeHoverLines = go.layout.Scene(
-            xaxis=go.layout.scene.XAxis(spikethickness=0),
-            yaxis=go.layout.scene.YAxis(spikethickness=0),
-            zaxis=go.layout.scene.ZAxis(spikethickness=0),
-        )
-
-# Graph-Object Scene
+    # Scene-Template for Graph-Object (orientation)
 orient_template = {
     'xaxis': {
         'showgrid': False,
@@ -124,11 +95,23 @@ orient_template = {
     },
     'bgcolor': '#f8f9fa',
 }
-'''
-    'height': '8vh',
-    'width': '8.33vw',
-    
-'''
+
+
+    # Properties for our plots
+plot_layout = {
+    'title': 'Plot',
+    'height': '75vh',
+    'width': '80vw',
+}
+orientation_style = {
+    'title': 'x-y-z',
+    'height': '3em',
+    'width': '3em',
+    'background': '#f8f9fa',
+    'position': 'fixed',
+    'margin-top': '75vh',
+    'margin-right': '0.5vw'
+}
 
 dos_plot_layout = {
     'height': '400px',
@@ -136,8 +119,21 @@ dos_plot_layout = {
     'background': '#f8f9fa',
 }
 
-# TODO: IDEA: ability to en-/disable individual Atoms (that are in the uploaded file) and let MALA recalculate
-#  -> helps see each Atoms' impact in the grid
+    # helper for removing unnecessary visuals on cell preview
+removeHoverLines = go.layout.Scene(
+            xaxis=go.layout.scene.XAxis(spikethickness=0),
+            yaxis=go.layout.scene.YAxis(spikethickness=0),
+            zaxis=go.layout.scene.ZAxis(spikethickness=0),
+        )
+
+    # shortcut for redefining
+default_scatter_marker = dict(marker=dict(
+    size=12,
+    opacity=1,
+    line=dict(width=1, color='DarkSlateGrey')),
+)
+
+
 
 
 print("_________________________________________________________________________________________")
@@ -148,18 +144,17 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.icons.BOOTSTRAP, dbc.themes.
 server = app.server
 app.title = 'MALAweb'
 
-# configure upload folder
+    # Config of upload folder
 du.configure_upload(app, r"./src/upload", http_request_handler=None)
 # for publicly hosting this app, add http_request_handler=True and implement as in:
 # https://github.com/np-8/dash-uploader/blob/dev/docs/dash-uploader.md
 
 
-# just needed for styling of some headings
+# helper for styling of some headings
 indent = '      '
 
-# -------------------------------
-# Figs
-    # Default fig for the main plot - gets overwritten on initial plot update, after that it gets patched on update
+    # Figs
+# Default fig for the main plot - gets overwritten on initial plot update, after that it gets patched on update
 def_fig = go.Figure(go.Scatter3d(x=[1], y=[1], z=[1], showlegend=False))
 def_fig.update_scenes(xaxis_visible=False, yaxis_visible=False, zaxis_visible=False, xaxis_showgrid=False,
                       yaxis_showgrid=False, zaxis_showgrid=False)
