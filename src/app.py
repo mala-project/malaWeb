@@ -206,8 +206,8 @@ atoms_table = dbc.Table(table_header + table_body, bordered=True)
 menu = html.Div([
     # Logo Section
     html.Div([
-        html.Img(src='https://avatars.githubusercontent.com/u/81354661?s=200&v=4', className="logo"),
-        html.H2(children='MALA', style={'text-align': 'center'}),
+        html.Img(src='./assets/logos/mala_vertical.png', className="logo"),
+        html.Br(),
         html.Div(children='''
                     Framework for machine learning materials properties from first-principles data.
                 ''', style={'text-align': 'center'}),
@@ -245,7 +245,7 @@ menu = html.Div([
                 du.Upload(id="upload-data", text="Drag & Drop or Click to select"),
                     # Can't manage to extract list of ASE-supported extensions from these IOFormats in:
                     # print(ase.io.formats.ioformats),
-                    # -> TODO property "fileformat" could be used in du.Upload() to restrict uploadable extensions (safety-reasons)
+                    # -> TODO property "fileformat" could be used in du.Upload() to restrict uploadable extensions (safety-reasons for web-hosting)
 
                 html.Div("Awaiting upload..", id='output-upload-state',
                          style={'margin': '2px', "font-size": "0.85em", 'textAlign': 'center'}),
@@ -565,9 +565,8 @@ main_plot = [
 mc0_landing = html.Div([
     html.Div([html.H1([indent.join('Welcome')], className='greetings'),
               html.H1([indent.join('To')], className='greetings'),
-              html.H1([indent.join('MALA')], className='greetings'),
-              html.Div('Upload a file containing atomic positions for MALA to process', className='greetings', ),
-              html.Div('Then choose a style for plotting', className='greetings', )]),
+              html.Img(src="./assets/logos/crop_mala_horizontal_white.png", style={'width': '30%', 'display': 'block', 'margin-left': 'auto', 'margin-right': 'auto'})
+              ]),
 
 ], style={'width': 'content-min', 'margin-top': '20vh'})
 
@@ -905,7 +904,6 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
     atoms-preview: Figure previewing ASE-read Atoms
     upload-data: Changing border-color of this component according to upload-status
     """
-    print((status.latest_file.resolve()))
     UP_STORE = {"ID": status.upload_id, "PATH": str(status.latest_file.resolve()), "ATOMS": None}
     LIMIT_EXCEEDED = False
     fig = px.scatter_3d()
@@ -913,7 +911,6 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
     boundaries = []
     # ASE.reading to check for file-format support, to fill atoms_table, and to fill atoms-preview
     try:
-        print("Trying upload")
         r_atoms = ase.io.read(status.latest_file)
         UPDATE_TEXT = "Upload successful"
         UP_STORE["ATOMS"] = r_atoms.todict()
@@ -1090,7 +1087,7 @@ def updateDF(trig, model_choice, temp_choice, upload):
     if upload is None:
         raise PreventUpdate
 
-    print("UpdateDF started")
+
     model_and_temp = {'name': model_choice, 'temperature': float(temp_choice)}
 
     # ASE.reading to receive ATOMS-objs, to pass to MALA-inference
@@ -1177,8 +1174,6 @@ def updateDF(trig, model_choice, temp_choice, upload):
                 'INPUT_DF': atoms_data.to_dict("records"),
                 'SCALE': {'x_axis': x_axis, 'y_axis': y_axis, 'z_axis': z_axis}}
 
-    print("DATA PROCESSING COMPLETE")
-    print("_________________________________________________________________________________________")
     return df_store
 
 
@@ -1217,12 +1212,10 @@ def update_settings_store(size, outline, atoms, opac, saved, cell):
             settings["outline"] = dict(width=0, color='DarkSlateGrey')
     elif dash.callback_context.triggered_id == "sc-outline":
         # Define outline settings
-        print("Outline: ", outline)
         if outline:
             settings["outline"] = dict(width=1, color='DarkSlateGrey')
         else:
             settings["outline"] = dict(width=0, color='DarkSlateGrey')
-        print("Saved outline setting: ", settings['outline'])
     elif dash.callback_context.triggered_id == "sc-atoms":
         settings["atoms"] = atoms
     elif dash.callback_context.triggered_id == "cell-boundaries":
@@ -1261,7 +1254,6 @@ def update_settings_store(size, outline, atoms, opac, saved, cell):
     ],
 )
 def update_tools(data):
-    print("STATUS: Tool-Update")
     if data is None:  # in case of reset:
         raise PreventUpdate
     else:
@@ -1451,7 +1443,6 @@ def updatePlot(
     if f_data is None:
         raise PreventUpdate
 
-    print("Plot update")
     df = pd.DataFrame(f_data['MALA_DF']['scatter'])
         # sheared coordinates
 
@@ -1510,7 +1501,6 @@ def updatePlot(
     # CAMERA
 
     elif "cam" in dash.callback_context.triggered_id:
-        print(dash.callback_context.triggered_id)
         if dash.callback_context.triggered_id == "default-cam":
             new_cam = dict(
                 up=dict(x=0, y=0, z=1),
