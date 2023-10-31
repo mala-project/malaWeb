@@ -2,9 +2,14 @@ from dash import html, dcc
 import dash_bootstrap_components as dbc
 
 '''
+Button for opening settings sidebar
+'''
+button = dbc.Button("<", id="open-settings", style={'visibility': 'hidden', 'margin-top': '40vh',
+                                                    'position': 'absolute', 'right': '0'})
+
+'''
 Structure/Layout of the Settings sidebar
 '''
-
 sidebar = html.Div(
     [
     html.H5("Settings"),
@@ -41,3 +46,16 @@ sidebar = html.Div(
 
         ]
     ))], style={'text-align': 'center'})
+
+
+'''
+Inserting sidebar into Off-Canvas
+'''
+oc_sidebar = html.Div([
+    dbc.Offcanvas(sidebar, id="offcanvas-r-sc", is_open=False,
+                  style={'width': '9rem', 'height': 'min-content',
+                         'margin-top': '3em',
+                         'margin-right': '0', 'border-top-left-radius': '5px', 'border-bottom-left-radius': '5px',
+                         'box-shadow': 'rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px', },
+                  scrollable=True, backdrop=False, placement='end'),
+])

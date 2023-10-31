@@ -75,20 +75,11 @@ orient_fig.add_trace(
                  hoverinfo='skip'))
 
 
-    # Orientational Plots
-'''
-Default Plot for orientation
-(could be integrated into the "main-card" at some point)
-'''
-orient_plot = dcc.Graph(id="orientation", responsive=True, figure=orient_fig, style=orientation_style,
-                        config={'displayModeBar': False, 'displaylogo': False})
-
     # The actual Plot
 '''
 STORE Variable & Card for the main plot 
 '''
 plot = [
-
     dcc.Store(id="cam_store"),
 
     dbc.Card(dbc.CardBody(
@@ -208,7 +199,9 @@ plot = [
 ]
 
 
-    # Landing-cell
+'''
+Content for landing-page
+'''
 landing = html.Div([
     html.Div([html.H1(['      '.join('Welcome')], className='greetings'),
               html.H1(['      '.join('To')], className='greetings'),

@@ -101,90 +101,19 @@ du.configure_upload(app, r"./src/upload", http_request_handler=None)
 
 
 
-
-
-
-
-# -----------------
-# Left SIDEBAR content
-menu = upload.sidebar
-
-# Right SIDEBAR (default) content
-r_content = settings.sidebar
-
-
-
-# --------------------------
-# Filling offcanvasses with respective content
-
-# TODO: put canvases in components too
-
-# Left SIDEBAR
-side_l = html.Div([
-    dbc.Offcanvas(menu, id="offcanvas-l", is_open=True, scrollable=True, backdrop=False,
-                  style={'width': '12rem', 'margin-top': '3rem', 'left': '0', 'border-top-right-radius': '5px',
-                         'border-bottom-right-radius': '5px',
-                         'height': 'min-content',
-                         'box-shadow': 'rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px',
-                         }
-                  )
-])
-
-# Right SIDEBAR
-side_r = html.Div([
-    dbc.Offcanvas(r_content, id="offcanvas-r-sc", is_open=False,
-                  style={'width': '9rem', 'height': 'min-content',
-                         'margin-top': '3em',
-                         'margin-right': '0', 'border-top-left-radius': '5px', 'border-bottom-left-radius': '5px',
-                         'box-shadow': 'rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px', },
-                  scrollable=True, backdrop=False, placement='end'),
-])
-
-# Bottom BAR
-bot = html.Div([dbc.Offcanvas(footer.bar, id="offcanvas-bot", is_open=False,
-                              style={'height': 'min-content', 'width': 'max-content', 'border-radius': '5px',
-                                     'background-color': 'rgba(248, 249, 250, 1)',
-                                     'left': '0',
-                                     'right': '0',
-                                     'margin': 'auto',
-                                     'bottom': '0.5em',
-                                     'box-shadow': 'rgba(0, 0, 0, 0.3) 0px 0px 16px -8px',
-                                     'padding': -30
-                                     },
-                              scrollable=True, backdrop=False, placement='bottom')])
-
-# button to open bottom bar
-bot_button = html.Div(dbc.Offcanvas([
-
-    dbc.Row(
-        dbc.Col(dbc.Button(html.P("Energy / Density of State",
-                                  style={"line-height": "0.65em", "font-size": "0.65em"}),
-                           id="open-bot", style={
-                "width": "10em",
-                "height": "1.2em",
-                "position": "absolute",
-                "left": "50%",
-                "-webkit-transform": "translateX(-50%)",
-                "transform": "translateX(-50%)",
-                'bottom': '0.5em'
-            }, n_clicks=0), width=1)
-        , )
-
-], id="open-bot-canv", style={'height': 'min-content',
-                              'background-color': 'rgba(0, 0, 0, 0)', 'border': '0'},
-    is_open=False, scrollable=True, backdrop=False, close_button=False, placement='bottom')
-)
-
 # ---------------------------------
 # Plots for the created Figures
 
 skel_layout = [dbc.Row([
     dbc.Col(
         [
-            side_l,
-            dbc.Button(">", id="open-offcanvas-l", n_clicks=0,
-                       style={'margin-top': '40vh', 'position': 'absolute', 'left': '0'}),
-            bot_button, bot
+            # Upload Sidebar Off-Canvas
+            upload.oc_sidebar,
+            upload.button,
+
+            # Bottom-Bar Off-Canvas
+            footer.oc_bar,
+            footer.button
             # it doesn't matter where offcanvasses are placed here - only their "placement"-prop matters
         ],
         id="l0", width='auto'),
@@ -193,9 +122,8 @@ skel_layout = [dbc.Row([
 
     dbc.Col(
         [
-            side_r,
-            dbc.Button("<", id="open-settings", n_clicks=0,
-                       style={'visibility': 'hidden', 'margin-top': '40vh', 'position': 'absolute', 'right': '0'}),
+            settings.oc_sidebar,
+            settings.button
         ],
         id="r0", width='auto')
 
@@ -1342,7 +1270,7 @@ def toggle_settings_button(state):
 # toggle canvas
 @app.callback(  # sidebar_l canvas
     Output("offcanvas-l", "is_open"),
-    Input("open-offcanvas-l", "n_clicks"),
+    Input("open-upload-oc", "n_clicks"),
     [State("offcanvas-l", "is_open")],
     prevent_initial_call=True
 )

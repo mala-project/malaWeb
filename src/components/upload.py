@@ -7,24 +7,87 @@ import json
 
 models = json.load(open("./src/utils/models/model_list.json"))
 
-'''
-Structure/Layout of the Upload-sidebar
-'''
-# TODO add upload popup?
-
 # CONSTANTS
 ATOM_LIMIT = 200
 
+'''
+Button for opening Upload Sidebar
+'''
 
-# Tables
 
-    # List of ASE-atoms table
+button = dbc.Button(">", id="open-upload-oc", n_clicks=0, style={'margin-top': '40vh', 'position': 'absolute', 'left': '0'})
+
+
+'''
+Structure of Table showing uploaded atoms
+'''
+# List of ASE-atoms table
 table_header = [html.Thead(html.Tr([html.Th("ID"), html.Th("X"), html.Th("Y"), html.Th("Z")]), )]   # , html.Th("Use to run MALA")
 table_body = [html.Tbody([], id="atoms_list")]
 atoms_table = dbc.Table(table_header + table_body, bordered=True)
 
+'''
+Popup-Modal on accepted file-upload
+(called in sidebar below)
+'''
+upload_modal = dbc.Modal([
+        dbc.ModalHeader(dbc.ModalTitle("Your Upload")),
+        dbc.ModalBody([
+            html.H6("The uploaded File contained the following atoms positions: "),
+            html.Br(),
 
-    #Sidebar
+
+            dbc.Card(html.H6(children=[dbc.Row([dbc.Col(width=1), dbc.Col('List of Atoms', width=10), dbc.Col("⌄", width=1, id="open-atom-list-arrow")])], style={'margin': '5px'}, id="open-atom-list", n_clicks=0),
+                         style={"text-align": "center"}),
+            dbc.Collapse(
+                    dbc.Card(dbc.CardBody(  # Upload Section
+                        [
+            atoms_table,
+            #html.P("Tick all the Atoms you want to use to send to MALA (Default: All checked).\nSee below for a pre-render of the chosen Atom-positions:"),
+                        ]
+
+                    )),
+                    id="collapse-atom-list",
+                    style={"max-height": "30rem"},
+                    is_open=False,
+                ),
+
+            dcc.Graph(id="atoms-preview"),
+
+            html.Hr(style={'margin-bottom': '1rem', 'margin-top': '1rem'}),
+
+            html.P("Choose the model that MALA should use for calculations"),
+            dbc.Row([
+                dbc.Col(dcc.Dropdown(id="model-choice", options=models, value=None, placeholder="-", optionHeight=45, style={"font-size": "0.95em"}), width=9),
+                dbc.Col(dbc.Input(id="model-temp", disabled=True, type="number", min=0, max=10, step=1), width=2),
+                dbc.Col(html.P("K", style={"margin-top": "0.5rem"}), width=1)
+            ], className="g-1"),
+            html.Br(),
+
+            dbc.Alert(id="atom-limit-warning",
+                      children="The amount of Atoms you want to display exceeds our threshold (" + str(
+                          ATOM_LIMIT) + ") for short render times. Be aware that continuing with the uploaded data may negatively impact waiting times.",
+                      color="warning"),
+            # only to be displayed if ATOM_LIMIT is exceeded (maybe as an alert window too)
+
+
+        ]),
+        dbc.ModalFooter(
+            dbc.Button(id="run-mala", style={'width': 'min-content'}, disabled=True, children=[
+                dbc.Stack([
+                        html.Div(dbc.Spinner(
+                            dcc.Store(id="df_store"), size="sm", color="success"    # Spinner awaits change here
+                                            ), style={'width': '40px'}),
+                        html.Div("Run MALA"),
+                        html.Div(style={'width': '40px'})
+                    ], direction="horizontal"
+                )
+            ], color="success", outline=True), style={'justify-content': 'center'})
+    ], id="upload-modal", size="lg", is_open=False)
+
+'''
+Structure/Layout of the Upload-sidebar
+'''
 sidebar = html.Div([
     # Logo Section
     html.Div([
@@ -89,61 +152,22 @@ sidebar = html.Div([
         is_open=True,
     ),
 
-    dbc.Modal([
-        dbc.ModalHeader(dbc.ModalTitle("Your Upload")),
-        dbc.ModalBody([
-            html.H6("The uploaded File contained the following atoms positions: "),
-            html.Br(),
-
-
-            dbc.Card(html.H6(children=[dbc.Row([dbc.Col(width=1), dbc.Col('List of Atoms', width=10), dbc.Col("⌄", width=1, id="open-atom-list-arrow")])], style={'margin': '5px'}, id="open-atom-list", n_clicks=0),
-                         style={"text-align": "center"}),
-            dbc.Collapse(
-                    dbc.Card(dbc.CardBody(  # Upload Section
-                        [
-            atoms_table,
-            #html.P("Tick all the Atoms you want to use to send to MALA (Default: All checked).\nSee below for a pre-render of the chosen Atom-positions:"),
-                        ]
-
-                    )),
-                    id="collapse-atom-list",
-                    style={"max-height": "30rem"},
-                    is_open=False,
-                ),
-
-            dcc.Graph(id="atoms-preview"),
-
-            html.Hr(style={'margin-bottom': '1rem', 'margin-top': '1rem'}),
-
-            html.P("Choose the model that MALA should use for calculations"),
-            dbc.Row([
-                dbc.Col(dcc.Dropdown(id="model-choice", options=models, value=None, placeholder="-", optionHeight=45, style={"font-size": "0.95em"}), width=9),
-                dbc.Col(dbc.Input(id="model-temp", disabled=True, type="number", min=0, max=10, step=1), width=2),
-                dbc.Col(html.P("K", style={"margin-top": "0.5rem"}), width=1)
-            ], className="g-1"),
-            html.Br(),
-
-            dbc.Alert(id="atom-limit-warning",
-                      children="The amount of Atoms you want to display exceeds our threshold (" + str(
-                          ATOM_LIMIT) + ") for short render times. Be aware that continuing with the uploaded data may negatively impact waiting times.",
-                      color="warning"),
-            # only to be displayed if ATOM_LIMIT is exceeded (maybe as an alert window too)
-
-
-        ]),
-        dbc.ModalFooter(
-            dbc.Button(id="run-mala", style={'width': 'min-content'}, disabled=True, children=[
-                dbc.Stack([
-                        html.Div(dbc.Spinner(
-                            dcc.Store(id="df_store"), size="sm", color="success"    # Spinner awaits change here
-                                            ), style={'width': '40px'}),
-                        html.Div("Run MALA"),
-                        html.Div(style={'width': '40px'})
-                    ], direction="horizontal"
-                )
-            ], color="success", outline=True), style={'justify-content': 'center'})
-    ], id="upload-modal", size="lg", is_open=False),
+    upload_modal
 
 
 
 ], className="sidebar")
+
+
+'''
+Inserting sidebar into off-canvas
+'''
+oc_sidebar = html.Div([
+    dbc.Offcanvas(sidebar, id="offcanvas-l", is_open=True, scrollable=True, backdrop=False,
+                  style={'width': '12rem', 'margin-top': '3rem', 'left': '0', 'border-top-right-radius': '5px',
+                         'border-bottom-right-radius': '5px',
+                         'height': 'min-content',
+                         'box-shadow': 'rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px',
+                         }
+                  )
+])
