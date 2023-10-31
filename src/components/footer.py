@@ -1,6 +1,9 @@
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 
+'''
+Everything to do with the bottom-side off-canvas, displaying a table of Energies and DoS-Plot
+'''
 
 # TABLES
     # Energy table

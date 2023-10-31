@@ -1,12 +1,16 @@
-import json
-
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 # I/O
 import ase.io
 import dash_uploader as du
+import json
 
 models = json.load(open("./src/utils/models/model_list.json"))
+
+'''
+Structure/Layout of the Upload-sidebar
+'''
+# TODO add upload popup?
 
 # CONSTANTS
 ATOM_LIMIT = 200

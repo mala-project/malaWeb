@@ -61,9 +61,10 @@ orientation_style = {
 def_fig = go.Figure(go.Scatter3d(x=[1], y=[1], z=[1], showlegend=False))
 def_fig.update_scenes(xaxis_visible=False, yaxis_visible=False, zaxis_visible=False, xaxis_showgrid=False,
                       yaxis_showgrid=False, zaxis_showgrid=False)
+
 orient_fig = go.Figure()
 orient_fig.update_scenes(orient_template)
-orient_fig.update_layout(margin=dict(l=0, r=0, b=0, t=0), title=dict(text="test"))
+orient_fig.update_layout(margin=dict(l=0, r=0, b=0, t=0), title=dict(text="test"), clickmode="none", dragmode=False)
 orient_fig.add_trace(
     go.Scatter3d(x=[0, 1], y=[0, 0], z=[0, 0], marker={'color': 'red', 'size': 0}, line={'width': 6}, showlegend=False,
                  hoverinfo='skip'))
@@ -73,11 +74,19 @@ orient_fig.add_trace(
     go.Scatter3d(x=[0, 0], y=[0, 0], z=[0, 1], marker={'color': 'blue', 'size': 0}, line={'width': 6}, showlegend=False,
                  hoverinfo='skip'))
 
+
+    # Orientational Plots
+'''
+Default Plot for orientation
+(could be integrated into the "main-card" at some point)
+'''
 orient_plot = dcc.Graph(id="orientation", responsive=True, figure=orient_fig, style=orientation_style,
                         config={'displayModeBar': False, 'displaylogo': False})
 
-
     # The actual Plot
+'''
+STORE Variable & Card for the main plot 
+'''
 plot = [
 
     dcc.Store(id="cam_store"),

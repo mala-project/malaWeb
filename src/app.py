@@ -112,10 +112,7 @@ menu = upload.sidebar
 # Right SIDEBAR (default) content
 r_content = settings.sidebar
 
-# Bottom BAR content
-bot_content = footer.bar
 
-mc0_landing = main.landing
 
 # --------------------------
 # Filling offcanvasses with respective content
@@ -144,7 +141,7 @@ side_r = html.Div([
 ])
 
 # Bottom BAR
-bot = html.Div([dbc.Offcanvas(bot_content, id="offcanvas-bot", is_open=False,
+bot = html.Div([dbc.Offcanvas(footer.bar, id="offcanvas-bot", is_open=False,
                               style={'height': 'min-content', 'width': 'max-content', 'border-radius': '5px',
                                      'background-color': 'rgba(248, 249, 250, 1)',
                                      'left': '0',
@@ -180,7 +177,6 @@ bot_button = html.Div(dbc.Offcanvas([
 
 # ---------------------------------
 # Plots for the created Figures
-main_plot = main.plot
 
 skel_layout = [dbc.Row([
     dbc.Col(
@@ -193,7 +189,7 @@ skel_layout = [dbc.Row([
         ],
         id="l0", width='auto'),
 
-    dbc.Col(mc0_landing, id="mc0", width='auto'),
+    dbc.Col(main.landing, id="mc0", width='auto'),
 
     dbc.Col(
         [
@@ -211,11 +207,12 @@ skel_layout = [dbc.Row([
 p_layout_landing = dbc.Container([
     dcc.Store(id="page_state", data="landing"),     # determines what is rendered as main content (among other things?)
     dcc.Store(id="UP_STORE"),       # Info on uploaded file (path, ...)
-    dcc.Store(id="BOUNDARIES_STORE"),
-    #dcc.Store(id="choice_store", data="scatter"),       # unused right now (for multiple vis-options)
+    dcc.Store(id="BOUNDARIES_STORE"),       # Saving data for cell-beoundaries
     dcc.Store(id="sc_settings"),        # parameters of the righthand sidebar, used to update plot
     html.Div(skel_layout, id="content-layout")
 ], fluid=True, style={'height': '100vh', 'width': '100vw', 'background-color': '#023B59'})
+
+
 app.layout = p_layout_landing
 
 
@@ -1016,10 +1013,10 @@ def update_slider_bound_indicators_density(value, disabled, data, trigger):
     prevent_initial_call=True)
 def updateMC0(state, data):
     if data is None or state == "landing":
-        return mc0_landing
+        return main.landing
 
     elif state == "plotting":
-        return main_plot
+        return main.plot
 
 
 '''
@@ -1233,16 +1230,20 @@ def slicePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, sl
     return patched_fig
 
 
-# TODO this can be optimized (link womewhere)
+
+
 @app.callback(
     Output("orientation", "figure"),
     Input("cam_store", "data"),
-    State("orientation", "figure"),
     prevent_initial_call=True
 )
-def updateOrientation(saved_cam, fig_upd):
-    fig_upd.update_layout(scene_camera={'up': {'x': 0, 'y': 0, 'z': 1}, 'center': {'x': 0, 'y': 0, 'z': 0},
-                                        'eye': saved_cam['eye']}, clickmode="none", dragmode=False)
+def updateOrientation(saved):
+    eye = saved['eye']
+    # TODO make zoom-level static
+
+    # Patching is definetly slower here! Tested!
+    fig_upd = main.orient_fig
+    fig_upd.update_scenes(camera={'eye': eye})
     return fig_upd
 
 # TODO this can be optimized by patching

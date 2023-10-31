@@ -1,6 +1,10 @@
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 
+'''
+Structure/Layout of the Settings sidebar
+'''
+
 sidebar = html.Div(
     [
     html.H5("Settings"),
