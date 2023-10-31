@@ -2,13 +2,16 @@
 import json
 import pathlib
 
-from assets.mala_inference import run_mala_prediction
 import dash
 import dash_bootstrap_components as dbc
 
 from dash.dependencies import Input, Output, State
 from dash import dcc, html, Patch
 from dash.exceptions import PreventUpdate
+
+# utils
+from src.components import upload, settings, footer, main
+from src.utils.mala_inference import run_mala_prediction
 
 # visualization
 import pandas as pd
@@ -28,7 +31,7 @@ ATOM_LIMIT = 200
 # TODO: implement patching so that figures are updated, nor recreated
 # as in: https://dash.plotly.com/partial-properties
 
-models = json.load(open("./src/assets/models/model_list.json"))
+models = json.load(open("./src/utils/models/model_list.json"))
 # "label" is the label visible in the apps dropdown ; "value"  is the value passed to the inference script. Ranges are to be surrounded by []
 
 
@@ -60,64 +63,7 @@ templ2 = dict(layout=go.Layout(
     paper_bgcolor='#fff',
 ))
 
-    # Scene-Template for Graph-Object (orientation)
-orient_template = {
-    'xaxis': {
-        'showgrid': False,
-        'showbackground': False,
-        'linecolor': 'red',
-        'linewidth': 0,
-        'ticks': 'inside',
-        'showticklabels': False,
-        'visible': False,
-        'title': 'x',
 
-    },
-    'yaxis': {
-        'showgrid': False,
-        'showbackground': False,
-        'linecolor': 'green',
-        'linewidth': 0,
-        'ticks': '',
-        'showticklabels': False,
-        'visible': False,
-        'title': 'y'
-    },
-    'zaxis': {
-        'showgrid': False,
-        'showbackground': False,
-        'linecolor': 'blue',
-        'linewidth': 0,
-        'ticks': '',
-        'showticklabels': False,
-        'visible': False,
-        'title': 'z'
-    },
-    'bgcolor': '#f8f9fa',
-}
-
-
-    # Properties for our plots
-plot_layout = {
-    'title': 'Plot',
-    'height': '75vh',
-    'width': '80vw',
-}
-orientation_style = {
-    'title': 'x-y-z',
-    'height': '3em',
-    'width': '3em',
-    'background': '#f8f9fa',
-    'position': 'fixed',
-    'margin-top': '75vh',
-    'margin-right': '0.5vw'
-}
-
-dos_plot_layout = {
-    'height': '400px',
-    'width': '800px',
-    'background': '#f8f9fa',
-}
 
     # helper for removing unnecessary visuals on cell preview
 removeHoverLines = go.layout.Scene(
@@ -126,7 +72,7 @@ removeHoverLines = go.layout.Scene(
             zaxis=go.layout.scene.ZAxis(spikethickness=0),
         )
 
-    # shortcut for redefining
+    # shortcut for default marker-settings
 default_scatter_marker = dict(marker=dict(
     size=12,
     opacity=1,
@@ -139,6 +85,9 @@ default_scatter_marker = dict(marker=dict(
 print("_________________________________________________________________________________________")
 print("STARTING UP...")
 
+'''
+
+'''
 app = dash.Dash(__name__, external_stylesheets=[dbc.icons.BOOTSTRAP, dbc.themes.BOOTSTRAP],
                 suppress_callback_exceptions=True)
 server = app.server
@@ -150,232 +99,28 @@ du.configure_upload(app, r"./src/upload", http_request_handler=None)
 # https://github.com/np-8/dash-uploader/blob/dev/docs/dash-uploader.md
 
 
-# helper for styling of some headings
-indent = '      '
 
-    # Figs
-# Default fig for the main plot - gets overwritten on initial plot update, after that it gets patched on update
-def_fig = go.Figure(go.Scatter3d(x=[1], y=[1], z=[1], showlegend=False))
-def_fig.update_scenes(xaxis_visible=False, yaxis_visible=False, zaxis_visible=False, xaxis_showgrid=False,
-                      yaxis_showgrid=False, zaxis_showgrid=False)
 
-orient_fig = go.Figure()
-orient_fig.update_scenes(orient_template)
-orient_fig.update_layout(margin=dict(l=0, r=0, b=0, t=0), title=dict(text="test"))
-orient_fig.add_trace(
-    go.Scatter3d(x=[0, 1], y=[0, 0], z=[0, 0], marker={'color': 'red', 'size': 0}, line={'width': 6}, showlegend=False,
-                 hoverinfo='skip'))
-orient_fig.add_trace(go.Scatter3d(x=[0, 0], y=[0, 1], z=[0, 0], marker={'color': 'green', 'size': 0}, line={'width': 6},
-                                  showlegend=False, hoverinfo='skip'))
-orient_fig.add_trace(
-    go.Scatter3d(x=[0, 0], y=[0, 0], z=[0, 1], marker={'color': 'blue', 'size': 0}, line={'width': 6}, showlegend=False,
-                 hoverinfo='skip'))
 
-orient_plot = dcc.Graph(id="orientation", responsive=True, figure=orient_fig, style=orientation_style,
-                        config={'displayModeBar': False, 'displaylogo': False})
 
-# ------------------------------------
-# Tables
-    # Energy table
-row1 = html.Tr([html.Td("Band energy", style={'text-align': 'center', 'padding': 3, 'font-size': '0.85em'})],
-               style={"font-weight": "bold"})
-row2 = html.Tr([html.Td(0, id="bandEn", style={'text-align': 'right', 'padding': 5, 'font-size': '0.85em'})])
-row3 = html.Tr([html.Td('Total energy', style={'text-align': 'center', 'padding': 3, 'font-size': '0.85em'})],
-               style={"font-weight": "bold"})
-row4 = html.Tr([html.Td(0, id="totalEn", style={'text-align': 'right', 'padding': 5, 'font-size': '0.85em'})])
-row5 = html.Tr([html.Td("Fermi energy", style={'text-align': 'center', 'padding': 3, 'font-size': '0.85em'})],
-               style={"font-weight": "bold"})
-row6 = html.Tr(
-    [html.Td("placeholder", id='fermiEn', style={'text-align': 'right', 'padding': 5, 'font-size': '0.85em'})])
-table_body = [html.Tbody([row1, row2, row3, row4, row5, row6])]
 
-table = dbc.Table(table_body, bordered=True, striped=True, style={'padding': 0, 'margin': 0})
-
-    # List of ASE-atoms table
-table_header = [html.Thead(html.Tr([html.Th("ID"), html.Th("X"), html.Th("Y"), html.Th("Z")]), )]   # , html.Th("Use to run MALA")
-table_body = [html.Tbody([], id="atoms_list")]
-atoms_table = dbc.Table(table_header + table_body, bordered=True)
 
 # -----------------
 # Left SIDEBAR content
-menu = html.Div([
-    # Logo Section
-    html.Div([
-        html.Img(src='./assets/logos/mala_vertical.png', className="logo"),
-        html.Br(),
-        html.Div(children='''
-                    Framework for machine learning materials properties from first-principles data.
-                ''', style={'text-align': 'center'}),
-    ], className="logo"),
-
-    html.Hr(style={'margin-bottom': '2rem', 'margin-top': '1rem', 'width': '5rem'}),
-
-    dbc.Card(html.H6(children='File-Upload', style={'margin': '5px'}, id="open-upload", n_clicks=0),
-             style={"text-align": "center"}),
-
-    dbc.Collapse(
-        dbc.Card(dbc.CardBody(  # Upload Section
-            html.Div([
-
-                html.Div(children='''
-                            Upload atom-positions via file!
-                            ''', style={'text-align': 'center', 'font-size': '0.85em'}),
-
-                html.Div(children='''
-                            Supported files
-                            ''', id="supported-files",
-                         style={'text-align': 'center', 'font-size': '0.6em', 'text-decoration': 'underline'}),
-
-                html.Br(),
-
-                dbc.Popover(
-                    dbc.PopoverBody(
-                        "ASE supports the following file-formats: " + str(ase.io.formats.ioformats.keys())[11:-2]),
-                    style={'font-size': "0.6em"},
-                    target="supported-files",
-                    trigger="legacy",
-                ),
-
-                # dash-uploader component (not vanilla)
-                du.Upload(id="upload-data", text="Drag & Drop or Click to select"),
-                    # Can't manage to extract list of ASE-supported extensions from these IOFormats in:
-                    # print(ase.io.formats.ioformats),
-                    # -> TODO property "fileformat" could be used in du.Upload() to restrict uploadable extensions (safety-reasons for web-hosting)
-
-                html.Div("Awaiting upload..", id='output-upload-state',
-                         style={'margin': '2px', "font-size": "0.85em", 'textAlign': 'center'}),
-
-                html.Hr(style={'margin-bottom': '1rem', 'margin-top': '1rem', 'width': '5rem'}),
-
-                dbc.Button("Edit", id="edit-input", color="success",
-                           style={"line-height": "0.85em", 'height': 'min-content', 'width': '100%',
-                                  'font-size': '0.85em'}),
-
-                dbc.Button("Reset", id="reset-data", color="danger",
-                           style={"line-height": "0.85em", 'height': 'min-content', 'width': '100%',
-                                  'font-size': '0.85em'})
-
-            ], className="upload-section"
-            ),
-        )),
-        id="collapse-upload",
-        is_open=True,
-    ),
-
-    dbc.Modal([
-        dbc.ModalHeader(dbc.ModalTitle("Your Upload")),
-        dbc.ModalBody([
-            html.H6("The uploaded File contained the following atoms positions: "),
-            html.Br(),
-
-
-            dbc.Card(html.H6(children=[dbc.Row([dbc.Col(width=1), dbc.Col('List of Atoms', width=10), dbc.Col("⌄", width=1, id="open-atom-list-arrow")])], style={'margin': '5px'}, id="open-atom-list", n_clicks=0),
-                         style={"text-align": "center"}),
-            dbc.Collapse(
-                    dbc.Card(dbc.CardBody(  # Upload Section
-                        [
-            atoms_table,
-            #html.P("Tick all the Atoms you want to use to send to MALA (Default: All checked).\nSee below for a pre-render of the chosen Atom-positions:"),
-                        ]
-
-                    )),
-                    id="collapse-atom-list",
-                    style={"max-height": "30rem"},
-                    is_open=False,
-                ),
-
-            dcc.Graph(id="atoms-preview"),
-
-            html.Hr(style={'margin-bottom': '1rem', 'margin-top': '1rem'}),
-
-            html.P("Choose the model that MALA should use for calculations"),
-            dbc.Row([
-                dbc.Col(dcc.Dropdown(id="model-choice", options=models, value=None, placeholder="-", optionHeight=45, style={"font-size": "0.95em"}), width=9),
-                dbc.Col(dbc.Input(id="model-temp", disabled=True, type="number", min=0, max=10, step=1), width=2),
-                dbc.Col(html.P("K", style={"margin-top": "0.5rem"}), width=1)
-            ], className="g-1"),
-            html.Br(),
-
-            dbc.Alert(id="atom-limit-warning",
-                      children="The amount of Atoms you want to display exceeds our threshold (" + str(
-                          ATOM_LIMIT) + ") for short render times. Be aware that continuing with the uploaded data may negatively impact waiting times.",
-                      color="warning"),
-            # only to be displayed if ATOM_LIMIT is exceeded (maybe as an alert window too)
-
-
-        ]),
-        dbc.ModalFooter(
-            dbc.Button(id="run-mala", style={'width': 'min-content'}, disabled=True, children=[
-                dbc.Stack([
-                        html.Div(dbc.Spinner(
-                            dcc.Store(id="df_store"), size="sm", color="success"    # Spinner awaits change here
-                                            ), style={'width': '40px'}),
-                        html.Div("Run MALA"),
-                        html.Div(style={'width': '40px'})
-                    ], direction="horizontal"
-                )
-            ], color="success", outline=True), style={'justify-content': 'center'})
-    ], id="upload-modal", size="lg", is_open=False),
-
-
-
-], className="sidebar")
+menu = upload.sidebar
 
 # Right SIDEBAR (default) content
-r_content = html.Div([
-    html.H5("Settings"),
-    dbc.Card(dbc.CardBody(
-        [
-
-            html.H6("Camera", style={"font-size": "0.95em"}),
-            dbc.ButtonGroup(
-                [
-                    dbc.Button('Def.', id='default-cam', n_clicks=0, style={"font-size": "0.85em"}),
-                    dbc.Button('X-Y', id='x-y-cam', n_clicks=0, style={"font-size": "0.85em"}),
-                    dbc.Button('X-Z', id='x-z-cam', n_clicks=0, style={"font-size": "0.85em"}),
-                    dbc.Button('Y-Z', id='y-z-cam', n_clicks=0, style={"font-size": "0.85em"})
-                ], vertical=True, size="sm",
-            ),
-            html.Hr(),
-
-            dbc.Checkbox(label='Outline', value=True, id='sc-outline',
-                         style={'text-align': 'left', "font-size": "0.85em"}),
-            dbc.Checkbox(label='Atoms', value=True, id='sc-atoms', style={'text-align': 'left', "font-size": "0.85em"}),
-            dbc.Checkbox(label='Cell', value=True, id='cell-boundaries', style={'text-align': 'left', "font-size": "0.85em"}),
-
-            html.Hr(),
-
-            html.H6("", id="sz/isosurf-label", style={"font-size": "0.95em"}),
-            html.Div(dcc.Slider(4, 16, 2, value=10, id='sc-size', vertical=True, verticalHeight=150),
-                     style={'margin-left': '1.2em'}),
-
-            html.Hr(),
-
-            html.H6("Opacity", id="opac-label", style={"font-size": "0.95em"}),
-            dbc.Input(type="number", min=0.1, max=1, step=0.1, id="sc-opac", placeholder="0.1 - 1",
-                      style={"width": "7em", 'margin-left': '1.5rem'}, size="sm"),
-
-        ]
-    ))], style={'text-align': 'center'})
+r_content = settings.sidebar
 
 # Bottom BAR content
-bot_content = dbc.Container([
+bot_content = footer.bar
 
-    dbc.Row([
-
-        dbc.Col(dbc.Card(dbc.CardBody(table)), width='auto'),
-        dbc.Col(dbc.Card(dbc.CardBody([
-            html.H6('Density of State', style={'font-size': '0.85em', 'font-weight': 'bold'}),
-            dcc.Graph(id="dos-plot", style={'width': '20vh', 'height': '10vh'}, config={'displaylogo': False})
-        ])), width='auto', align='center'),
-
-    ], style={'height': 'min-content', 'padding': 0}, justify='center')
-
-])
-
+mc0_landing = main.landing
 
 # --------------------------
 # Filling offcanvasses with respective content
+
+# TODO: put canvases in components too
 
 # Left SIDEBAR
 side_l = html.Div([
@@ -435,135 +180,7 @@ bot_button = html.Div(dbc.Offcanvas([
 
 # ---------------------------------
 # Plots for the created Figures
-main_plot = [
-
-    dcc.Store(id="cam_store"),
-
-    dbc.Card(dbc.CardBody(
-        [
-            dbc.Row([
-                dcc.Graph(id="orientation", responsive=True, figure=orient_fig, style=orientation_style,
-                          config={'displayModeBar': False, 'displaylogo': False, 'showAxisDragHandles': True}),
-
-                dcc.Graph(id="scatter-plot", responsive=True, figure=def_fig, style=plot_layout,
-                          config={'displaylogo': False}),
-            ]),
-
-            # Tools
-            dbc.Row([
-                html.Hr(),
-                dbc.Button(html.P("Tools", style={"line-height": "0.65em", "font-size": "0.65em"}),
-                           id="open-sc-tools", style={"width": "5em", "height": "1.2em"}, n_clicks=0)
-            ], justify="center", style={"text-align": "center"}),
-
-            dbc.Row(
-                dbc.Collapse(
-                    dbc.Card(dbc.CardBody(
-                        [
-                            dbc.Row([
-                                # Buttons
-                                dbc.Col(
-                                    dbc.ButtonGroup(
-                                        [
-                                            dbc.Button('X', id='sc-active-x', active=False, outline=True,
-                                                       color="danger", n_clicks=0),
-                                            dbc.Button('Y', id='sc-active-y', active=False, outline=True,
-                                                       color="success", n_clicks=0),
-                                            dbc.Button('Z', id='sc-active-z', active=False, outline=True,
-                                                       color="primary", n_clicks=0),
-                                            dbc.Button("Density", id='active-dense', active=False, outline=True,
-                                                       color="dark", n_clicks=0)
-                                        ],
-                                        vertical=True,
-                                    ), width=1),
-
-                                # Sliders
-                                dbc.Col([
-                                    # TODO: Triggers need work
-                                    # TODO: rangesliders are only optimized with the example cell used in current models. Differently sheared planes will mess things up, as will cells with bigger datasets (minimum slice will grow/shrink)
-                                    dbc.Row([
-                                        dbc.Col(dcc.RangeSlider(id='range-slider-cs-x',
-                                                                disabled=True,
-                                                                min=0,
-                                                                max=1,
-                                                                #step=None,
-                                                                marks=None,
-                                                                pushable=10,            # the sheared plane needs a range of values to be able to slice down to approx. 1 layer
-                                                                updatemode='drag')),
-                                        dbc.Col(html.Img(id="reset-cs-x", src="/assets/x.svg", n_clicks=0,
-                                                         style={'width': '1.25em'}), width=1)
-                                    ], style={"margin-top": "7px"}),  # X-Axis
-                                    dbc.Tooltip(id="x-lower-bound", target="range-slider-cs-x", trigger="hover focus", placement="left"),
-                                    dbc.Tooltip(id="x-higher-bound", target="range-slider-cs-x", trigger="hover focus", placement="right"),
-
-
-                                    dbc.Row([
-                                        dbc.Col(dcc.RangeSlider(
-                                            id='range-slider-cs-y',
-                                            disabled=True,
-                                            pushable=0,
-                                            min=0, max=1,
-                                            marks=None,
-                                            updatemode='drag')),
-                                        dbc.Col(html.Img(id="reset-cs-y", src="/assets/x.svg", n_clicks=0,
-                                                         style={'width': '1.25em'}), width=1)
-                                    ]),  # Y-Axis
-                                    dbc.Tooltip(id="y-lower-bound", target="range-slider-cs-y", trigger="hover focus", placement="left"),
-                                    dbc.Tooltip(id="y-higher-bound", target="range-slider-cs-y", trigger="hover focus", placement="right"),
-
-                                    dbc.Row([
-                                        dbc.Col(dcc.RangeSlider(
-                                            id='range-slider-cs-z',
-                                            disabled=True,
-                                            pushable=0,
-                                            min=0, max=1,
-                                            marks=None,
-                                            updatemode='drag')),
-                                        dbc.Col(html.Img(id="reset-cs-z", src="/assets/x.svg", n_clicks=0,
-                                                         style={'width': '1.25em'}), width=1)
-
-                                    ]),  # Z-Axis
-                                    dbc.Tooltip(id="z-lower-bound", target="range-slider-cs-z", trigger="hover focus", placement="left"),
-                                    dbc.Tooltip(id="z-higher-bound", target="range-slider-cs-z", trigger="hover focus", placement="right"),
-
-                                    dbc.Row([
-
-                                        dbc.Col(dcc.RangeSlider(
-                                            id='range-slider-dense',
-                                            disabled=True,
-                                            pushable=True,
-                                            min=0, max=1,
-                                            marks=None,
-                                            updatemode='drag')),
-                                        dbc.Col(html.Img(id="reset-dense", src="/assets/x.svg", n_clicks=0,
-                                                         style={'width': '1.25em', 'position': 'float'}),
-                                                width=1),
-
-                                    ]),  # Density
-                                    dbc.Tooltip(id="dense-lower-bound", target="range-slider-dense", trigger="hover focus", placement="left"),
-                                    dbc.Tooltip(id="dense-higher-bound", target="range-slider-dense", trigger="hover focus", placement="right"),
-                                ], width=11),
-                            ]),
-                        ]
-                    )),
-                    id="sc-tools-collapse",
-                    is_open=False), style={'margin-top': '1em'}
-            )
-        ]
-    ), style={'background-color': 'rgba(248, 249, 250, 1)', 'width': 'min-content',
-              'align-content': 'center', 'margin-top': '1.5rem'}),
-
-]
-
-# ----------------
-# landing-cell for mc0
-mc0_landing = html.Div([
-    html.Div([html.H1([indent.join('Welcome')], className='greetings'),
-              html.H1([indent.join('To')], className='greetings'),
-              html.Img(src="./assets/logos/crop_mala_horizontal_white.png", style={'width': '30%', 'display': 'block', 'margin-left': 'auto', 'margin-right': 'auto'})
-              ]),
-
-], style={'width': 'content-min', 'margin-top': '20vh'})
+main_plot = main.plot
 
 skel_layout = [dbc.Row([
     dbc.Col(
@@ -1620,10 +1237,10 @@ def slicePlot(slider_range, dense_inactive, slider_range_cs_x, cs_x_inactive, sl
 @app.callback(
     Output("orientation", "figure"),
     Input("cam_store", "data"),
+    State("orientation", "figure"),
     prevent_initial_call=True
 )
-def updateOrientation(saved_cam):
-    fig_upd = orient_fig
+def updateOrientation(saved_cam, fig_upd):
     fig_upd.update_layout(scene_camera={'up': {'x': 0, 'y': 0, 'z': 1}, 'center': {'x': 0, 'y': 0, 'z': 0},
                                         'eye': saved_cam['eye']}, clickmode="none", dragmode=False)
     return fig_upd
