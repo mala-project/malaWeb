@@ -6,9 +6,11 @@ import ase.io
 import dash_uploader as du
 import json
 
-models = json.load(open("./src/utils/models/model_list.json"))
-
 # CONSTANTS
+# > "label" is the label visible in the apps dropdown ; "value"  is the value passed to the inference script. Ranges are to be surrounded by []
+MODELS = json.load(open("./src/utils/models/model_list.json"))
+
+# > Used for giving out high computation time warning
 ATOM_LIMIT = 200
 
 """
@@ -85,7 +87,7 @@ upload_modal = dbc.Modal(
                         dbc.Col(
                             dcc.Dropdown(
                                 id="model-choice",
-                                options=models,
+                                options=MODELS,
                                 value=None,
                                 placeholder="-",
                                 optionHeight=45,

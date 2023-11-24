@@ -7,3 +7,5 @@ pandas
 plotly>=5.14.0
 setuptools
 packaging==21.0.0
+orjson
+dash-extensions

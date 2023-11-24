@@ -31,11 +31,8 @@ ATOM_LIMIT = 200
 # TODO implement caching of the dataset to improve performance
 # as in: https://dash.plotly.com/performance
 
-# TODO: implement patching so that figures are updated, nor recreated
+# TODO: implement patching so that figures are updated, not recreated
 # as in: https://dash.plotly.com/partial-properties
-
-models = json.load(open("./src/utils/models/model_list.json"))
-# "label" is the label visible in the apps dropdown ; "value"  is the value passed to the inference script. Ranges are to be surrounded by []
 
 
 # Scene-templates for PX-Objects (our 2 plots (1=main, 2=cell-preview))
