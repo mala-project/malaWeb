@@ -1,0 +1,56 @@
+[1mdiff --git a/requirements.txt b/requirements.txt[m
+[1mindex bad8e43..7ce1991 100644[m
+[1m--- a/requirements.txt[m
+[1m+++ b/requirements.txt[m
+[36m@@ -7,3 +7,5 @@[m [mpandas[m
+ plotly>=5.14.0[m
+ setuptools[m
+ packaging==21.0.0[m
+[32m+[m[32morjson[m
+[32m+[m[32mdash-extensions[m
+\ No newline at end of file[m
+[1mdiff --git a/src/app.py b/src/app.py[m
+[1mindex 31dc139..d46a954 100644[m
+[1m--- a/src/app.py[m
+[1m+++ b/src/app.py[m
+[36m@@ -31,12 +31,9 @@[m [mATOM_LIMIT = 200[m
+ # TODO implement caching of the dataset to improve performance[m
+ # as in: https://dash.plotly.com/performance[m
+ [m
+[31m-# TODO: implement patching so that figures are updated, nor recreated[m
+[32m+[m[32m# TODO: implement patching so that figures are updated, not recreated[m
+ # as in: https://dash.plotly.com/partial-properties[m
+ [m
+[31m-models = json.load(open("./src/utils/models/model_list.json"))[m
+[31m-# "label" is the label visible in the apps dropdown ; "value"  is the value passed to the inference script. Ranges are to be surrounded by [][m
+[31m-[m
+ [m
+ # Scene-templates for PX-Objects (our 2 plots (1=main, 2=cell-preview))[m
+ templ1 = dict([m
+[1mdiff --git a/src/components/upload.py b/src/components/upload.py[m
+[1mindex cda5b13..67e9672 100644[m
+[1m--- a/src/components/upload.py[m
+[1m+++ b/src/components/upload.py[m
+[36m@@ -6,9 +6,11 @@[m [mimport ase.io[m
+ import dash_uploader as du[m
+ import json[m
+ [m
+[31m-models = json.load(open("./src/utils/models/model_list.json"))[m
+[31m-[m
+ # CONSTANTS[m
+[32m+[m[32m# > "label" is the label visible in the apps dropdown ; "value"  is the value passed to the inference script. Ranges are to be surrounded by [][m
+[32m+[m[32mMODELS = json.load(open("./src/utils/models/model_list.json"))[m
+[32m+[m
+[32m+[m[32m# > Used for giving out high computation time warning[m
+ ATOM_LIMIT = 200[m
+ [m
+ """[m
+[36m@@ -85,7 +87,7 @@[m [mupload_modal = dbc.Modal([m
+                         dbc.Col([m
+                             dcc.Dropdown([m
+                                 id="model-choice",[m
+[31m-                                options=models,[m
+[32m+[m[32m                                options=MODELS,[m
+                                 value=None,[m
+                                 placeholder="-",[m
+                                 optionHeight=45,[m

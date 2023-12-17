@@ -1,0 +1,11 @@
+ase
+dash>=2.13.0
+dash_bootstrap_components>=1.4.1
+dash_uploader==0.7.0a1
+numpy
+pandas
+plotly>=5.14.0
+setuptools
+packaging==21.0.0
+orjson
+dash-extensions

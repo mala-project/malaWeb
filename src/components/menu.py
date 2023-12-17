@@ -20,7 +20,7 @@ Button for opening Upload Sidebar
 
 button = dbc.Button(
     ">",
-    id="open-upload-oc",
+    id="open-menu-button",
     n_clicks=0,
     style={"margin-top": "40vh", "position": "absolute", "left": "0"},
 )
@@ -281,7 +281,7 @@ oc_sidebar = html.Div(
     [
         dbc.Offcanvas(
             sidebar,
-            id="offcanvas-l",
+            id="menu-offcanvas",
             is_open=True,
             scrollable=True,
             backdrop=False,

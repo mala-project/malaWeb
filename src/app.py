@@ -10,7 +10,7 @@ from dash import dcc, html, Patch
 from dash.exceptions import PreventUpdate
 
 # utils
-from src.components import upload, settings, footer, main
+from src.components import menu, settings, footer, main
 from src.utils.mala_inference import run_mala_prediction
 
 # visualization
@@ -110,8 +110,8 @@ skel_layout = [
             dbc.Col(
                 [
                     # Upload Sidebar Off-Canvas
-                    upload.oc_sidebar,
-                    upload.button,
+                    menu.oc_sidebar,
+                    menu.button,
                     # Bottom-Bar Off-Canvas
                     footer.oc_bar,
                     footer.button
@@ -328,6 +328,7 @@ def toggle_density_sc(n_d, active, bc):
     prevent_initial_call=True,
 )
 def reset_sliders(n_clicks_x, n_clicks_y, n_clicks_z, n_clicks_dense, data):
+    print("OPT slider reset triggered by: ", dash.callback_context.triggered_id)
     df = pd.DataFrame(data["MALA_DF"]["scatter"])
     if dash.callback_context.triggered_id == "reset-cs-x":
         return (
@@ -379,7 +380,7 @@ def reset_sliders(n_clicks_x, n_clicks_y, n_clicks_z, n_clicks_dense, data):
 )
 def store_cam(default_clicks, x_y_clicks, x_z_clicks, y_z_clicks, user_in):
     # user_in is the camera position set by mouse movement, it has to be updated on every mouse input on the fig
-
+    print("OPT cam_store triggered by: ", dash.callback_context.triggered_id)
     # set stored_cam_setting according to which button was last pressed
     if dash.callback_context.triggered_id[0:-4] == "default":
         return dict(
@@ -433,6 +434,7 @@ def store_cam(default_clicks, x_y_clicks, x_z_clicks, y_z_clicks, user_in):
     prevent_initial_call=True,
 )
 def updatePageState(trig1, state):
+    print("OPT page state triggered by: ", dash.callback_context.triggered_id)
     new_state = "landing"
     if dash.callback_context.triggered_id == "df_store":
         if trig1 is not None:
@@ -478,6 +480,7 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
     atoms-preview: Figure previewing ASE-read Atoms
     upload-data: Changing border-color of this component according to upload-status
     """
+    print("OPT upload triggered by: ", dash.callback_context.triggered_id)
     UP_STORE = {
         "ID": status.upload_id,
         "PATH": str(status.latest_file.resolve()),
@@ -694,6 +697,7 @@ def activate_runMALA_button(model, temp):
     prevent_initial_call=True,
 )
 def open_UP_MODAL(upload, edit_input, page_state, data):
+    print("OPT modal opener triggered by: ", dash.callback_context.triggered_id)
     if (
         dash.callback_context.triggered_id == "page_state" and page_state == "plotting"
     ) or dash.callback_context.triggered_id == "df_store":
@@ -719,6 +723,7 @@ def open_UP_MODAL(upload, edit_input, page_state, data):
     prevent_initial_call=True,
 )
 def init_temp_choice(model_choice):
+    print("OPT temp init triggered by: ", dash.callback_context.triggered_id)
     if model_choice is None:
         raise PreventUpdate
     # splitting string input in substance and (possible) temperature(s)
@@ -774,7 +779,7 @@ def updateDF(trig, model_choice, temp_choice, upload):
     on MALA-call, give ATOMS-objs & model_choice
     -> returns density data and energy values +  a .cube-file
     """
-
+    print("OPT df-update triggered by: ", dash.callback_context.triggered_id)
     if upload is None:
         raise PreventUpdate
 
@@ -910,6 +915,7 @@ def updateDF(trig, model_choice, temp_choice, upload):
     Input("cell-boundaries", "value"),
 )
 def update_settings_store(size, outline, atoms, opac, saved, cell):
+    print("OPT settings-store-update triggered by: ", dash.callback_context.triggered_id)
     if saved is None:
         # default settings
         settings = {
@@ -971,6 +977,7 @@ def update_settings_store(size, outline, atoms, opac, saved, cell):
     ],
 )
 def update_tools(data):
+    print("OPT tools-update triggered by: ", dash.callback_context.triggered_id)
     if data is None:  # in case of reset:
         raise PreventUpdate
     else:
@@ -1004,6 +1011,7 @@ def update_tools(data):
     State("x-lower-bound", "trigger"),  # unused - needed for see above
 )
 def update_slider_bound_indicators_X(value, disabled, data, trigger):
+    print("OPT slider-bound-x-update triggered by: ", dash.callback_context.triggered_id)
     if data is None:  # in case of reset:
         raise PreventUpdate
 
@@ -1036,6 +1044,7 @@ def update_slider_bound_indicators_X(value, disabled, data, trigger):
     State("y-lower-bound", "trigger"),
 )
 def update_slider_bound_indicators_Y(value, disabled, data, trigger):
+    print("OPT slider-bound-y-update triggered by: ", dash.callback_context.triggered_id)
     if data is None:  # in case of reset:
         raise PreventUpdate
 
@@ -1068,6 +1077,7 @@ def update_slider_bound_indicators_Y(value, disabled, data, trigger):
     State("z-lower-bound", "trigger"),
 )
 def update_slider_bound_indicators_Z(value, disabled, data, trigger):
+    print("OPT slider-bound-z-update triggered by: ", dash.callback_context.triggered_id)
     if data is None:  # in case of reset:
         raise PreventUpdate
 
@@ -1100,6 +1110,7 @@ def update_slider_bound_indicators_Z(value, disabled, data, trigger):
     State("dense-lower-bound", "trigger"),
 )
 def update_slider_bound_indicators_density(value, disabled, data, trigger):
+    print("OPT slider-bound-density-update triggered by: ", dash.callback_context.triggered_id)
     if data is None:  # in case of reset:
         raise PreventUpdate
 
@@ -1132,6 +1143,7 @@ def update_slider_bound_indicators_density(value, disabled, data, trigger):
     prevent_initial_call=True,
 )
 def updateMC0(state, data):
+    print("OPT update mc0 triggered by: ", dash.callback_context.triggered_id)
     if data is None or state == "landing":
         return main.landing
 
@@ -1172,6 +1184,7 @@ def updatePlot(
     fig,
     boundaries_fig,
 ):
+    print("OPT update-Plot-trigger: ", dash.callback_context.triggered_id)
     # TODO: make this function more efficient
     patched_fig = Patch()
 
@@ -1348,6 +1361,7 @@ def slicePlot(
     f_data,
     cam,
 ):
+    print("OPT slicePlot triggered: ", dash.callback_context.triggered_id)
     if f_data is None:
         raise PreventUpdate
 
@@ -1406,6 +1420,7 @@ def slicePlot(
     prevent_initial_call=True,
 )
 def updateOrientation(saved):
+    print("OPT Orientation update triggered by: ", dash.callback_context.triggered_id)
     eye = saved["eye"]
     # TODO make zoom-level static
 
@@ -1424,7 +1439,8 @@ def updateOrientation(saved):
     [Input("df_store", "data"), Input("page_state", "data")],
     prevent_initial_call=True,
 )
-def update_bot_canv(f_data, state):
+def update_footer(f_data, state):
+    print("OPT update footer triggered by: ", dash.callback_context.triggered_id)
     if state == "landing":
         raise PreventUpdate
 
@@ -1491,6 +1507,7 @@ def update_bot_canv(f_data, state):
     prevent_initial_call=True,
 )
 def updateSettings(run_mala):
+    print("OPT settings-update triggered by: ", dash.callback_context.triggered_id)
     return (
         "Size",
         {"visibility": "visible"},
@@ -1520,6 +1537,7 @@ def toggle_settings_bar(page_state, n1, is_open):
     prevent_initial_call=True,
 )
 def toggle_settings_button(state):
+    print("OPT settings-button toggled by: ", dash.callback_context.triggered_id)
     if state == "plotting":
         return {
             "visibility": "visible",
@@ -1530,23 +1548,18 @@ def toggle_settings_button(state):
     else:
         return {
             "visibility": "hidden",
-            "margin-top": "40vh",
-            "position": "absolute",
-            "right": "0",
         }
 
 
 # toggle canvas
 @app.callback(  # sidebar_l canvas
-    Output("offcanvas-l", "is_open"),
-    Input("open-upload-oc", "n_clicks"),
-    [State("offcanvas-l", "is_open")],
+    Output("menu-offcanvas", "is_open"),
+    Input("open-menu-button", "n_clicks"),
+    #[State("menu-offcanvas", "is_open")],
     prevent_initial_call=True,
 )
-def toggle_offcanvas_l(n1, is_open):
-    if n1:
-        return not is_open
-    return is_open
+def toggle_menu_offcanvas(toggle_menu):
+    return True
 
 
 # END OF CALLBACKS FOR SIDEBAR
