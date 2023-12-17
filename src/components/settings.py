@@ -6,7 +6,7 @@ Button for opening settings sidebar
 """
 button = dbc.Button(
     "<",
-    id="open-settings",
+    id="open-settings-button",
     style={
         "visibility": "hidden",
         "margin-top": "40vh",
@@ -115,7 +115,7 @@ oc_sidebar = html.Div(
     [
         dbc.Offcanvas(
             sidebar,
-            id="offcanvas-r-sc",
+            id="settings-offcanvas",
             is_open=False,
             style={
                 "width": "9rem",

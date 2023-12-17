@@ -159,7 +159,7 @@ app.layout = p_layout_landing
 @app.callback(
         Output("page_state", "data", allow_duplicate=True),
         Output("df_store", "data", allow_duplicate=True),
-        Output("offcanvas-r-sc", "is_open", allow_duplicate=True),
+        Output("settings-offcanvas", "is_open", allow_duplicate=True),
         Output("offcanvas-bot", "is_open", allow_duplicate=True),
         Output("UP_STORE", "data", allow_duplicate=True),
         Input("reset-data", "n_clicks"),
@@ -1516,10 +1516,10 @@ def updateSettings(run_mala):
 
 
 @app.callback(  # sidebar_r canvas (1/?)
-    Output("offcanvas-r-sc", "is_open"),
+    Output("settings-offcanvas", "is_open"),
     Input("page_state", "data"),
-    Input("open-settings", "n_clicks"),
-    [State("offcanvas-r-sc", "is_open")],
+    Input("open-settings-button", "n_clicks"),
+    [State("settings-offcanvas", "is_open")],
     prevent_initial_call=True,
 )
 def toggle_settings_bar(page_state, n1, is_open):
@@ -1532,7 +1532,7 @@ def toggle_settings_bar(page_state, n1, is_open):
 
 
 @app.callback(
-    Output("open-settings", "style"),
+    Output("open-settings-button", "style"),
     Input("page_state", "data"),
     prevent_initial_call=True,
 )
@@ -1555,7 +1555,6 @@ def toggle_settings_button(state):
 @app.callback(  # sidebar_l canvas
     Output("menu-offcanvas", "is_open"),
     Input("open-menu-button", "n_clicks"),
-    #[State("menu-offcanvas", "is_open")],
     prevent_initial_call=True,
 )
 def toggle_menu_offcanvas(toggle_menu):
