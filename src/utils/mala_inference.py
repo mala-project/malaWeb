@@ -14,7 +14,8 @@ model_paths = {
 }
 
 
-def run_mala_prediction(atoms_to_predict, model_and_temp):
+def run_mala_prediction(atoms_to_predict, model_and_temp,
+                        calc_total_energy=True):
     """
     Perform a MALA prediction for an ase.Atoms object.
 
@@ -83,7 +84,6 @@ def run_mala_prediction(atoms_to_predict, model_and_temp):
 
         results = {
             "band_energy": ldos_calculator.band_energy,
-            "total_energy": ldos_calculator.total_energy,
             # Reshaping for plotting.
             "density": np.reshape(
                 ldos_calculator.density, ldos_calculator.grid_dimensions
@@ -94,4 +94,8 @@ def run_mala_prediction(atoms_to_predict, model_and_temp):
             "voxel": ldos_calculator.voxel,
             "grid_dimensions": ldos_calculator.grid_dimensions,
         }
+        if calc_total_energy:
+            results["total_energy"] = ldos_calculator.total_energy
+        else:
+            results["total_energy"] = 0.0
         return results
