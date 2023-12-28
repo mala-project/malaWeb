@@ -1,10 +1,13 @@
 """Script for single MALA inference."""
+import json
 import time
 
 import mala
 import numpy as np
 
 # Set up the path to the model.
+MODELS = json.load(open("../src/models/model_paths.json"))
+
 model_paths = {
     "Be|298": "Be_model",
     "Al|298": None,
@@ -74,7 +77,7 @@ def run_mala_prediction(atoms_to_predict, model_and_temp,
         return results
     else:
         parameters, network, data_handler, predictor = mala.Predictor.load_run(
-            model_paths[model_and_temp["name"]], path="utils/models"
+            MODELS[model_and_temp["name"]], path="models"
         )
         predicted_ldos = predictor.predict_for_atoms(atoms_to_predict)
 

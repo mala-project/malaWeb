@@ -8,7 +8,8 @@ import json
 
 # CONSTANTS
 # > "label" is the label visible in the apps dropdown ; "value"  is the value passed to the inference script. Ranges are to be surrounded by []
-MODELS = json.load(open("./src/utils/models/model_list.json"))
+MODELS = json.load(open("../src/models/model_list.json"))
+MODELS = [{'label': model['label'], 'value': model['value']} for model in MODELS]
 
 # > Used for giving out high computation time warning
 ATOM_LIMIT = 200

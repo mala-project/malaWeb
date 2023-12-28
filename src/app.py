@@ -782,8 +782,7 @@ def updateDF(trig, model_choice, temp_choice, upload):
     print("OPT df-update triggered by: ", dash.callback_context.triggered_id)
     if upload is None:
         raise PreventUpdate
-
-    model_and_temp = {"name": model_choice, "temperature": float(temp_choice)}
+    model_temp_path = {"name": model_choice, "temperature": float(temp_choice)}
 
     # ASE.reading to receive ATOMS-objs, to pass to MALA-inference
     # no ValueError Exception needed, bc this is done directly on upload
@@ -795,9 +794,9 @@ def updateDF(trig, model_choice, temp_choice, upload):
         "Running MALA-Inference. Passing: ",
         read_atoms,
         " and model-choice: ",
-        model_and_temp,
+        model_temp_path,
     )
-    mala_data = run_mala_prediction(read_atoms, model_and_temp)
+    mala_data = run_mala_prediction(read_atoms, model_temp_path)
     # contains 'band_energy', 'total_energy', 'density', 'density_of_states', 'energy_grid'
     # mala_data is stored in df_store dict under key 'MALA_DATA'. (See declaration of df_store below for more info)
     density = mala_data["density"]
@@ -1193,21 +1192,25 @@ def updatePlot(
     if f_data is None:
         raise PreventUpdate
 
-    df = pd.DataFrame(f_data["MALA_DF"]["scatter"])
-    # sheared coordinates
-
-    # atoms-Dataframe also taken from f_data
-    atoms = pd.DataFrame(f_data["INPUT_DF"])
-    no_of_atoms = len(atoms)
-
-    # Dataframes are ready now
-    fig_bound = boundaries_fig
-
+    # Last Camera-Pos
     new_cam = stored_cam_settings
+
 
     # INIT PLOT
     if dash.callback_context.triggered[0]["prop_id"] == ".":
+        print("INIT Plot")
         # Our main figure = scatter plot
+
+        df = pd.DataFrame(f_data["MALA_DF"]["scatter"])
+        # sheared coordinates
+
+        # atoms-Dataframe also taken from f_data
+        atoms = pd.DataFrame(f_data["INPUT_DF"])
+        no_of_atoms = len(atoms)
+
+        # Cell
+        fig_bound = boundaries_fig
+
         patched_fig = px.scatter_3d(
             df,
             x="x",
@@ -1262,6 +1265,7 @@ def updatePlot(
 
     # SETTINGS
     elif dash.callback_context.triggered_id == "sc_settings":
+        print("PLOT-Settings")
         patched_fig["data"][0]["marker"]["line"] = settings["outline"]
         patched_fig["data"][0]["marker"]["size"] = settings["size"]
         patched_fig["data"][0]["marker"]["opacity"] = settings["opac"]
@@ -1269,9 +1273,12 @@ def updatePlot(
             patched_fig["data"][i]["line"]["width"] = settings["cell"]
         patched_fig["data"][5]["visible"] = settings["atoms"]
 
+        patched_fig["layout"]["scene"]["camera"] = new_cam
+
     # CAMERA
 
     elif "cam" in dash.callback_context.triggered_id:
+        print("PLOT-Cqm")
         if dash.callback_context.triggered_id == "default-cam":
             new_cam = dict(
                 up=dict(x=0, y=0, z=1),
@@ -1296,7 +1303,8 @@ def updatePlot(
                 center=dict(x=0, y=0, z=0),
                 eye=dict(x=3.00, y=0, z=0),
             )
-    patched_fig["layout"]["scene"]["camera"] = new_cam
+        print("patched cam")
+        patched_fig["layout"]["scene"]["camera"] = new_cam
 
     """
     INIT PLOT
@@ -1499,6 +1507,7 @@ def update_footer(f_data, state):
 
 
 # Update settings sidebar
+# TODO: this can probably be deleted
 @app.callback(
     Output("sz/isosurf-label", "children"),
     Output("opac-label", "style"),
@@ -1515,7 +1524,7 @@ def updateSettings(run_mala):
     )
 
 
-@app.callback(  # sidebar_r canvas (1/?)
+@app.callback(
     Output("settings-offcanvas", "is_open"),
     Input("page_state", "data"),
     Input("open-settings-button", "n_clicks"),
