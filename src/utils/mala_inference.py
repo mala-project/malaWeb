@@ -74,7 +74,7 @@ def run_mala_prediction(atoms_to_predict, model_and_temp,
         return results
     else:
         parameters, network, data_handler, predictor = mala.Predictor.load_run(
-            model_paths[model_and_temp["name"]], path="models"
+            model_paths[model_and_temp["name"]], path="utils/models"
         )
         predicted_ldos = predictor.predict_for_atoms(atoms_to_predict)
 
