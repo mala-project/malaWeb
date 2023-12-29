@@ -679,10 +679,8 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
 def activate_runMALA_button(click, disabled ,model, temp):
     print(dash.callback_context.triggered_id, "and", disabled)
     if dash.callback_context.triggered_id == "run-mala" and disabled:
-        print("prevented")
         raise PreventUpdate
     elif dash.callback_context.triggered_id == "run-mala":
-        print("should disable")
         return True
     if model is not None and temp is not None:
         return False
