@@ -150,10 +150,6 @@ app.layout = p_layout_landing
 
 
 # Could be used to refactor callbacks to a seperate file
-# get_callbacks(app)
-
-
-# CLIENTSIDE CALLBACK
 
 
 # CALLBACKS & FUNCTIONS
@@ -169,7 +165,6 @@ app.layout = p_layout_landing
     prevent_initial_call=True,
 )
 def click_reset(click):
-    print("df update by reset")
     return "landing", None, False, False, None
 
 
@@ -272,7 +267,6 @@ def toggle_tools(n_sc_s, is_open):
     prevent_initial_call=True,
 )
 def toggle_x_cs(n_x, active, bc):
-    print("range slider x toggled")
     if n_x:
         return not active, not bc
 
@@ -335,7 +329,6 @@ def toggle_density_sc(n_d, active, bc):
 def reset_sliders(n_clicks_x, n_clicks_y, n_clicks_z, n_clicks_dense, data):
     # print("OPT slider reset triggered by: ", dash.callback_context.triggered_id)
     df = pd.DataFrame(data["MALA_DF"]["scatter"])
-    print("slider reset triggered")
     if dash.callback_context.triggered_id == "reset-cs-x":
         return (
             [0, len(np.unique(df["x"])) - 1],
@@ -388,7 +381,6 @@ def store_cam(default_clicks, x_y_clicks, x_z_clicks, y_z_clicks, user_in):
     # user_in is the camera position set by mouse movement, it has to be updated on every mouse input on the fig
     # print("OPT cam_store triggered by: ", dash.callback_context.triggered_id)
     # set stored_cam_setting according to which button was last pressed
-    print("cam update")
     if dash.callback_context.triggered_id[0:-4] == "default":
         return dict(
             up=dict(x=0, y=0, z=1),
@@ -797,7 +789,6 @@ def updateDF(trig, model_choice, temp_choice, upload):
     #print("OPT df-update triggered by: ", dash.callback_context.triggered_id)
     if upload is None:
         raise PreventUpdate
-    print("DF UPDATED")
     model_temp_path = {"name": model_choice, "temperature": float(temp_choice)}
 
     # ASE.reading to receive ATOMS-objs, to pass to MALA-inference
@@ -806,12 +797,6 @@ def updateDF(trig, model_choice, temp_choice, upload):
 
     # (a) GET DATA FROM MALA (/ inference script)
 
-    # print(
-    #     "Running MALA-Inference. Passing: ",
-    #     read_atoms,
-    #     " and model-choice: ",
-    #     model_temp_path,
-    # )
     mala_data = run_mala_prediction(read_atoms, model_temp_path)
     # contains 'band_energy', 'total_energy', 'density', 'density_of_states', 'energy_grid'
     # mala_data is stored in df_store dict under key 'MALA_DATA'. (See declaration of df_store below for more info)
@@ -1003,6 +988,7 @@ def update_tools(data):
     if data is None:  # in case of reset:
         raise PreventUpdate
     else:
+        df = pd.DataFrame(data["MALA_DF"]["scatter"])
 
         return (
             0,
@@ -1219,7 +1205,7 @@ def updatePlot(
 
     # INIT PLOT
     if dash.callback_context.triggered[0]["prop_id"] == "." or dash.callback_context.triggered == "df_store":
-        # print("INIT Plot")
+        print("INIT Plot")
         # Our main figure = scatter plot
 
         df = pd.DataFrame(f_data["MALA_DF"]["scatter"])
@@ -1299,7 +1285,7 @@ def updatePlot(
     # CAMERA
 
     elif "cam" in dash.callback_context.triggered_id:
-        # print("PLOT-Cqm")
+        # print("PLOT-Cam")
         if dash.callback_context.triggered_id == "default-cam":
             new_cam = dict(
                 up=dict(x=0, y=0, z=1),
@@ -1360,8 +1346,8 @@ Sets transition options used during Plotly.react updates."
 
 """
 
+
 # TODO optimize by using relayout to update camera instead of cam_store (or smth else entirely)
-# TODO Rewrite this as clientside callback
 @app.callback(
     Output("scatter-plot", "figure"),
     # Tools
