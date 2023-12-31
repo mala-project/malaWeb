@@ -57,7 +57,7 @@ row1 = html.Tr(
             style={"text-align": "center", "padding": 3, "font-size": "0.85em"},
         )
     ],
-    style={"font-weight": "bold"},
+    style={"fontWeight": "bold"},
 )
 row2 = html.Tr(
     [
@@ -164,7 +164,7 @@ oc_bar = html.Div(
             style={
                 "height": "min-content",
                 "width": "max-content",
-                "border-radius": "5px",
+                "borderRadius": "5px",
                 "background-color": "rgba(248, 249, 250, 1)",
                 "left": "0",
                 "right": "0",

@@ -166,7 +166,7 @@ plot = [
         style={
             "background-color": "rgba(248, 249, 250, 1)",
             "width": "min-content",
-            "align-content": "center",
+            "alignContent": "center",
             "margin-top": "1.5rem",
         },
     ),

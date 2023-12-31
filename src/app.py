@@ -6,7 +6,7 @@ import dash
 import dash_bootstrap_components as dbc
 
 from dash.dependencies import Input, Output, State
-from dash import dcc, html, Patch
+from dash import dcc, html, Patch, clientside_callback
 from dash.exceptions import PreventUpdate
 
 # utils
@@ -22,6 +22,7 @@ import plotly.graph_objs as go
 # I/O
 import ase.io
 import dash_uploader as du
+
 # could be used to refactor callbacks into a seperate file callbacks.py
 # from callbacks import get_callbacks
 
@@ -65,7 +66,6 @@ templ2 = dict(
     )
 )
 
-
 # helper for removing unnecessary visuals on cell preview
 removeHoverLines = go.layout.Scene(
     xaxis=go.layout.scene.XAxis(spikethickness=0),
@@ -77,7 +77,6 @@ removeHoverLines = go.layout.Scene(
 default_scatter_marker = dict(
     marker=dict(size=12, opacity=1, line=dict(width=1, color="DarkSlateGrey")),
 )
-
 
 print(
     "_________________________________________________________________________________________"
@@ -146,24 +145,24 @@ p_layout_landing = dbc.Container(
     style={"height": "100vh", "width": "100vw", "background-color": "#023B59"},
 )
 
-
 app.layout = p_layout_landing
 
+
 # Could be used to refactor callbacks to a seperate file
-#get_callbacks(app)
+# get_callbacks(app)
 
 
 # CALLBACKS & FUNCTIONS
 
 # Change of Page_State Store
 @app.callback(
-        Output("page_state", "data", allow_duplicate=True),
-        Output("df_store", "data", allow_duplicate=True),
-        Output("settings-offcanvas", "is_open", allow_duplicate=True),
-        Output("offcanvas-bot", "is_open", allow_duplicate=True),
-        Output("UP_STORE", "data", allow_duplicate=True),
-        Input("reset-data", "n_clicks"),
-        prevent_initial_call=True,
+    Output("page_state", "data", allow_duplicate=True),
+    Output("df_store", "data", allow_duplicate=True),
+    Output("settings-offcanvas", "is_open", allow_duplicate=True),
+    Output("offcanvas-bot", "is_open", allow_duplicate=True),
+    Output("UP_STORE", "data", allow_duplicate=True),
+    Input("reset-data", "n_clicks"),
+    prevent_initial_call=True,
 )
 def click_reset(click):
     return "landing", None, False, False, None
@@ -676,7 +675,7 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
     Input("model-temp", "value"),
     prevent_initial_call=True,
 )
-def activate_runMALA_button(click, disabled ,model, temp):
+def activate_runMALA_button(click, disabled, model, temp):
     print(dash.callback_context.triggered_id, "and", disabled)
     if dash.callback_context.triggered_id == "run-mala" and disabled:
         raise PreventUpdate
@@ -706,12 +705,12 @@ def activate_runMALA_button(click, disabled ,model, temp):
 def open_UP_MODAL(upload, edit_input, page_state, data):
     print("OPT modal opener triggered by: ", dash.callback_context.triggered_id)
     if (
-        dash.callback_context.triggered_id == "page_state" and page_state == "plotting"
+            dash.callback_context.triggered_id == "page_state" and page_state == "plotting"
     ) or dash.callback_context.triggered_id == "df_store":
         return False
     elif (
-        dash.callback_context.triggered_id == "UP_STORE"
-        or dash.callback_context.triggered_id == "edit-input"
+            dash.callback_context.triggered_id == "UP_STORE"
+            or dash.callback_context.triggered_id == "edit-input"
     ) and upload is not None:
         return True
     else:
@@ -761,6 +760,7 @@ def init_temp_choice(model_choice):
 
 @app.callback(
     Output("df_store", "data"),
+    Output("client_df", "data"),
     Input("run-mala", "n_clicks"),
     State("model-choice", "value"),
     State("model-temp", "value"),
@@ -906,7 +906,7 @@ def updateDF(trig, model_choice, temp_choice, upload):
         "SCALE": {"x_axis": x_axis, "y_axis": y_axis, "z_axis": z_axis},
     }
 
-    return df_store
+    return df_store, df_store
 
 
 # SC SETTINGS STORING
@@ -1180,15 +1180,15 @@ cam_store can't be an input or else it triggers an update everytime the cam is m
     prevent_initial_call="initial_duplicate",
 )
 def updatePlot(
-    settings,
-    cam_default,
-    cam_xy,
-    cam_xz,
-    cam_yz,
-    stored_cam_settings,
-    f_data,
-    fig,
-    boundaries_fig,
+        settings,
+        cam_default,
+        cam_xy,
+        cam_xz,
+        cam_yz,
+        stored_cam_settings,
+        f_data,
+        fig,
+        boundaries_fig,
 ):
     print("OPT update-Plot-trigger: ", dash.callback_context.triggered_id)
     # TODO: make this function more efficient
@@ -1202,9 +1202,8 @@ def updatePlot(
     # Last Camera-Pos
     new_cam = stored_cam_settings
 
-
     # INIT PLOT
-    if dash.callback_context.triggered[0]["prop_id"] == ".":
+    if dash.callback_context.triggered[0]["prop_id"] == "." or dash.callback_context.triggered == "df_store":
         print("INIT Plot")
         # Our main figure = scatter plot
 
@@ -1346,8 +1345,8 @@ Sets transition options used during Plotly.react updates."
 
 """
 
-
 # TODO optimize by using relayout to update camera instead of cam_store (or smth else entirely)
+# TODO Rewrite this as clientside callback
 @app.callback(
     Output("scatter-plot", "figure"),
     # Tools
@@ -1427,7 +1426,6 @@ def slicePlot(
     patched_fig["layout"]["scene"]["camera"] = cam
 
     return patched_fig
-
 
 @app.callback(
     Output("orientation", "figure"),

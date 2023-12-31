@@ -131,8 +131,9 @@ upload_modal = dbc.Modal(
                     dbc.Stack(
                         [
                             html.Div(
-                                dbc.Spinner(
+                                dbc.Spinner([
                                     dcc.Store(id="df_store"),
+                                    dcc.Store(id="client_df")],
                                     size="sm",
                                     color="success",  # Spinner awaits change here
                                 ),
@@ -147,7 +148,7 @@ upload_modal = dbc.Modal(
                 color="success",
                 outline=True,
             ),
-            style={"justify-content": "center"},
+            style={"justifyContent": "center"},
         ),
     ],
     id="upload-modal",
@@ -244,7 +245,7 @@ sidebar = html.Div(
                                 id="edit-input",
                                 color="success",
                                 style={
-                                    "line-height": "0.85em",
+                                    "lineHeight": "0.85em",
                                     "height": "min-content",
                                     "width": "100%",
                                     "font-size": "0.85em",
@@ -255,7 +256,7 @@ sidebar = html.Div(
                                 id="reset-data",
                                 color="danger",
                                 style={
-                                    "line-height": "0.85em",
+                                    "lineHeight": "0.85em",
                                     "height": "min-content",
                                     "width": "100%",
                                     "font-size": "0.85em",
@@ -290,10 +291,10 @@ oc_sidebar = html.Div(
                 "width": "12rem",
                 "margin-top": "3rem",
                 "left": "0",
-                "border-top-right-radius": "5px",
-                "border-bottom-right-radius": "5px",
+                "borderTopRightRadius": "5px",
+                "borderBottomRightRadius": "5px",
                 "height": "min-content",
-                "box-shadow": "rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px",
+                "boxShadow": "rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px",
             },
         )
     ]
