@@ -388,6 +388,7 @@ def store_cam(default_clicks, x_y_clicks, x_z_clicks, y_z_clicks, user_in):
     # user_in is the camera position set by mouse movement, it has to be updated on every mouse input on the fig
     # print("OPT cam_store triggered by: ", dash.callback_context.triggered_id)
     # set stored_cam_setting according to which button was last pressed
+    print("cam update")
     if dash.callback_context.triggered_id[0:-4] == "default":
         return dict(
             up=dict(x=0, y=0, z=1),
@@ -1389,9 +1390,6 @@ def slicePlot(
     f_data,
     cam,
 ):
-    # print("OPT slicePlot triggered: ", dash.callback_context.triggered_id)
-    start = timer()
-    print("Plot slice")
     if f_data is None:
         raise PreventUpdate
     df = pd.DataFrame(f_data["MALA_DF"]["scatter"])
@@ -1439,8 +1437,6 @@ def slicePlot(
     patched_fig["data"][0]["marker"]["color"] = dfu["val"]
     # sadly the patch overwrites our cam positioning, which is why we have to re-patch it everytime
     patched_fig["layout"]["scene"]["camera"] = cam
-    end = timer()
-    print(end - start)
     return patched_fig
 
 @app.callback(
