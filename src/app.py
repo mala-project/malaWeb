@@ -6,7 +6,7 @@ import dash
 import dash_bootstrap_components as dbc
 
 from dash.dependencies import Input, Output, State
-from dash import dcc, html, Patch, clientside_callback
+from dash import Dash, dcc, html, Patch, clientside_callback
 from dash.exceptions import PreventUpdate
 
 # utils
@@ -86,7 +86,7 @@ print("STARTING UP...")
 """
 
 """
-app = dash.Dash(
+app = Dash(
     __name__,
     external_stylesheets=[dbc.icons.BOOTSTRAP, dbc.themes.BOOTSTRAP],
     suppress_callback_exceptions=True,
@@ -150,6 +150,86 @@ app.layout = p_layout_landing
 
 # Could be used to refactor callbacks to a seperate file
 # get_callbacks(app)
+
+
+# CLIENTSIDE CALLBACK TEST
+
+# if data is None:  # in case of reset:
+#         raise PreventUpdate
+#     else:
+#         df = pd.DataFrame(data["MALA_DF"]["scatter"])
+#
+#         return (
+#             0,
+#             len(np.unique(df["x"])) - 1,
+#             1,
+#             0,
+#             len(np.unique(df["y"])) - 1,
+#             1,
+#             0,
+#             len(np.unique(df["z"])) - 1,
+#             1,
+#             0,
+#             len(np.unique(df["val"])) - 1,
+#             1,
+#         )
+
+#
+# if (Object. is (data, null)) {
+# console.log("data is null")
+# } else {
+# data = data["MALA_DF"]["default"]
+# x_unique = data["x"].filter((value, index, array) = > array.indexOf(value) == = index);
+# y_unique = data["y"].filter((value, index, array) = > array.indexOf(value) == = index);
+# z_unique = data["z"].filter((value, index, array) = > array.indexOf(value) == = index);
+# dense_unique = data["dense"].filter((value, index, array) = > array.indexOf(value) == = index);
+#
+# x_step = x_unique.length - 1;
+# y_step = y_unique.length - 1;
+# z_step = z_unique.length - 1;
+# dense_step = dense_unique.length - 1;
+#
+# console.log(x_step);
+#
+# output =[0, x_step, 1, 0, y_step, 1, 0, z_step, 1, 0, dense_step, 1];
+# };
+
+clientside_callback(
+    '''
+    function(data) {
+        console.log("tools updated");
+        output = [0, 1, 0.5, 0, 1, 0.5, 0, 1, 0.5, 0, 1, 0.5];
+        
+        
+        
+        return output
+    }
+    ''',
+    Output("range-slider-cs-x", "min"),
+    Output("range-slider-cs-x", "max"),
+    Output("range-slider-cs-x", "step"),
+    Output("range-slider-cs-y", "min"),
+    Output("range-slider-cs-y", "max"),
+    Output("range-slider-cs-y", "step"),
+    Output("range-slider-cs-z", "min"),
+    Output("range-slider-cs-z", "max"),
+    Output("range-slider-cs-z", "step"),
+    Output("range-slider-dense", "min"),
+    Output("range-slider-dense", "max"),
+    Output("range-slider-dense", "step"),
+    Input("df_store", "data"),
+    prevent_initial_call=True
+)
+
+@app.callback(
+    Output("test_div", "children"),
+    Input("range-slider-cs-x", "min"),
+    Input("range-slider-cs-x", "max"),
+    Input("range-slider-cs-x", "step"),
+    prevent_initial_call=True
+)
+def print_upd(v1, v2, v3):
+    print(v1, v2, v3)
 
 
 # CALLBACKS & FUNCTIONS
@@ -327,7 +407,7 @@ def toggle_density_sc(n_d, active, bc):
     prevent_initial_call=True,
 )
 def reset_sliders(n_clicks_x, n_clicks_y, n_clicks_z, n_clicks_dense, data):
-    print("OPT slider reset triggered by: ", dash.callback_context.triggered_id)
+    # print("OPT slider reset triggered by: ", dash.callback_context.triggered_id)
     df = pd.DataFrame(data["MALA_DF"]["scatter"])
     if dash.callback_context.triggered_id == "reset-cs-x":
         return (
@@ -358,7 +438,7 @@ def reset_sliders(n_clicks_x, n_clicks_y, n_clicks_z, n_clicks_dense, data):
             [0, len(np.unique(df["val"])) - 1],
         )
     else:
-        print("STATUS: something unknown triggered slider reset")
+        # print("STATUS: something unknown triggered slider reset")
         raise PreventUpdate
 
 
@@ -379,7 +459,7 @@ def reset_sliders(n_clicks_x, n_clicks_y, n_clicks_z, n_clicks_dense, data):
 )
 def store_cam(default_clicks, x_y_clicks, x_z_clicks, y_z_clicks, user_in):
     # user_in is the camera position set by mouse movement, it has to be updated on every mouse input on the fig
-    print("OPT cam_store triggered by: ", dash.callback_context.triggered_id)
+    # print("OPT cam_store triggered by: ", dash.callback_context.triggered_id)
     # set stored_cam_setting according to which button was last pressed
     if dash.callback_context.triggered_id[0:-4] == "default":
         return dict(
@@ -415,7 +495,7 @@ def store_cam(default_clicks, x_y_clicks, x_z_clicks, y_z_clicks, user_in):
                 return user_in["scene.camera"]
         # stops the update in case the callback is triggered by zooming/smth else
     else:
-        print("unknown trigger caused cam_pos_update")
+        # print("unknown trigger caused cam_pos_update")
         raise PreventUpdate
 
     # Feels very unelegant -> this is always run twice when switching to scatter for example
@@ -433,7 +513,7 @@ def store_cam(default_clicks, x_y_clicks, x_z_clicks, y_z_clicks, user_in):
     prevent_initial_call=True,
 )
 def updatePageState(trig1, state):
-    print("OPT page state triggered by: ", dash.callback_context.triggered_id)
+    # print("OPT page state triggered by: ", dash.callback_context.triggered_id)
     new_state = "landing"
     if dash.callback_context.triggered_id == "df_store":
         if trig1 is not None:
@@ -449,7 +529,7 @@ def updatePageState(trig1, state):
 # DASH-UPLOADER
 # after file-upload, return upload-status (if successful) and dict with file-path and upload-id (for future verif?)
 def upload_exception():
-    print("excepted file error")
+    # print("excepted file error")
     return None, "File not supported", dash.no_update, dash.no_update, "upload-failure"
     # = FILE NOT SUPPORTED AS ASE INPUT (some formats listed in supported-files for ase are output only. This will only be filtered here)
 
@@ -479,7 +559,7 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
     atoms-preview: Figure previewing ASE-read Atoms
     upload-data: Changing border-color of this component according to upload-status
     """
-    print("OPT upload triggered by: ", dash.callback_context.triggered_id)
+    # print("OPT upload triggered by: ", dash.callback_context.triggered_id)
     UP_STORE = {
         "ID": status.upload_id,
         "PATH": str(status.latest_file.resolve()),
@@ -676,7 +756,6 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
     prevent_initial_call=True,
 )
 def activate_runMALA_button(click, disabled, model, temp):
-    print(dash.callback_context.triggered_id, "and", disabled)
     if dash.callback_context.triggered_id == "run-mala" and disabled:
         raise PreventUpdate
     elif dash.callback_context.triggered_id == "run-mala":
@@ -703,7 +782,7 @@ def activate_runMALA_button(click, disabled, model, temp):
     prevent_initial_call=True,
 )
 def open_UP_MODAL(upload, edit_input, page_state, data):
-    print("OPT modal opener triggered by: ", dash.callback_context.triggered_id)
+    # print("OPT modal opener triggered by: ", dash.callback_context.triggered_id)
     if (
             dash.callback_context.triggered_id == "page_state" and page_state == "plotting"
     ) or dash.callback_context.triggered_id == "df_store":
@@ -729,7 +808,7 @@ def open_UP_MODAL(upload, edit_input, page_state, data):
     prevent_initial_call=True,
 )
 def init_temp_choice(model_choice):
-    print("OPT temp init triggered by: ", dash.callback_context.triggered_id)
+    # print("OPT temp init triggered by: ", dash.callback_context.triggered_id)
     if model_choice is None:
         raise PreventUpdate
     # splitting string input in substance and (possible) temperature(s)
@@ -786,7 +865,7 @@ def updateDF(trig, model_choice, temp_choice, upload):
     on MALA-call, give ATOMS-objs & model_choice
     -> returns density data and energy values +  a .cube-file
     """
-    print("OPT df-update triggered by: ", dash.callback_context.triggered_id)
+    # print("OPT df-update triggered by: ", dash.callback_context.triggered_id)
     if upload is None:
         raise PreventUpdate
     model_temp_path = {"name": model_choice, "temperature": float(temp_choice)}
@@ -797,12 +876,12 @@ def updateDF(trig, model_choice, temp_choice, upload):
 
     # (a) GET DATA FROM MALA (/ inference script)
 
-    print(
-        "Running MALA-Inference. Passing: ",
-        read_atoms,
-        " and model-choice: ",
-        model_temp_path,
-    )
+    # print(
+    #     "Running MALA-Inference. Passing: ",
+    #     read_atoms,
+    #     " and model-choice: ",
+    #     model_temp_path,
+    # )
     mala_data = run_mala_prediction(read_atoms, model_temp_path)
     # contains 'band_energy', 'total_energy', 'density', 'density_of_states', 'energy_grid'
     # mala_data is stored in df_store dict under key 'MALA_DATA'. (See declaration of df_store below for more info)
@@ -921,7 +1000,7 @@ def updateDF(trig, model_choice, temp_choice, upload):
     Input("cell-boundaries", "value"),
 )
 def update_settings_store(size, outline, atoms, opac, saved, cell):
-    print("OPT settings-store-update triggered by: ", dash.callback_context.triggered_id)
+    # print("OPT settings-store-update triggered by: ", dash.callback_context.triggered_id)
     if saved is None:
         # default settings
         settings = {
@@ -962,180 +1041,179 @@ def update_settings_store(size, outline, atoms, opac, saved, cell):
 
 # END UPDATE FOR STORED DATA
 
-
-@app.callback(
-    [
-        Output("range-slider-cs-x", "min"),
-        Output("range-slider-cs-x", "max"),
-        Output("range-slider-cs-x", "step"),
-        Output("range-slider-cs-y", "min"),
-        Output("range-slider-cs-y", "max"),
-        Output("range-slider-cs-y", "step"),
-        Output("range-slider-cs-z", "min"),
-        Output("range-slider-cs-z", "max"),
-        Output("range-slider-cs-z", "step"),
-        Output("range-slider-dense", "min"),
-        Output("range-slider-dense", "max"),
-        Output("range-slider-dense", "step"),
-    ],
-    [
-        Input("df_store", "data"),
-    ],
-)
-def update_tools(data):
-    print("OPT tools-update triggered by: ", dash.callback_context.triggered_id)
-    if data is None:  # in case of reset:
-        raise PreventUpdate
-    else:
-        df = pd.DataFrame(data["MALA_DF"]["scatter"])
-
-        return (
-            0,
-            len(np.unique(df["x"])) - 1,
-            1,
-            0,
-            len(np.unique(df["y"])) - 1,
-            1,
-            0,
-            len(np.unique(df["z"])) - 1,
-            1,
-            0,
-            len(np.unique(df["val"])) - 1,
-            1,
-        )
+# @app.callback(
+#     [
+#         Output("range-slider-cs-x", "min"),
+#         Output("range-slider-cs-x", "max"),
+#         Output("range-slider-cs-x", "step"),
+#         Output("range-slider-cs-y", "min"),
+#         Output("range-slider-cs-y", "max"),
+#         Output("range-slider-cs-y", "step"),
+#         Output("range-slider-cs-z", "min"),
+#         Output("range-slider-cs-z", "max"),
+#         Output("range-slider-cs-z", "step"),
+#         Output("range-slider-dense", "min"),
+#         Output("range-slider-dense", "max"),
+#         Output("range-slider-dense", "step"),
+#     ],
+#     [
+#         Input("df_store", "data"),
+#     ],
+# )
+# def update_tools(data):
+#     # print("OPT tools-update triggered by: ", dash.callback_context.triggered_id)
+#     if data is None:  # in case of reset:
+#         raise PreventUpdate
+#     else:
+#         df = pd.DataFrame(data["MALA_DF"]["scatter"])
+#
+#         return (
+#             0,
+#             len(np.unique(df["x"])) - 1,
+#             1,
+#             0,
+#             len(np.unique(df["y"])) - 1,
+#             1,
+#             0,
+#             len(np.unique(df["z"])) - 1,
+#             1,
+#             0,
+#             len(np.unique(df["val"])) - 1,
+#             1,
+#         )
 
 
 # TODO: maybe use popover instead of tooltip
 # Updating slider-range indicators X
-@app.callback(
-    Output("x-lower-bound", "children"),
-    Output("x-higher-bound", "children"),
-    Output("x-lower-bound", "trigger"),  # unused - doesn't seem to be editable on CB
-    Input("range-slider-cs-x", "value"),
-    Input("range-slider-cs-x", "disabled"),
-    State("df_store", "data"),
-    State("x-lower-bound", "trigger"),  # unused - needed for see above
-)
-def update_slider_bound_indicators_X(value, disabled, data, trigger):
-    print("OPT slider-bound-x-update triggered by: ", dash.callback_context.triggered_id)
-    if data is None:  # in case of reset:
-        raise PreventUpdate
-
-    # TODO: enabling/disabling hovermode of indicator doesn't work - doesn't seem to overwrite init-param
-    if disabled:
-        trigger = None
-    else:
-        trigger = "hover"
-
-    dfX = pd.DataFrame(data["MALA_DF"]["scatter"])["x"]
-
-    if value is None:
-        lower = round(min(dfX), ndigits=5)
-        higher = round(max(dfX), ndigits=5)
-    else:
-        lowB, highB = value
-        lower = round(np.unique(dfX)[lowB], ndigits=5)
-        higher = round(np.unique(dfX)[highB], ndigits=5)
-    return lower, higher, trigger
+# @app.callback(
+#     Output("x-lower-bound", "children"),
+#     Output("x-higher-bound", "children"),
+#     Output("x-lower-bound", "trigger"),  # unused - doesn't seem to be editable on CB
+#     Input("range-slider-cs-x", "value"),
+#     Input("range-slider-cs-x", "disabled"),
+#     State("df_store", "data"),
+#     State("x-lower-bound", "trigger"),  # unused - needed for see above
+# )
+# def update_slider_bound_indicators_X(value, disabled, data, trigger):
+#     # print("OPT slider-bound-x-update triggered by: ", dash.callback_context.triggered_id)
+#     if data is None:  # in case of reset:
+#         raise PreventUpdate
+#
+#     # TODO: enabling/disabling hovermode of indicator doesn't work - doesn't seem to overwrite init-param
+#     if disabled:
+#         trigger = None
+#     else:
+#         trigger = "hover"
+#
+#     dfX = pd.DataFrame(data["MALA_DF"]["scatter"])["x"]
+#
+#     if value is None:
+#         lower = round(min(dfX), ndigits=5)
+#         higher = round(max(dfX), ndigits=5)
+#     else:
+#         lowB, highB = value
+#         lower = round(np.unique(dfX)[lowB], ndigits=5)
+#         higher = round(np.unique(dfX)[highB], ndigits=5)
+#     return lower, higher, trigger
 
 
 # Updating slider-range indicators Y
-@app.callback(
-    Output("y-lower-bound", "children"),
-    Output("y-higher-bound", "children"),
-    Output("y-lower-bound", "trigger"),
-    Input("range-slider-cs-y", "value"),
-    Input("range-slider-cs-y", "disabled"),
-    State("df_store", "data"),
-    State("y-lower-bound", "trigger"),
-)
-def update_slider_bound_indicators_Y(value, disabled, data, trigger):
-    print("OPT slider-bound-y-update triggered by: ", dash.callback_context.triggered_id)
-    if data is None:  # in case of reset:
-        raise PreventUpdate
-
-    # TODO: enabling/disabling hovermode of indicator doesn't work - doesn't seem to overwrite init-param
-    if disabled:
-        trigger = None
-    else:
-        trigger = "hover"
-
-    dfY = pd.DataFrame(data["MALA_DF"]["scatter"])["y"]
-
-    if value is None:
-        lower = round(min(dfY), ndigits=5)
-        higher = round(max(dfY), ndigits=5)
-    else:
-        lowB, highB = value
-        lower = round(np.unique(dfY)[lowB], ndigits=5)
-        higher = round(np.unique(dfY)[highB], ndigits=5)
-    return lower, higher, trigger
+# @app.callback(
+#     Output("y-lower-bound", "children"),
+#     Output("y-higher-bound", "children"),
+#     Output("y-lower-bound", "trigger"),
+#     Input("range-slider-cs-y", "value"),
+#     Input("range-slider-cs-y", "disabled"),
+#     State("df_store", "data"),
+#     State("y-lower-bound", "trigger"),
+# )
+# def update_slider_bound_indicators_Y(value, disabled, data, trigger):
+#     # print("OPT slider-bound-y-update triggered by: ", dash.callback_context.triggered_id)
+#     if data is None:  # in case of reset:
+#         raise PreventUpdate
+#
+#     # TODO: enabling/disabling hovermode of indicator doesn't work - doesn't seem to overwrite init-param
+#     if disabled:
+#         trigger = None
+#     else:
+#         trigger = "hover"
+#
+#     dfY = pd.DataFrame(data["MALA_DF"]["scatter"])["y"]
+#
+#     if value is None:
+#         lower = round(min(dfY), ndigits=5)
+#         higher = round(max(dfY), ndigits=5)
+#     else:
+#         lowB, highB = value
+#         lower = round(np.unique(dfY)[lowB], ndigits=5)
+#         higher = round(np.unique(dfY)[highB], ndigits=5)
+#     return lower, higher, trigger
 
 
 # Updating slider-range indicators Z
-@app.callback(
-    Output("z-lower-bound", "children"),
-    Output("z-higher-bound", "children"),
-    Output("z-lower-bound", "trigger"),
-    Input("range-slider-cs-z", "value"),
-    Input("range-slider-cs-z", "disabled"),
-    State("df_store", "data"),
-    State("z-lower-bound", "trigger"),
-)
-def update_slider_bound_indicators_Z(value, disabled, data, trigger):
-    print("OPT slider-bound-z-update triggered by: ", dash.callback_context.triggered_id)
-    if data is None:  # in case of reset:
-        raise PreventUpdate
-
-    # TODO: enabling/disabling hovermode of indicator doesn't work - doesn't seem to overwrite init-param
-    if disabled:
-        trigger = None
-    else:
-        trigger = "hover"
-
-    dfZ = pd.DataFrame(data["MALA_DF"]["scatter"])["z"]
-
-    if value is None:
-        lower = round(min(dfZ), ndigits=5)
-        higher = round(max(dfZ), ndigits=5)
-    else:
-        lowB, highB = value
-        lower = round(np.unique(dfZ)[lowB], ndigits=5)
-        higher = round(np.unique(dfZ)[highB], ndigits=5)
-    return lower, higher, trigger
+# @app.callback(
+#     Output("z-lower-bound", "children"),
+#     Output("z-higher-bound", "children"),
+#     Output("z-lower-bound", "trigger"),
+#     Input("range-slider-cs-z", "value"),
+#     Input("range-slider-cs-z", "disabled"),
+#     State("df_store", "data"),
+#     State("z-lower-bound", "trigger"),
+# )
+# def update_slider_bound_indicators_Z(value, disabled, data, trigger):
+#     # print("OPT slider-bound-z-update triggered by: ", dash.callback_context.triggered_id)
+#     if data is None:  # in case of reset:
+#         raise PreventUpdate
+#
+#     # TODO: enabling/disabling hovermode of indicator doesn't work - doesn't seem to overwrite init-param
+#     if disabled:
+#         trigger = None
+#     else:
+#         trigger = "hover"
+#
+#     dfZ = pd.DataFrame(data["MALA_DF"]["scatter"])["z"]
+#
+#     if value is None:
+#         lower = round(min(dfZ), ndigits=5)
+#         higher = round(max(dfZ), ndigits=5)
+#     else:
+#         lowB, highB = value
+#         lower = round(np.unique(dfZ)[lowB], ndigits=5)
+#         higher = round(np.unique(dfZ)[highB], ndigits=5)
+#     return lower, higher, trigger
 
 
 # Updating slider-range indicators density
-@app.callback(
-    Output("dense-lower-bound", "children"),
-    Output("dense-higher-bound", "children"),
-    Output("dense-lower-bound", "trigger"),
-    Input("range-slider-dense", "value"),
-    Input("range-slider-dense", "disabled"),
-    State("df_store", "data"),
-    State("dense-lower-bound", "trigger"),
-)
-def update_slider_bound_indicators_density(value, disabled, data, trigger):
-    print("OPT slider-bound-density-update triggered by: ", dash.callback_context.triggered_id)
-    if data is None:  # in case of reset:
-        raise PreventUpdate
-
-    # TODO: enabling/disabling hovermode of indicator doesn't work - doesn't seem to overwrite init-param
-    if disabled:
-        trigger = None
-    else:
-        trigger = "hover"
-
-    dfDense = pd.DataFrame(data["MALA_DF"]["scatter"])["val"]
-
-    if value is None:
-        lower = round(min(dfDense), ndigits=5)
-        higher = round(max(dfDense), ndigits=5)
-    else:
-        lowB, highB = value
-        lower = round(np.unique(dfDense)[lowB], ndigits=5)
-        higher = round(np.unique(dfDense)[highB], ndigits=5)
-    return lower, higher, trigger
+# @app.callback(
+#     Output("dense-lower-bound", "children"),
+#     Output("dense-higher-bound", "children"),
+#     Output("dense-lower-bound", "trigger"),
+#     Input("range-slider-dense", "value"),
+#     Input("range-slider-dense", "disabled"),
+#     State("df_store", "data"),
+#     State("dense-lower-bound", "trigger"),
+# )
+# def update_slider_bound_indicators_density(value, disabled, data, trigger):
+#     # print("OPT slider-bound-density-update triggered by: ", dash.callback_context.triggered_id)
+#     if data is None:  # in case of reset:
+#         raise PreventUpdate
+#
+#     # TODO: enabling/disabling hovermode of indicator doesn't work - doesn't seem to overwrite init-param
+#     if disabled:
+#         trigger = None
+#     else:
+#         trigger = "hover"
+#
+#     dfDense = pd.DataFrame(data["MALA_DF"]["scatter"])["val"]
+#
+#     if value is None:
+#         lower = round(min(dfDense), ndigits=5)
+#         higher = round(max(dfDense), ndigits=5)
+#     else:
+#         lowB, highB = value
+#         lower = round(np.unique(dfDense)[lowB], ndigits=5)
+#         higher = round(np.unique(dfDense)[highB], ndigits=5)
+#     return lower, higher, trigger
 
 
 # LAYOUT CALLBACKS
@@ -1149,7 +1227,7 @@ def update_slider_bound_indicators_density(value, disabled, data, trigger):
     prevent_initial_call=True,
 )
 def updateMC0(state, data):
-    print("OPT update mc0 triggered by: ", dash.callback_context.triggered_id)
+    # print("OPT update mc0 triggered by: ", dash.callback_context.triggered_id)
     if data is None or state == "landing":
         return main.landing
 
@@ -1190,7 +1268,7 @@ def updatePlot(
         fig,
         boundaries_fig,
 ):
-    print("OPT update-Plot-trigger: ", dash.callback_context.triggered_id)
+    # print("OPT update-Plot-trigger: ", dash.callback_context.triggered_id)
     # TODO: make this function more efficient
     patched_fig = Patch()
 
@@ -1204,7 +1282,7 @@ def updatePlot(
 
     # INIT PLOT
     if dash.callback_context.triggered[0]["prop_id"] == "." or dash.callback_context.triggered == "df_store":
-        print("INIT Plot")
+        # print("INIT Plot")
         # Our main figure = scatter plot
 
         df = pd.DataFrame(f_data["MALA_DF"]["scatter"])
@@ -1271,7 +1349,7 @@ def updatePlot(
 
     # SETTINGS
     elif dash.callback_context.triggered_id == "sc_settings":
-        print("PLOT-Settings")
+        # print("PLOT-Settings")
         patched_fig["data"][0]["marker"]["line"] = settings["outline"]
         patched_fig["data"][0]["marker"]["size"] = settings["size"]
         patched_fig["data"][0]["marker"]["opacity"] = settings["opac"]
@@ -1284,7 +1362,7 @@ def updatePlot(
     # CAMERA
 
     elif "cam" in dash.callback_context.triggered_id:
-        print("PLOT-Cqm")
+        # print("PLOT-Cqm")
         if dash.callback_context.triggered_id == "default-cam":
             new_cam = dict(
                 up=dict(x=0, y=0, z=1),
@@ -1309,7 +1387,7 @@ def updatePlot(
                 center=dict(x=0, y=0, z=0),
                 eye=dict(x=3.00, y=0, z=0),
             )
-        print("patched cam")
+        # print("patched cam")
         patched_fig["layout"]["scene"]["camera"] = new_cam
 
     """
@@ -1375,7 +1453,7 @@ def slicePlot(
     f_data,
     cam,
 ):
-    print("OPT slicePlot triggered: ", dash.callback_context.triggered_id)
+    # print("OPT slicePlot triggered: ", dash.callback_context.triggered_id)
     if f_data is None:
         raise PreventUpdate
 
@@ -1433,7 +1511,7 @@ def slicePlot(
     prevent_initial_call=True,
 )
 def updateOrientation(saved):
-    print("OPT Orientation update triggered by: ", dash.callback_context.triggered_id)
+    # print("OPT Orientation update triggered by: ", dash.callback_context.triggered_id)
     eye = saved["eye"]
     # TODO make zoom-level static
 
@@ -1453,7 +1531,7 @@ def updateOrientation(saved):
     prevent_initial_call=True,
 )
 def update_footer(f_data, state):
-    print("OPT update footer triggered by: ", dash.callback_context.triggered_id)
+    # print("OPT update footer triggered by: ", dash.callback_context.triggered_id)
     if state == "landing":
         raise PreventUpdate
 
@@ -1521,7 +1599,7 @@ def update_footer(f_data, state):
     prevent_initial_call=True,
 )
 def updateSettings(run_mala):
-    print("OPT settings-update triggered by: ", dash.callback_context.triggered_id)
+    # print("OPT settings-update triggered by: ", dash.callback_context.triggered_id)
     return (
         "Size",
         {"visibility": "visible"},
@@ -1551,7 +1629,7 @@ def toggle_settings_bar(page_state, n1, is_open):
     prevent_initial_call=True,
 )
 def toggle_settings_button(state):
-    print("OPT settings-button toggled by: ", dash.callback_context.triggered_id)
+    # print("OPT settings-button toggled by: ", dash.callback_context.triggered_id)
     if state == "plotting":
         return {
             "visibility": "visible",

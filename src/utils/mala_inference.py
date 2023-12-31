@@ -72,8 +72,6 @@ def run_mala_prediction(atoms_to_predict, model_and_temp,
             "voxel": ldos_calculator.voxel,
             "grid_dimensions": ldos_calculator.grid_dimensions,
         }
-        print(results["voxel"])
-        print(results["grid_dimensions"])
         return results
     else:
         parameters, network, data_handler, predictor = mala.Predictor.load_run(

@@ -172,6 +172,8 @@ sidebar = html.Div(
                 """,
                     style={"text-align": "center"},
                 ),
+                dbc.Button(id="test_button"),
+                html.Div(id="test_div")
             ],
             className="logo",
         ),

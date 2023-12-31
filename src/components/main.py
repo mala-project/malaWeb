@@ -149,7 +149,7 @@ plot = [
                         dbc.Button(
                             html.P(
                                 "Tools",
-                                style={"line-height": "0.65em", "font-size": "0.65em"},
+                                style={"lineHeight": "0.65em", "font-size": "0.65em"},
                             ),
                             id="open-sc-tools",
                             style={"width": "5em", "height": "1.2em"},
