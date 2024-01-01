@@ -53,8 +53,8 @@ orientation_style = {
     "width": "3em",
     "background": "#f8f9fa",
     "position": "fixed",
-    "margin-top": "75vh",
-    "margin-right": "0.5vw",
+    "marginTop": "75vh",
+    "marginRight": "0.5vw",
 }
 
 # Figs as prep for Plot
@@ -149,7 +149,7 @@ plot = [
                         dbc.Button(
                             html.P(
                                 "Tools",
-                                style={"lineHeight": "0.65em", "font-size": "0.65em"},
+                                style={"lineHeight": "0.65em", "fontSize": "0.65em"},
                             ),
                             id="open-sc-tools",
                             style={"width": "5em", "height": "1.2em"},
@@ -157,17 +157,17 @@ plot = [
                         ),
                     ],
                     justify="center",
-                    style={"text-align": "center"},
+                    style={"textAlign": "center"},
                 ),
                 # Collapsable containing 4 Rangesliders
-                dbc.Row(plot_tools, style={"margin-top": "1em"}),
+                dbc.Row(plot_tools, style={"marginTop": "1em"}),
             ]
         ),
         style={
-            "background-color": "rgba(248, 249, 250, 1)",
+            "backgroundColor": "rgba(248, 249, 250, 1)",
             "width": "min-content",
             "alignContent": "center",
-            "margin-top": "1.5rem",
+            "marginTop": "1.5rem",
         },
     ),
 ]
@@ -186,12 +186,12 @@ landing = html.Div(
                     style={
                         "width": "30%",
                         "display": "block",
-                        "margin-left": "auto",
-                        "margin-right": "auto",
+                        "marginLeft": "auto",
+                        "marginRight": "auto",
                     },
                 ),
             ]
         ),
     ],
-    style={"width": "content-min", "margin-top": "20vh"},
+    style={"width": "content-min", "marginTop": "20vh"},
 )

@@ -23,7 +23,7 @@ button = dbc.Button(
     ">",
     id="open-menu-button",
     n_clicks=0,
-    style={"margin-top": "40vh", "position": "absolute", "left": "0"},
+    style={"marginTop": "40vh", "position": "absolute", "left": "0"},
 )
 
 
@@ -65,7 +65,7 @@ upload_modal = dbc.Modal(
                         id="open-atom-list",
                         n_clicks=0,
                     ),
-                    style={"text-align": "center"},
+                    style={"textAlign": "center"},
                 ),
                 dbc.Collapse(
                     dbc.Card(
@@ -81,7 +81,7 @@ upload_modal = dbc.Modal(
                     is_open=False,
                 ),
                 dcc.Graph(id="atoms-preview"),
-                html.Hr(style={"margin-bottom": "1rem", "margin-top": "1rem"}),
+                html.Hr(style={"marginBottom": "1rem", "marginTop": "1rem"}),
                 html.P("Choose the model that MALA should use for calculations"),
                 dbc.Row(
                     [
@@ -92,7 +92,7 @@ upload_modal = dbc.Modal(
                                 value=None,
                                 placeholder="-",
                                 optionHeight=45,
-                                style={"font-size": "0.95em"},
+                                style={"fontSize": "0.95em"},
                             ),
                             width=9,
                         ),
@@ -107,7 +107,7 @@ upload_modal = dbc.Modal(
                             ),
                             width=2,
                         ),
-                        dbc.Col(html.P("K", style={"margin-top": "0.5rem"}), width=1),
+                        dbc.Col(html.P("K", style={"marginTop": "0.5rem"}), width=1),
                     ],
                     className="g-1",
                 ),
@@ -170,14 +170,14 @@ sidebar = html.Div(
                     children="""
                     Framework for machine learning materials properties from first-principles data.
                 """,
-                    style={"text-align": "center"},
+                    style={"textAlign": "center"},
                 ),
                 dbc.Button(id="test_button"),
                 html.Div(id="test_div")
             ],
             className="logo",
         ),
-        html.Hr(style={"margin-bottom": "2rem", "margin-top": "1rem", "width": "5rem"}),
+        html.Hr(style={"marginBottom": "2rem", "marginTop": "1rem", "width": "5rem"}),
         dbc.Card(
             html.H6(
                 children="File-Upload",
@@ -185,7 +185,7 @@ sidebar = html.Div(
                 id="open-upload",
                 n_clicks=0,
             ),
-            style={"text-align": "center"},
+            style={"textAlign": "center"},
         ),
         dbc.Collapse(
             dbc.Card(
@@ -196,7 +196,7 @@ sidebar = html.Div(
                                 children="""
                             Upload atom-positions via file!
                             """,
-                                style={"text-align": "center", "font-size": "0.85em"},
+                                style={"textAlign": "center", "fontSize": "0.85em"},
                             ),
                             html.Div(
                                 children="""
@@ -204,9 +204,9 @@ sidebar = html.Div(
                             """,
                                 id="supported-files",
                                 style={
-                                    "text-align": "center",
-                                    "font-size": "0.6em",
-                                    "text-decoration": "underline",
+                                    "textAlign": "center",
+                                    "fontSize": "0.6em",
+                                    "textDecoration": "underline",
                                 },
                             ),
                             html.Br(),
@@ -215,7 +215,7 @@ sidebar = html.Div(
                                     "ASE supports the following file-formats: "
                                     + str(ase.io.formats.ioformats.keys())[11:-2]
                                 ),
-                                style={"font-size": "0.6em"},
+                                style={"fontSize": "0.6em"},
                                 target="supported-files",
                                 trigger="legacy",
                             ),
@@ -231,14 +231,14 @@ sidebar = html.Div(
                                 id="output-upload-state",
                                 style={
                                     "margin": "2px",
-                                    "font-size": "0.85em",
+                                    "fontSize": "0.85em",
                                     "textAlign": "center",
                                 },
                             ),
                             html.Hr(
                                 style={
-                                    "margin-bottom": "1rem",
-                                    "margin-top": "1rem",
+                                    "marginBottom": "1rem",
+                                    "marginTop": "1rem",
                                     "width": "5rem",
                                 }
                             ),
@@ -250,7 +250,7 @@ sidebar = html.Div(
                                     "lineHeight": "0.85em",
                                     "height": "min-content",
                                     "width": "100%",
-                                    "font-size": "0.85em",
+                                    "fontSize": "0.85em",
                                 },
                             ),
                             dbc.Button(
@@ -261,7 +261,7 @@ sidebar = html.Div(
                                     "lineHeight": "0.85em",
                                     "height": "min-content",
                                     "width": "100%",
-                                    "font-size": "0.85em",
+                                    "fontSize": "0.85em",
                                 },
                             ),
                         ],
@@ -291,7 +291,7 @@ oc_sidebar = html.Div(
             backdrop=False,
             style={
                 "width": "12rem",
-                "margin-top": "3rem",
+                "marginTop": "3rem",
                 "left": "0",
                 "borderTopRightRadius": "5px",
                 "borderBottomRightRadius": "5px",

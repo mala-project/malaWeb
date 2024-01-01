@@ -82,7 +82,7 @@ plot_tools = dbc.Collapse(
                                             width=1,
                                         ),
                                     ],
-                                    style={"margin-top": "7px"},
+                                    style={"marginTop": "7px"},
                                 ),  # X-Axis
                                 dbc.Tooltip(
                                     id="x-lower-bound",

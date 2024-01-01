@@ -1,7 +1,0 @@
-README.md
-setup.py
-malaWeb.egg-info/PKG-INFO
-malaWeb.egg-info/SOURCES.txt
-malaWeb.egg-info/dependency_links.txt
-malaWeb.egg-info/requires.txt
-malaWeb.egg-info/top_level.txt

@@ -9,7 +9,7 @@ button = dbc.Button(
     id="open-settings-button",
     style={
         "visibility": "hidden",
-        "margin-top": "40vh",
+        "marginTop": "40vh",
         "position": "absolute",
         "right": "0",
     },
@@ -24,32 +24,32 @@ sidebar = html.Div(
         dbc.Card(
             dbc.CardBody(
                 [
-                    html.H6("Camera", style={"font-size": "0.95em"}),
+                    html.H6("Camera", style={"fontSize": "0.95em"}),
                     dbc.ButtonGroup(
                         [
                             dbc.Button(
                                 "Def.",
                                 id="default-cam",
                                 n_clicks=0,
-                                style={"font-size": "0.85em"},
+                                style={"fontSize": "0.85em"},
                             ),
                             dbc.Button(
                                 "X-Y",
                                 id="x-y-cam",
                                 n_clicks=0,
-                                style={"font-size": "0.85em"},
+                                style={"fontSize": "0.85em"},
                             ),
                             dbc.Button(
                                 "X-Z",
                                 id="x-z-cam",
                                 n_clicks=0,
-                                style={"font-size": "0.85em"},
+                                style={"fontSize": "0.85em"},
                             ),
                             dbc.Button(
                                 "Y-Z",
                                 id="y-z-cam",
                                 n_clicks=0,
-                                style={"font-size": "0.85em"},
+                                style={"fontSize": "0.85em"},
                             ),
                         ],
                         vertical=True,
@@ -60,22 +60,22 @@ sidebar = html.Div(
                         label="Outline",
                         value=True,
                         id="sc-outline",
-                        style={"text-align": "left", "font-size": "0.85em"},
+                        style={"textAlign": "left", "fontSize": "0.85em"},
                     ),
                     dbc.Checkbox(
                         label="Atoms",
                         value=True,
                         id="sc-atoms",
-                        style={"text-align": "left", "font-size": "0.85em"},
+                        style={"textAlign": "left", "fontSize": "0.85em"},
                     ),
                     dbc.Checkbox(
                         label="Cell",
                         value=True,
                         id="cell-boundaries",
-                        style={"text-align": "left", "font-size": "0.85em"},
+                        style={"textAlign": "left", "fontSize": "0.85em"},
                     ),
                     html.Hr(),
-                    html.H6("", id="sz/isosurf-label", style={"font-size": "0.95em"}),
+                    html.H6("", id="sz/isosurf-label", style={"fontSize": "0.95em"}),
                     html.Div(
                         dcc.Slider(
                             4,
@@ -86,10 +86,10 @@ sidebar = html.Div(
                             vertical=True,
                             verticalHeight=150,
                         ),
-                        style={"margin-left": "1.2em"},
+                        style={"marginLeft": "1.2em"},
                     ),
                     html.Hr(),
-                    html.H6("Opacity", id="opac-label", style={"font-size": "0.95em"}),
+                    html.H6("Opacity", id="opac-label", style={"fontSize": "0.95em"}),
                     dbc.Input(
                         type="number",
                         min=0.1,
@@ -97,14 +97,14 @@ sidebar = html.Div(
                         step=0.1,
                         id="sc-opac",
                         placeholder="0.1 - 1",
-                        style={"width": "7em", "margin-left": "1.5rem"},
+                        style={"width": "7em", "marginLeft": "1.5rem"},
                         size="sm",
                     ),
                 ]
             )
         ),
     ],
-    style={"text-align": "center"},
+    style={"textAlign": "center"},
 )
 
 
@@ -120,8 +120,8 @@ oc_sidebar = html.Div(
             style={
                 "width": "9rem",
                 "height": "min-content",
-                "margin-top": "3em",
-                "margin-right": "0",
+                "marginTop": "3em",
+                "marginRight": "0",
                 "borderTopLeftRadius": "5px",
                 "borderBottomLeftRadius": "5px",
                 "boxShadow": "rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px",

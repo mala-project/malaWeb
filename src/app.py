@@ -142,7 +142,7 @@ p_layout_landing = dbc.Container(
         html.Div(skel_layout, id="content-layout"),
     ],
     fluid=True,
-    style={"height": "100vh", "width": "100vw", "background-color": "#023B59"},
+    style={"height": "100vh", "width": "100vw", "backgroundColor": "#023B59"},
 )
 
 app.layout = p_layout_landing
@@ -197,26 +197,26 @@ app.layout = p_layout_landing
 clientside_callback(
     '''
     function(data) {
-        console.log("tools updated");
-        output = [0, 1, 0.5, 0, 1, 0.5, 0, 1, 0.5, 0, 1, 0.5];
-        
+        console.log("update tools");
+        var output = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
+        console.log(output);
         
         
         return output
     }
     ''',
-    Output("range-slider-cs-x", "min"),
-    Output("range-slider-cs-x", "max"),
-    Output("range-slider-cs-x", "step"),
-    Output("range-slider-cs-y", "min"),
-    Output("range-slider-cs-y", "max"),
-    Output("range-slider-cs-y", "step"),
-    Output("range-slider-cs-z", "min"),
-    Output("range-slider-cs-z", "max"),
-    Output("range-slider-cs-z", "step"),
-    Output("range-slider-dense", "min"),
-    Output("range-slider-dense", "max"),
-    Output("range-slider-dense", "step"),
+    Output("range-slider-cs-x", "min", allow_duplicate=True),
+    Output("range-slider-cs-x", "max", allow_duplicate=True),
+    Output("range-slider-cs-x", "step", allow_duplicate=True),
+    Output("range-slider-cs-y", "min", allow_duplicate=True),
+    Output("range-slider-cs-y", "max", allow_duplicate=True),
+    Output("range-slider-cs-y", "step", allow_duplicate=True),
+    Output("range-slider-cs-z", "min", allow_duplicate=True),
+    Output("range-slider-cs-z", "max", allow_duplicate=True),
+    Output("range-slider-cs-z", "step", allow_duplicate=True),
+    Output("range-slider-dense", "min", allow_duplicate=True),
+    Output("range-slider-dense", "max", allow_duplicate=True),
+    Output("range-slider-dense", "step", allow_duplicate=True),
     Input("df_store", "data"),
     prevent_initial_call=True
 )
@@ -245,6 +245,7 @@ def print_upd(v1, v2, v3):
     prevent_initial_call=True,
 )
 def click_reset(click):
+    print("df update by reset")
     return "landing", None, False, False, None
 
 
@@ -865,7 +866,7 @@ def updateDF(trig, model_choice, temp_choice, upload):
     on MALA-call, give ATOMS-objs & model_choice
     -> returns density data and energy values +  a .cube-file
     """
-    # print("OPT df-update triggered by: ", dash.callback_context.triggered_id)
+    print("OPT df-update triggered by: ", dash.callback_context.triggered_id)
     if upload is None:
         raise PreventUpdate
     model_temp_path = {"name": model_choice, "temperature": float(temp_choice)}
@@ -1603,7 +1604,7 @@ def updateSettings(run_mala):
     return (
         "Size",
         {"visibility": "visible"},
-        {"visibility": "visible", "width": "5em", "margin-left": "0.25em"},
+        {"visibility": "visible", "width": "5em", "marginLeft": "0.25em"},
     )
 
 
@@ -1633,7 +1634,7 @@ def toggle_settings_button(state):
     if state == "plotting":
         return {
             "visibility": "visible",
-            "margin-top": "40vh",
+            "marginTop": "40vh",
             "position": "absolute",
             "right": "0",
         }

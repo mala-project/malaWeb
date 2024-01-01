@@ -15,7 +15,7 @@ button = html.Div(
                     dbc.Button(
                         html.P(
                             "Energy / Density of State",
-                            style={"line-height": "0.65em", "font-size": "0.65em"},
+                            style={"lineHeight": "0.65em", "font-size": "0.65em"},
                         ),
                         id="open-bot",
                         style={
@@ -23,7 +23,7 @@ button = html.Div(
                             "height": "1.2em",
                             "position": "absolute",
                             "left": "50%",
-                            "-webkit-transform": "translateX(-50%)",
+                            "WebkitTransform": "translateX(-50%)",
                             "transform": "translateX(-50%)",
                             "bottom": "0.5em",
                         },
