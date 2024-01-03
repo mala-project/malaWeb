@@ -193,16 +193,41 @@ app.layout = p_layout_landing
 #
 # output =[0, x_step, 1, 0, y_step, 1, 0, z_step, 1, 0, dense_step, 1];
 # };
-
+# TODO: find out why df_store is not triggering this CB - maybe bc renderer thinks, the stored obj doesnt change?
+# TODO edit button triggers df update??
 clientside_callback(
     '''
-    function(data) {
+    function(time_of_change, click, data) {
+        let output;
+        let df;
         console.log("update tools");
-        var output = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
+        output = [0, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
+        
+        if (Object.is(data, null)) {
+            console.log("data null");
+        } else {
+            console.log("data not null");
+            df = data["MALA_DF"]["scatter"];
+            
+            x_unique = data["x"].filter((value, index, array) = > array.indexOf(value) == = index);
+            y_unique = data["y"].filter((value, index, array) = > array.indexOf(value) == = index);
+            z_unique = data["z"].filter((value, index, array) = > array.indexOf(value) == = index);
+            dense_unique = data["dense"].filter((value, index, array) = > array.indexOf(value) == = index);
+
+            x_step = x_unique.length - 1;
+            y_step = y_unique.length - 1;
+            z_step = z_unique.length - 1;
+            dense_step = dense_unique.length - 1;
+
+            console.log(x_step);
+
+            output =[0, x_step, 1, 0, y_step, 1, 0, z_step, 1, 0, dense_step, 1];
+
+        }
         console.log(output);
         
         
-        return output
+        return output;
     }
     ''',
     Output("range-slider-cs-x", "min", allow_duplicate=True),
@@ -217,7 +242,9 @@ clientside_callback(
     Output("range-slider-dense", "min", allow_duplicate=True),
     Output("range-slider-dense", "max", allow_duplicate=True),
     Output("range-slider-dense", "step", allow_duplicate=True),
-    Input("df_store", "data"),
+    Input("df_store", "modified_timestamp"),
+    Input("test_button", "n_clicks"),
+    State("df_store", "data"),
     prevent_initial_call=True
 )
 
@@ -230,6 +257,7 @@ clientside_callback(
 )
 def print_upd(v1, v2, v3):
     print(v1, v2, v3)
+    return [v1, v2, v3]
 
 
 # CALLBACKS & FUNCTIONS
@@ -333,7 +361,7 @@ def toggle_bot_canv(open_cl, page_state):
     State("sc-tools-collapse", "is_open"),
     prevent_initial_call=True,
 )
-def toggle_sc_tools(n_sc_s, is_open):
+def toggle_tools(n_sc_s, is_open):
     if n_sc_s:
         return not is_open
 
@@ -348,6 +376,7 @@ def toggle_sc_tools(n_sc_s, is_open):
     prevent_initial_call=True,
 )
 def toggle_x_cs(n_x, active, bc):
+    print("range slider x toggled")
     if n_x:
         return not active, not bc
 
@@ -394,7 +423,7 @@ def toggle_density_sc(n_d, active, bc):
         return True, False, True
     # active actually is the disabled parameter!
 
-
+# TODO this can be included in tools_update
 @app.callback(
     Output("range-slider-cs-x", "value"),
     Output("range-slider-cs-y", "value"),
@@ -410,6 +439,7 @@ def toggle_density_sc(n_d, active, bc):
 def reset_sliders(n_clicks_x, n_clicks_y, n_clicks_z, n_clicks_dense, data):
     # print("OPT slider reset triggered by: ", dash.callback_context.triggered_id)
     df = pd.DataFrame(data["MALA_DF"]["scatter"])
+    print("slider reset triggered")
     if dash.callback_context.triggered_id == "reset-cs-x":
         return (
             [0, len(np.unique(df["x"])) - 1],
@@ -866,9 +896,10 @@ def updateDF(trig, model_choice, temp_choice, upload):
     on MALA-call, give ATOMS-objs & model_choice
     -> returns density data and energy values +  a .cube-file
     """
-    print("OPT df-update triggered by: ", dash.callback_context.triggered_id)
+    #print("OPT df-update triggered by: ", dash.callback_context.triggered_id)
     if upload is None:
         raise PreventUpdate
+    print("DF UPDATED")
     model_temp_path = {"name": model_choice, "temperature": float(temp_choice)}
 
     # ASE.reading to receive ATOMS-objs, to pass to MALA-inference
@@ -985,7 +1016,7 @@ def updateDF(trig, model_choice, temp_choice, upload):
         "INPUT_DF": atoms_data.to_dict("records"),
         "SCALE": {"x_axis": x_axis, "y_axis": y_axis, "z_axis": z_axis},
     }
-
+    print("end of DF update")
     return df_store, df_store
 
 
@@ -1466,6 +1497,7 @@ def slicePlot(
     # TOOLS
     # filter-by-density
     if slider_range is not None and dense_inactive:  # Any slider Input there? Do:
+        print("density slider: ", slider_range)
         low, high = slider_range
         mask = (dfu["val"] >= np.unique(df["val"])[low]) & (
             dfu["val"] <= np.unique(df["val"])[high]
@@ -1474,6 +1506,7 @@ def slicePlot(
 
     # slice X
     if slider_range_cs_x is not None and cs_x_inactive:  # Any slider Input there? Do:
+        print("x slider range: ", slider_range_cs_x)
         low, high = slider_range_cs_x
         mask = (dfu["x"] >= np.unique(df["x"])[low]) & (
             dfu["x"] <= np.unique(df["x"])[high]
@@ -1482,6 +1515,7 @@ def slicePlot(
 
     # slice Y
     if slider_range_cs_y is not None and cs_y_inactive:  # Any slider Input there? Do:
+        print("y slider range: ", slider_range_cs_y)
         low, high = slider_range_cs_y
         mask = (dfu["y"] >= np.unique(df["y"])[low]) & (
             dfu["y"] <= np.unique(df["y"])[high]
@@ -1490,6 +1524,7 @@ def slicePlot(
 
     # slice Z
     if slider_range_cs_z is not None and cs_z_inactive:  # Any slider Input there? Do:
+        print("z slider range: ", slider_range_cs_z)
         low, high = slider_range_cs_z
         mask = (dfu["z"] >= np.unique(df["z"])[low]) & (
             dfu["z"] <= np.unique(df["z"])[high]
