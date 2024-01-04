@@ -1,10 +1,12 @@
 # IMPORTS
 import json
+import os
 import pathlib
 from timeit import default_timer as timer
 
 import dash
 import dash_bootstrap_components as dbc
+import flask
 
 from dash.dependencies import Input, Output, State, ClientsideFunction
 from dash import Dash, dcc, html, Patch, clientside_callback
@@ -95,8 +97,8 @@ app = Dash(
 server = app.server
 app.title = "MALAweb"
 
-# Config of upload folder
-du.configure_upload(app, r"./upload", http_request_handler=None)
+# Config of session folder
+du.configure_upload(app, r"./session", http_request_handler=None)
 # for publicly hosting this app, add http_request_handler=True and implement as in:
 # https://github.com/np-8/dash-uploader/blob/dev/docs/dash-uploader.md
 
@@ -170,9 +172,9 @@ def click_reset(click):
 
 # sidebar_l collapses
 @app.callback(
-    Output("collapse-upload", "is_open"),
-    Input("open-upload", "n_clicks"),
-    Input("collapse-upload", "is_open"),
+    Output("collapse-session", "is_open"),
+    Input("open-session", "n_clicks"),
+    Input("collapse-session", "is_open"),
     prevent_initial_call=True,
 )
 def toggle_upload_section(n_header, is_open):
@@ -447,24 +449,24 @@ def updatePageState(trig1, state):
 
 
 # DASH-UPLOADER
-# after file-upload, return upload-status (if successful) and dict with file-path and upload-id (for future verif?)
+# after file-session, return session-status (if successful) and dict with file-path and session-id (for future verif?)
 def upload_exception():
     # print("excepted file error")
-    return None, "File not supported", dash.no_update, dash.no_update, "upload-failure"
+    return None, "File not supported", dash.no_update, dash.no_update, "session-failure"
     # = FILE NOT SUPPORTED AS ASE INPUT (some formats listed in supported-files for ase are output only. This will only be filtered here)
 
 
 @du.callback(
     output=[
-        Output("output-upload-state", "children"),
+        Output("output-session-state", "children"),
         Output("UP_STORE", "data"),
         Output("atom-limit-warning", "is_open"),
         Output("atoms_list", "children"),
         Output("atoms-preview", "figure"),
-        Output("upload-data", "className"),
+        Output("session-data", "className"),
         Output("BOUNDARIES_STORE", "data"),
     ],
-    id="upload-data",
+    id="session-data",
 )
 def upload_callback(status):  # <------- NEW: du.UploadStatus
     """
@@ -472,14 +474,14 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
     :param status: All the info necessary to access (latest) uploaded files
 
     Output
-    upload-state: Upload-state below upload-area
+    session-state: Upload-state below session-area
     UP_STORE: dcc.Store-component, storing uploader-ID and path of uploaded file
     atom-limit-warning: Boolean for displaying long-computation-time-warning
     atoms_list: Table containing all atoms read by ASE
     atoms-preview: Figure previewing ASE-read Atoms
-    upload-data: Changing border-color of this component according to upload-status
+    session-data: Changing border-color of this component according to session-status
     """
-    # print("OPT upload triggered by: ", dash.callback_context.triggered_id)
+    # print("OPT session triggered by: ", dash.callback_context.triggered_id)
     UP_STORE = {
         "ID": status.upload_id,
         "PATH": str(status.latest_file.resolve()),
@@ -645,9 +647,9 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
         fig.update_scenes(removeHoverLines)
         fig.add_trace(atoms_fig)
 
-        border_style = "upload-success"
+        border_style = "session-success"
 
-    # ValueError or File not sup. - exception for not supported formats (not yet filtered by upload-component)
+    # ValueError or File not sup. - exception for not supported formats (not yet filtered by session-component)
     except ValueError:
         r_atoms, UPDATE_TEXT, UP_STORE, table_rows, border_style = upload_exception()
     except ase.io.formats.UnknownFileTypeError:
@@ -666,6 +668,22 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
 
 # END DASH UPLOADER
 
+# DATA DOWNLOAD CALLBACK
+@app.callback(
+    Output("data-downloader", "data"),
+    Input("download-data", "n_clicks"),
+    State("UP_STORE", "data"),
+    prevent_initial_call=True
+)
+def download_data(click, up_data):
+    try:
+        return dcc.send_file("./session/{}/inference_data.cube".format(up_data["ID"]))
+    except FileNotFoundError:
+        print("File not found")
+        raise PreventUpdate
+    except TypeError:
+        print("No file uploaded")
+        raise PreventUpdate
 
 # CALLBACK TO ACTIVATE RUN-MALA-button
 @app.callback(
@@ -693,7 +711,7 @@ def activate_runMALA_button(click, disabled, model, temp):
 # CALLBACK TO OPEN UPLOAD-MODAL
 # BUG: modal immediately closes after reuploading
 @app.callback(
-    Output("upload-modal", "is_open"),
+    Output("session-modal", "is_open"),
     [
         Input("UP_STORE", "data"),
         Input("edit-input", "n_clicks"),
@@ -761,6 +779,7 @@ def init_temp_choice(model_choice):
 @app.callback(
     Output("df_store", "data"),
     Output("unique_df", "data"),
+    Output("download-data", "disabled"),
     Input("run-mala", "n_clicks"),
     State("model-choice", "value"),
     State("model-temp", "value"),
@@ -774,7 +793,7 @@ def updateDF(trig, model_choice, temp_choice, upload):
     :param reset: =INPUT - trigger for reset of stored data
     :param model_choice: =STATE - info on the cell-system (substance+temp(-range)), separated by |
     :param temp_choice: =STATE - chosen temperature - either defined by model-choice, or direct input inbetween range
-    :param upload: =STATE - dict(upload ID, filepath, ASE-Atoms-Obj as dict)
+    :param upload: =STATE - dict(session ID, filepath, ASE-Atoms-Obj as dict)
 
     :return: returns a dictionary with the data necessary to render to store-component
 
@@ -792,12 +811,16 @@ def updateDF(trig, model_choice, temp_choice, upload):
     model_temp_path = {"name": model_choice, "temperature": float(temp_choice)}
 
     # ASE.reading to receive ATOMS-objs, to pass to MALA-inference
-    # no ValueError Exception needed, bc this is done directly on upload
+    # no ValueError Exception needed, bc this is done directly on session
     read_atoms = ase.Atoms.fromdict(upload["ATOMS"])
 
     # (a) GET DATA FROM MALA (/ inference script)
 
-    mala_data = run_mala_prediction(read_atoms, model_temp_path)
+    mala_data = run_mala_prediction(
+        atoms_to_predict=read_atoms,
+        model_and_temp=model_temp_path,
+        session_id=upload["ID"],
+    )
     # contains 'band_energy', 'total_energy', 'density', 'density_of_states', 'energy_grid'
     # mala_data is stored in df_store dict under key 'MALA_DATA'. (See declaration of df_store below for more info)
     density = mala_data["density"]
@@ -908,7 +931,7 @@ def updateDF(trig, model_choice, temp_choice, upload):
         "SCALE": {"x_axis": x_axis, "y_axis": y_axis, "z_axis": z_axis},
     }
     print("end of DF update")
-    return df_store, unique_df
+    return df_store, unique_df, False
 
 
 # SC SETTINGS STORING
@@ -1054,7 +1077,7 @@ def update_indicators_y(value, unique_data):
     Output("z-lower-bound", "children"),
     Output("z-higher-bound", "children"),
     Input("slider-z", "value"),
-    State("unique_store", "data"),
+    State("unique_df", "data"),
 )
 def update_indicators_z(value, unique_data):
     if unique_data is None:  # in case of reset:
