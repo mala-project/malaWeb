@@ -160,7 +160,20 @@ app.clientside_callback(
         function_name='ext_function',
     ),
     Output("test_div", "children", allow_duplicate=True),
+    Output("range-slider-cs-x", "min", allow_duplicate=True),
+    Output("range-slider-cs-x", "max", allow_duplicate=True),
+    Output("range-slider-cs-x", "step", allow_duplicate=True),
+    Output("range-slider-cs-y", "min", allow_duplicate=True),
+    Output("range-slider-cs-y", "max", allow_duplicate=True),
+    Output("range-slider-cs-y", "step", allow_duplicate=True),
+    Output("range-slider-cs-z", "min", allow_duplicate=True),
+    Output("range-slider-cs-z", "max", allow_duplicate=True),
+    Output("range-slider-cs-z", "step", allow_duplicate=True),
+    Output("range-slider-dense", "min", allow_duplicate=True),
+    Output("range-slider-dense", "max", allow_duplicate=True),
+    Output("range-slider-dense", "step", allow_duplicate=True),
     Input("test_button", "n_clicks"),
+    State("df_store", "data"),
     prevent_initial_call=True
 )
 
