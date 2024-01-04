@@ -84,34 +84,18 @@ plot_tools = dbc.Collapse(
                                     ],
                                     style={"marginTop": "7px"},
                                 ),  # X-Axis
-                                # dbc.Tooltip(
-                                #     id="x-lower-bound",
-                                #     target="slider-x",
-                                #     trigger="hover focus",
-                                #     placement="left",
-                                # ),
-                                # dbc.Tooltip(
-                                #     id="x-higher-bound",
-                                #     target="slider-x",
-                                #     trigger="hover focus",
-                                #     placement="right",
-                                # ),
-                                dbc.Popover(
-                                            dbc.PopoverBody("def", style={"width": "min-content", "opacity": "0.5"}),
-                                            target="slider-x",
-                                            trigger="hover",
-                                            placement="left",
-                                            id="x-min-indicator",
-                                            style={"width": "min-content"}
-                                        ),
-                                dbc.Popover(
-                                            dbc.PopoverBody("def", style={"width": "min-content", "opacity": "0.5"}),
-                                            target="slider-x",
-                                            trigger="hover",
-                                            placement="right",
-                                            id="x-max-indicator",
-                                            style={"width": "min-content"}
-                                        ),
+                                dbc.Tooltip(
+                                    id="x-min-indicator",
+                                    target="slider-x",
+                                    trigger="hover focus",
+                                    placement="left",
+                                ),
+                                dbc.Tooltip(
+                                    id="x-max-indicator",
+                                    target="slider-x",
+                                    trigger="hover focus",
+                                    placement="right",
+                                ),
                                 dbc.Row(
                                     [
                                         dbc.Col(
