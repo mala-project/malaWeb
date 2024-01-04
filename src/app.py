@@ -163,11 +163,12 @@ app.layout = p_layout_landing
     Output("settings-offcanvas", "is_open", allow_duplicate=True),
     Output("offcanvas-bot", "is_open", allow_duplicate=True),
     Output("UP_STORE", "data", allow_duplicate=True),
+    Output("download-data", "disabled", allow_duplicate=True),
     Input("reset-data", "n_clicks"),
     prevent_initial_call=True,
 )
 def click_reset(click):
-    return "landing", None, False, False, None
+    return "landing", None, False, False, None, True
 
 
 # sidebar_l collapses
