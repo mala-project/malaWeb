@@ -95,7 +95,7 @@ server = app.server
 app.title = "MALAweb"
 
 # Config of upload folder
-du.configure_upload(app, r"./src/upload", http_request_handler=None)
+du.configure_upload(app, r"./upload", http_request_handler=None)
 # for publicly hosting this app, add http_request_handler=True and implement as in:
 # https://github.com/np-8/dash-uploader/blob/dev/docs/dash-uploader.md
 
@@ -616,6 +616,7 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
         UPDATE_TEXT = "Upload successful"
         UP_STORE["ATOMS"] = r_atoms.todict()
         # delete uploaded file right after it's read by ASE - could be problematic, will see
+        # TODO: delete session path either right here, or when session ends (how?)
         pathlib.Path(str(status.latest_file.resolve())).unlink()
 
         if r_atoms.get_global_number_of_atoms() > ATOM_LIMIT:
