@@ -133,7 +133,7 @@ upload_modal = dbc.Modal(
                             html.Div(
                                 dbc.Spinner([
                                     dcc.Store(id="df_store"),
-                                    dcc.Store(id="client_df")],
+                                    dcc.Store(id="unique_df")],
                                     size="sm",
                                     color="success",  # Spinner awaits change here
                                 ),
