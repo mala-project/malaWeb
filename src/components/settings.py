@@ -78,8 +78,8 @@ sidebar = html.Div(
                     html.H6("", id="sz/isosurf-label", style={"fontSize": "0.95em"}),
                     html.Div(
                         dcc.Slider(
-                            4,
-                            16,
+                            2,
+                            12,
                             2,
                             value=10,
                             id="sc-size",
@@ -100,6 +100,36 @@ sidebar = html.Div(
                         style={"width": "7em", "marginLeft": "1.5rem"},
                         size="sm",
                     ),
+                    html.Hr(),
+                    # this button might not be needed
+                    # - another du.uploader-component instead
+                    # - but maybe as "apply" button
+                    # TODO: put inside collapsable card
+                    dbc.Button(
+                        "Import",
+                        id="import-settings",
+                        color="info",
+                        style={
+                            "lineHeight": "0.85em",
+                            "height": "min-content",
+                            "width": "100%",
+                            "fontSize": "0.85em",
+                        },
+                        disabled=True,
+                    ),
+                    dbc.Button(
+                        "Export",
+                        id="export-settings",
+                        color="info",
+                        style={
+                            "lineHeight": "0.85em",
+                            "height": "min-content",
+                            "width": "100%",
+                            "fontSize": "0.85em",
+                        },
+                        disabled=True,
+                    ),
+                    dcc.Download(id="settings-downloader"),
                 ]
             )
         ),
