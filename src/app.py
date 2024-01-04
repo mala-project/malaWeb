@@ -5,7 +5,7 @@ import pathlib
 import dash
 import dash_bootstrap_components as dbc
 
-from dash.dependencies import Input, Output, State
+from dash.dependencies import Input, Output, State, ClientsideFunction
 from dash import Dash, dcc, html, Patch, clientside_callback
 from dash.exceptions import PreventUpdate
 
@@ -154,99 +154,16 @@ app.layout = p_layout_landing
 
 # CLIENTSIDE CALLBACK TEST
 
-# if data is None:  # in case of reset:
-#         raise PreventUpdate
-#     else:
-#         df = pd.DataFrame(data["MALA_DF"]["scatter"])
-#
-#         return (
-#             0,
-#             len(np.unique(df["x"])) - 1,
-#             1,
-#             0,
-#             len(np.unique(df["y"])) - 1,
-#             1,
-#             0,
-#             len(np.unique(df["z"])) - 1,
-#             1,
-#             0,
-#             len(np.unique(df["val"])) - 1,
-#             1,
-#         )
-
-#
-# if (Object. is (data, null)) {
-# console.log("data is null")
-# } else {
-# data = data["MALA_DF"]["default"]
-# x_unique = data["x"].filter((value, index, array) = > array.indexOf(value) == = index);
-# y_unique = data["y"].filter((value, index, array) = > array.indexOf(value) == = index);
-# z_unique = data["z"].filter((value, index, array) = > array.indexOf(value) == = index);
-# dense_unique = data["dense"].filter((value, index, array) = > array.indexOf(value) == = index);
-#
-# x_step = x_unique.length - 1;
-# y_step = y_unique.length - 1;
-# z_step = z_unique.length - 1;
-# dense_step = dense_unique.length - 1;
-#
-# console.log(x_step);
-#
-# output =[0, x_step, 1, 0, y_step, 1, 0, z_step, 1, 0, dense_step, 1];
-# };
-# TODO: find out why df_store is not triggering this CB - maybe bc renderer thinks, the stored obj doesnt change?
-# TODO edit button triggers df update??
-clientside_callback(
-    '''
-    function(time_of_change, click, data) {
-        let output;
-        let df;
-        console.log("update tools");
-        output = [0, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
-        
-        if (Object.is(data, null)) {
-            console.log("data null");
-        } else {
-            console.log("data not null");
-            df = data["MALA_DF"]["scatter"];
-            
-            x_unique = data["x"].filter((value, index, array) = > array.indexOf(value) == = index);
-            y_unique = data["y"].filter((value, index, array) = > array.indexOf(value) == = index);
-            z_unique = data["z"].filter((value, index, array) = > array.indexOf(value) == = index);
-            dense_unique = data["dense"].filter((value, index, array) = > array.indexOf(value) == = index);
-
-            x_step = x_unique.length - 1;
-            y_step = y_unique.length - 1;
-            z_step = z_unique.length - 1;
-            dense_step = dense_unique.length - 1;
-
-            console.log(x_step);
-
-            output =[0, x_step, 1, 0, y_step, 1, 0, z_step, 1, 0, dense_step, 1];
-
-        }
-        console.log(output);
-        
-        
-        return output;
-    }
-    ''',
-    Output("range-slider-cs-x", "min", allow_duplicate=True),
-    Output("range-slider-cs-x", "max", allow_duplicate=True),
-    Output("range-slider-cs-x", "step", allow_duplicate=True),
-    Output("range-slider-cs-y", "min", allow_duplicate=True),
-    Output("range-slider-cs-y", "max", allow_duplicate=True),
-    Output("range-slider-cs-y", "step", allow_duplicate=True),
-    Output("range-slider-cs-z", "min", allow_duplicate=True),
-    Output("range-slider-cs-z", "max", allow_duplicate=True),
-    Output("range-slider-cs-z", "step", allow_duplicate=True),
-    Output("range-slider-dense", "min", allow_duplicate=True),
-    Output("range-slider-dense", "max", allow_duplicate=True),
-    Output("range-slider-dense", "step", allow_duplicate=True),
-    Input("df_store", "modified_timestamp"),
+app.clientside_callback(
+    ClientsideFunction(
+        namespace='clientside',
+        function_name='ext_function',
+    ),
+    Output("test_div", "children", allow_duplicate=True),
     Input("test_button", "n_clicks"),
-    State("df_store", "data"),
     prevent_initial_call=True
 )
+
 
 @app.callback(
     Output("test_div", "children"),
