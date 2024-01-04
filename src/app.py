@@ -197,9 +197,7 @@ app.layout = p_layout_landing
 # TODO edit button triggers df update??
 clientside_callback(
     '''
-    function(time_of_change, click, data) {
-        let output;
-        let df;
+    function(click, data) {
         console.log("update tools");
         output = [0, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
         
@@ -209,19 +207,32 @@ clientside_callback(
             console.log("data not null");
             df = data["MALA_DF"]["scatter"];
             
-            x_unique = data["x"].filter((value, index, array) = > array.indexOf(value) == = index);
-            y_unique = data["y"].filter((value, index, array) = > array.indexOf(value) == = index);
-            z_unique = data["z"].filter((value, index, array) = > array.indexOf(value) == = index);
-            dense_unique = data["dense"].filter((value, index, array) = > array.indexOf(value) == = index);
+            let unique_x = [];
+            let unique_y = [];
+            let unique_z = [];
+            let unique_val = [];
+            for (i = 0; i < df.length; i++) {
+                    unique_x[i] = df[i]["x"];
+                    unique_y[i] = df[i]["y"];
+                    unique_z[i] = df[i]["z"];
+                    unique_val[i] = df[i]["val"];
+            }
+            unique_x = unique_x.filter((value, index, array) => array.indexOf(value) === index);
+            unique_y = unique_y.filter((value, index, array) => array.indexOf(value) === index);
+            unique_z = unique_z.filter((value, index, array) => array.indexOf(value) === index);
+            unique_val = unique_val.filter((value, index, array) => array.indexOf(value) === index);
+            
+            console.log(unique_x);
+            console.log(unique_y);
+            console.log(unique_z);
+            console.log(unique_val);
+            
+            x_step = unique_x.length - 1;
+            y_step = unique_y.length - 1;
+            z_step = unique_z.length - 1;
+            dense_step = unique_val.length - 1;
 
-            x_step = x_unique.length - 1;
-            y_step = y_unique.length - 1;
-            z_step = z_unique.length - 1;
-            dense_step = dense_unique.length - 1;
-
-            console.log(x_step);
-
-            output =[0, x_step, 1, 0, y_step, 1, 0, z_step, 1, 0, dense_step, 1];
+            output = [0, x_step, 1, 0, y_step, 1, 0, z_step, 1, 0, dense_step, 1]
 
         }
         console.log(output);
@@ -242,7 +253,6 @@ clientside_callback(
     Output("range-slider-dense", "min", allow_duplicate=True),
     Output("range-slider-dense", "max", allow_duplicate=True),
     Output("range-slider-dense", "step", allow_duplicate=True),
-    Input("df_store", "modified_timestamp"),
     Input("test_button", "n_clicks"),
     State("df_store", "data"),
     prevent_initial_call=True
@@ -1006,7 +1016,7 @@ def updateDF(trig, model_choice, temp_choice, upload):
     """
 
     # _______________________________________________________________________________________
-
+    print(mala_data["density"])
     df_store = {
         "MALA_DF": {
             "default": data0.to_dict("records"),
