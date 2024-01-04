@@ -1173,6 +1173,7 @@ def updatePlot(
 ):
     # print("OPT update-Plot-trigger: ", dash.callback_context.triggered_id)
     # TODO: make this function more efficient
+    print("PLOT UPDATE", dash.callback_context.triggered_id)
     patched_fig = Patch()
 
     # DATA
@@ -1184,7 +1185,7 @@ def updatePlot(
     new_cam = stored_cam_settings
 
     # INIT PLOT
-    if dash.callback_context.triggered[0]["prop_id"] == "." or dash.callback_context.triggered == "df_store":
+    if dash.callback_context.triggered[0]["prop_id"] == "." or dash.callback_context.triggered_id == "df_store":
         print("INIT Plot")
         # Our main figure = scatter plot
 
