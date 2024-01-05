@@ -127,7 +127,7 @@ sidebar = html.Div(
                             "width": "100%",
                             "fontSize": "0.85em",
                         },
-                        disabled=True,
+                        disabled=False,
                     ),
                     dcc.Download(id="settings-downloader"),
                 ]

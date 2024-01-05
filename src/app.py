@@ -935,7 +935,7 @@ def updateDF(trig, model_choice, temp_choice, upload):
     return df_store, unique_df, False
 
 
-# SC SETTINGS STORING
+# SETTINGS STORING
 @app.callback(
     Output("plot_settings", "data"),
     Output("sc-outline", "value"),
@@ -987,6 +987,21 @@ def update_settings_store(size, outline, atoms, opac, saved, cell):
 
 
 # END UPDATE FOR STORED DATA
+
+# EXPORT SETTINGS
+@app.callback(
+    Output("settings-downloader", "data"),
+    Input("export-settings", "n_clicks"),
+    State("plot_settings", "data"),
+    prevent_initial_call=True
+)
+def export_settings(click, data):
+    print(data)
+    # Writing to settings.json
+    with open("settings.json", "w") as outfile:
+        json.dumps(data)
+
+    return dcc.send_file(path=os.getcwd()+"/settings.json", filename="settings.json")
 
 @app.callback(
     [
