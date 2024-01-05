@@ -62,7 +62,7 @@ plot_tools = dbc.Collapse(
                                     [
                                         dbc.Col(
                                             dcc.RangeSlider(
-                                                id="range-slider-cs-x",
+                                                id="slider-x",
                                                 disabled=True,
                                                 min=0,
                                                 max=1,
@@ -85,14 +85,14 @@ plot_tools = dbc.Collapse(
                                     style={"marginTop": "7px"},
                                 ),  # X-Axis
                                 dbc.Tooltip(
-                                    id="x-lower-bound",
-                                    target="range-slider-cs-x",
+                                    id="x-min-indicator",
+                                    target="slider-x",
                                     trigger="hover focus",
                                     placement="left",
                                 ),
                                 dbc.Tooltip(
-                                    id="x-higher-bound",
-                                    target="range-slider-cs-x",
+                                    id="x-max-indicator",
+                                    target="slider-x",
                                     trigger="hover focus",
                                     placement="right",
                                 ),
@@ -100,7 +100,7 @@ plot_tools = dbc.Collapse(
                                     [
                                         dbc.Col(
                                             dcc.RangeSlider(
-                                                id="range-slider-cs-y",
+                                                id="slider-y",
                                                 disabled=True,
                                                 pushable=0,
                                                 min=0,
@@ -122,13 +122,13 @@ plot_tools = dbc.Collapse(
                                 ),  # Y-Axis
                                 dbc.Tooltip(
                                     id="y-lower-bound",
-                                    target="range-slider-cs-y",
+                                    target="slider-y",
                                     trigger="hover focus",
                                     placement="left",
                                 ),
                                 dbc.Tooltip(
                                     id="y-higher-bound",
-                                    target="range-slider-cs-y",
+                                    target="slider-y",
                                     trigger="hover focus",
                                     placement="right",
                                 ),
@@ -136,7 +136,7 @@ plot_tools = dbc.Collapse(
                                     [
                                         dbc.Col(
                                             dcc.RangeSlider(
-                                                id="range-slider-cs-z",
+                                                id="slider-z",
                                                 disabled=True,
                                                 pushable=0,
                                                 min=0,
@@ -158,13 +158,13 @@ plot_tools = dbc.Collapse(
                                 ),  # Z-Axis
                                 dbc.Tooltip(
                                     id="z-lower-bound",
-                                    target="range-slider-cs-z",
+                                    target="slider-z",
                                     trigger="hover focus",
                                     placement="left",
                                 ),
                                 dbc.Tooltip(
                                     id="z-higher-bound",
-                                    target="range-slider-cs-z",
+                                    target="slider-z",
                                     trigger="hover focus",
                                     placement="right",
                                 ),
@@ -172,7 +172,7 @@ plot_tools = dbc.Collapse(
                                     [
                                         dbc.Col(
                                             dcc.RangeSlider(
-                                                id="range-slider-dense",
+                                                id="slider-val",
                                                 disabled=True,
                                                 pushable=True,
                                                 min=0,
@@ -197,13 +197,13 @@ plot_tools = dbc.Collapse(
                                 ),  # Density
                                 dbc.Tooltip(
                                     id="dense-lower-bound",
-                                    target="range-slider-dense",
+                                    target="slider-val",
                                     trigger="hover focus",
                                     placement="left",
                                 ),
                                 dbc.Tooltip(
                                     id="dense-higher-bound",
-                                    target="range-slider-dense",
+                                    target="slider-val",
                                     trigger="hover focus",
                                     placement="right",
                                 ),

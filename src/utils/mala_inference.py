@@ -17,7 +17,7 @@ model_paths = {
 }
 
 
-def run_mala_prediction(atoms_to_predict, model_and_temp,
+def run_mala_prediction(atoms_to_predict, model_and_temp, session_id,
                         calc_total_energy=True):
     """
     Perform a MALA prediction for an ase.Atoms object.
@@ -30,6 +30,13 @@ def run_mala_prediction(atoms_to_predict, model_and_temp,
     model_and_temp : dict
         A dictionary containing the name of the model to use and the
         temperature at which to run inference on.
+
+    # TODO: pass dynamically generated path instead
+    session_id : string
+        unique identifier for the session used for storing uploaded and downloadable files.
+        Needed here for saving .cube at the correct location.
+        Download component is expecting file with name "inference_data.cube"
+        Path would be: "../sessions/<session_id>/density.cube"
 
     Returns
     -------

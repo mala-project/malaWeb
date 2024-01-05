@@ -40,7 +40,7 @@ table_body = [html.Tbody([], id="atoms_list")]
 atoms_table = dbc.Table(table_header + table_body, bordered=True)
 
 """
-Popup-Modal on accepted file-upload
+Popup-Modal on accepted file-session
 (called in sidebar below)
 """
 upload_modal = dbc.Modal(
@@ -133,7 +133,7 @@ upload_modal = dbc.Modal(
                             html.Div(
                                 dbc.Spinner([
                                     dcc.Store(id="df_store"),
-                                    dcc.Store(id="client_df")],
+                                    dcc.Store(id="unique_df")],
                                     size="sm",
                                     color="success",  # Spinner awaits change here
                                 ),
@@ -151,7 +151,7 @@ upload_modal = dbc.Modal(
             style={"justifyContent": "center"},
         ),
     ],
-    id="upload-modal",
+    id="session-modal",
     size="lg",
     is_open=False,
 )
@@ -172,24 +172,23 @@ sidebar = html.Div(
                 """,
                     style={"textAlign": "center"},
                 ),
-                dbc.Button("test", id="test_button"),
-                html.Div(id="test_div", children="TEST")
             ],
             className="logo",
         ),
         html.Hr(style={"marginBottom": "2rem", "marginTop": "1rem", "width": "5rem"}),
+        # Upload Section
         dbc.Card(
             html.H6(
                 children="File-Upload",
                 style={"margin": "5px"},
-                id="open-upload",
+                id="open-session",
                 n_clicks=0,
             ),
             style={"textAlign": "center"},
         ),
         dbc.Collapse(
             dbc.Card(
-                dbc.CardBody(  # Upload Section
+                dbc.CardBody(
                     html.Div(
                         [
                             html.Div(
@@ -221,56 +220,63 @@ sidebar = html.Div(
                             ),
                             # dash-uploader component (not vanilla)
                             du.Upload(
-                                id="upload-data", text="Drag & Drop or Click to select"
+                                id="session-data", text="Drag & Drop or Click to select"
                             ),
                             # Can't manage to extract list of ASE-supported extensions from these IOFormats in:
                             # print(ase.io.formats.ioformats),
                             # -> TODO property "fileformat" could be used in du.Upload() to restrict uploadable extensions (safety-reasons for web-hosting)
                             html.Div(
-                                "Awaiting upload..",
-                                id="output-upload-state",
+                                "Awaiting session..",
+                                id="output-session-state",
                                 style={
                                     "margin": "2px",
                                     "fontSize": "0.85em",
                                     "textAlign": "center",
                                 },
                             ),
-                            html.Hr(
-                                style={
-                                    "marginBottom": "1rem",
-                                    "marginTop": "1rem",
-                                    "width": "5rem",
-                                }
-                            ),
-                            dbc.Button(
-                                "Edit",
-                                id="edit-input",
-                                color="success",
-                                style={
-                                    "lineHeight": "0.85em",
-                                    "height": "min-content",
-                                    "width": "100%",
-                                    "fontSize": "0.85em",
-                                },
-                            ),
-                            dbc.Button(
-                                "Reset",
-                                id="reset-data",
-                                color="danger",
-                                style={
-                                    "lineHeight": "0.85em",
-                                    "height": "min-content",
-                                    "width": "100%",
-                                    "fontSize": "0.85em",
-                                },
-                            ),
                         ],
-                        className="upload-section",
+                        className="session-section",
                     ),
                 )
             ),
-            id="collapse-upload",
+            id="collapse-session",
             is_open=True,
+        ),
+        dbc.Button(
+            "Download",
+            id="download-data",
+            #download="inference_data.cube",
+            color="info",
+            style={
+                "lineHeight": "0.85em",
+                "height": "min-content",
+                "width": "100%",
+                "fontSize": "0.85em",
+            },
+            disabled=True,
+        ),
+        dcc.Download(id="data-downloader"),
+        dbc.Button(
+            "Edit",
+            id="edit-input",
+            color="success",
+            style={
+                "lineHeight": "0.85em",
+                "height": "min-content",
+                "width": "100%",
+                "fontSize": "0.85em",
+            },
+        ),
+        dbc.Button(
+            "Reset",
+            id="reset-data",
+            color="danger",
+            style={
+                "lineHeight": "0.85em",
+                "height": "min-content",
+                "width": "100%",
+                "fontSize": "0.85em",
+            },
         ),
         upload_modal,
     ],

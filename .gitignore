@@ -1,4 +1,7 @@
-/src/upload/
+/src/session/
+/src/lammps_bgrid_log.tmp
+/src/lammps_input.tmp
+/src/mala.pw.scf.in
 /test/
 /test_data/
 /src/lammps_bgrid_log.tmp

@@ -1,9 +1,12 @@
 # IMPORTS
 import json
+import os
 import pathlib
+from timeit import default_timer as timer
 
 import dash
 import dash_bootstrap_components as dbc
+import flask
 
 from dash.dependencies import Input, Output, State, ClientsideFunction
 from dash import Dash, dcc, html, Patch, clientside_callback
@@ -94,8 +97,8 @@ app = Dash(
 server = app.server
 app.title = "MALAweb"
 
-# Config of upload folder
-du.configure_upload(app, r"./upload", http_request_handler=None)
+# Config of session folder
+du.configure_upload(app, r"./session", http_request_handler=None)
 # for publicly hosting this app, add http_request_handler=True and implement as in:
 # https://github.com/np-8/dash-uploader/blob/dev/docs/dash-uploader.md
 
@@ -137,7 +140,7 @@ p_layout_landing = dbc.Container(
         dcc.Store(id="UP_STORE"),  # Info on uploaded file (path, ...)
         dcc.Store(id="BOUNDARIES_STORE"),  # Saving data for cell-boundaries
         dcc.Store(
-            id="sc_settings"
+            id="plot_settings"
         ),  # parameters of the righthand sidebar, used to update plot
         html.Div(skel_layout, id="content-layout"),
     ],
@@ -149,45 +152,6 @@ app.layout = p_layout_landing
 
 
 # Could be used to refactor callbacks to a seperate file
-# get_callbacks(app)
-
-
-# CLIENTSIDE CALLBACK TEST
-
-app.clientside_callback(
-    ClientsideFunction(
-        namespace='clientside',
-        function_name='ext_function',
-    ),
-    Output("test_div", "children", allow_duplicate=True),
-    Output("range-slider-cs-x", "min", allow_duplicate=True),
-    Output("range-slider-cs-x", "max", allow_duplicate=True),
-    Output("range-slider-cs-x", "step", allow_duplicate=True),
-    Output("range-slider-cs-y", "min", allow_duplicate=True),
-    Output("range-slider-cs-y", "max", allow_duplicate=True),
-    Output("range-slider-cs-y", "step", allow_duplicate=True),
-    Output("range-slider-cs-z", "min", allow_duplicate=True),
-    Output("range-slider-cs-z", "max", allow_duplicate=True),
-    Output("range-slider-cs-z", "step", allow_duplicate=True),
-    Output("range-slider-dense", "min", allow_duplicate=True),
-    Output("range-slider-dense", "max", allow_duplicate=True),
-    Output("range-slider-dense", "step", allow_duplicate=True),
-    Input("test_button", "n_clicks"),
-    State("df_store", "data"),
-    prevent_initial_call=True
-)
-
-
-@app.callback(
-    Output("test_div", "children"),
-    Input("range-slider-cs-x", "min"),
-    Input("range-slider-cs-x", "max"),
-    Input("range-slider-cs-x", "step"),
-    prevent_initial_call=True
-)
-def print_upd(v1, v2, v3):
-    print(v1, v2, v3)
-    return [v1, v2, v3]
 
 
 # CALLBACKS & FUNCTIONS
@@ -199,19 +163,19 @@ def print_upd(v1, v2, v3):
     Output("settings-offcanvas", "is_open", allow_duplicate=True),
     Output("offcanvas-bot", "is_open", allow_duplicate=True),
     Output("UP_STORE", "data", allow_duplicate=True),
+    Output("download-data", "disabled", allow_duplicate=True),
     Input("reset-data", "n_clicks"),
     prevent_initial_call=True,
 )
 def click_reset(click):
-    print("df update by reset")
-    return "landing", None, False, False, None
+    return "landing", None, False, False, None, True
 
 
 # sidebar_l collapses
 @app.callback(
-    Output("collapse-upload", "is_open"),
-    Input("open-upload", "n_clicks"),
-    Input("collapse-upload", "is_open"),
+    Output("collapse-session", "is_open"),
+    Input("open-session", "n_clicks"),
+    Input("collapse-session", "is_open"),
     prevent_initial_call=True,
 )
 def toggle_upload_section(n_header, is_open):
@@ -298,24 +262,23 @@ def toggle_tools(n_sc_s, is_open):
 
 # toggle rangesliders
 @app.callback(
-    Output("range-slider-cs-x", "disabled"),
+    Output("slider-x", "disabled"),
     Output("sc-active-x", "active"),
     Input("sc-active-x", "n_clicks"),
-    Input("range-slider-cs-x", "disabled"),
+    Input("slider-x", "disabled"),
     State("sc-active-x", "active"),
     prevent_initial_call=True,
 )
 def toggle_x_cs(n_x, active, bc):
-    print("range slider x toggled")
     if n_x:
         return not active, not bc
 
 
 @app.callback(
-    Output("range-slider-cs-y", "disabled"),
+    Output("slider-y", "disabled"),
     Output("sc-active-y", "active"),
     Input("sc-active-y", "n_clicks"),
-    Input("range-slider-cs-y", "disabled"),
+    Input("slider-y", "disabled"),
     State("sc-active-y", "active"),
     prevent_initial_call=True,
 )
@@ -325,10 +288,10 @@ def toggle_y_cs(n_x, active, bc):
 
 
 @app.callback(
-    Output("range-slider-cs-z", "disabled"),
+    Output("slider-z", "disabled"),
     Output("sc-active-z", "active"),
     Input("sc-active-z", "n_clicks"),
-    Input("range-slider-cs-z", "disabled"),
+    Input("slider-z", "disabled"),
     State("sc-active-z", "active"),
     prevent_initial_call=True,
 )
@@ -338,11 +301,11 @@ def toggle_z_cs(n_x, active, bc):
 
 
 @app.callback(
-    Output("range-slider-dense", "disabled"),
+    Output("slider-val", "disabled"),
     Output("active-dense", "active"),
     Output("active-dense", "disabled"),
     Input("active-dense", "n_clicks"),
-    State("range-slider-dense", "disabled"),
+    State("slider-val", "disabled"),
     State("active-dense", "active"),
     prevent_initial_call=True,
 )
@@ -355,10 +318,10 @@ def toggle_density_sc(n_d, active, bc):
 
 # TODO this can be included in tools_update
 @app.callback(
-    Output("range-slider-cs-x", "value"),
-    Output("range-slider-cs-y", "value"),
-    Output("range-slider-cs-z", "value"),
-    Output("range-slider-dense", "value"),
+    Output("slider-x", "value"),
+    Output("slider-y", "value"),
+    Output("slider-z", "value"),
+    Output("slider-val", "value"),
     Input("reset-cs-x", "n_clicks"),
     Input("reset-cs-y", "n_clicks"),
     Input("reset-cs-z", "n_clicks"),
@@ -369,7 +332,6 @@ def toggle_density_sc(n_d, active, bc):
 def reset_sliders(n_clicks_x, n_clicks_y, n_clicks_z, n_clicks_dense, data):
     # print("OPT slider reset triggered by: ", dash.callback_context.triggered_id)
     df = pd.DataFrame(data["MALA_DF"]["scatter"])
-    print("slider reset triggered")
     if dash.callback_context.triggered_id == "reset-cs-x":
         return (
             [0, len(np.unique(df["x"])) - 1],
@@ -488,24 +450,24 @@ def updatePageState(trig1, state):
 
 
 # DASH-UPLOADER
-# after file-upload, return upload-status (if successful) and dict with file-path and upload-id (for future verif?)
+# after file-session, return session-status (if successful) and dict with file-path and session-id (for future verif?)
 def upload_exception():
     # print("excepted file error")
-    return None, "File not supported", dash.no_update, dash.no_update, "upload-failure"
+    return None, "File not supported", dash.no_update, dash.no_update, "session-failure"
     # = FILE NOT SUPPORTED AS ASE INPUT (some formats listed in supported-files for ase are output only. This will only be filtered here)
 
 
 @du.callback(
     output=[
-        Output("output-upload-state", "children"),
+        Output("output-session-state", "children"),
         Output("UP_STORE", "data"),
         Output("atom-limit-warning", "is_open"),
         Output("atoms_list", "children"),
         Output("atoms-preview", "figure"),
-        Output("upload-data", "className"),
+        Output("session-data", "className"),
         Output("BOUNDARIES_STORE", "data"),
     ],
-    id="upload-data",
+    id="session-data",
 )
 def upload_callback(status):  # <------- NEW: du.UploadStatus
     """
@@ -513,14 +475,14 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
     :param status: All the info necessary to access (latest) uploaded files
 
     Output
-    upload-state: Upload-state below upload-area
+    session-state: Upload-state below session-area
     UP_STORE: dcc.Store-component, storing uploader-ID and path of uploaded file
     atom-limit-warning: Boolean for displaying long-computation-time-warning
     atoms_list: Table containing all atoms read by ASE
     atoms-preview: Figure previewing ASE-read Atoms
-    upload-data: Changing border-color of this component according to upload-status
+    session-data: Changing border-color of this component according to session-status
     """
-    # print("OPT upload triggered by: ", dash.callback_context.triggered_id)
+    # print("OPT session triggered by: ", dash.callback_context.triggered_id)
     UP_STORE = {
         "ID": status.upload_id,
         "PATH": str(status.latest_file.resolve()),
@@ -686,9 +648,9 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
         fig.update_scenes(removeHoverLines)
         fig.add_trace(atoms_fig)
 
-        border_style = "upload-success"
+        border_style = "session-success"
 
-    # ValueError or File not sup. - exception for not supported formats (not yet filtered by upload-component)
+    # ValueError or File not sup. - exception for not supported formats (not yet filtered by session-component)
     except ValueError:
         r_atoms, UPDATE_TEXT, UP_STORE, table_rows, border_style = upload_exception()
     except ase.io.formats.UnknownFileTypeError:
@@ -707,6 +669,22 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
 
 # END DASH UPLOADER
 
+# DATA DOWNLOAD CALLBACK
+@app.callback(
+    Output("data-downloader", "data"),
+    Input("download-data", "n_clicks"),
+    State("UP_STORE", "data"),
+    prevent_initial_call=True
+)
+def download_data(click, up_data):
+    try:
+        return dcc.send_file("./session/{}/inference_data.cube".format(up_data["ID"]))
+    except FileNotFoundError:
+        print("File not found")
+        raise PreventUpdate
+    except TypeError:
+        print("No file uploaded")
+        raise PreventUpdate
 
 # CALLBACK TO ACTIVATE RUN-MALA-button
 @app.callback(
@@ -734,7 +712,7 @@ def activate_runMALA_button(click, disabled, model, temp):
 # CALLBACK TO OPEN UPLOAD-MODAL
 # BUG: modal immediately closes after reuploading
 @app.callback(
-    Output("upload-modal", "is_open"),
+    Output("session-modal", "is_open"),
     [
         Input("UP_STORE", "data"),
         Input("edit-input", "n_clicks"),
@@ -801,7 +779,8 @@ def init_temp_choice(model_choice):
 
 @app.callback(
     Output("df_store", "data"),
-    Output("client_df", "data"),
+    Output("unique_df", "data"),
+    Output("download-data", "disabled"),
     Input("run-mala", "n_clicks"),
     State("model-choice", "value"),
     State("model-temp", "value"),
@@ -815,7 +794,7 @@ def updateDF(trig, model_choice, temp_choice, upload):
     :param reset: =INPUT - trigger for reset of stored data
     :param model_choice: =STATE - info on the cell-system (substance+temp(-range)), separated by |
     :param temp_choice: =STATE - chosen temperature - either defined by model-choice, or direct input inbetween range
-    :param upload: =STATE - dict(upload ID, filepath, ASE-Atoms-Obj as dict)
+    :param upload: =STATE - dict(session ID, filepath, ASE-Atoms-Obj as dict)
 
     :return: returns a dictionary with the data necessary to render to store-component
 
@@ -830,22 +809,19 @@ def updateDF(trig, model_choice, temp_choice, upload):
     #print("OPT df-update triggered by: ", dash.callback_context.triggered_id)
     if upload is None:
         raise PreventUpdate
-    print("DF UPDATED")
     model_temp_path = {"name": model_choice, "temperature": float(temp_choice)}
 
     # ASE.reading to receive ATOMS-objs, to pass to MALA-inference
-    # no ValueError Exception needed, bc this is done directly on upload
+    # no ValueError Exception needed, bc this is done directly on session
     read_atoms = ase.Atoms.fromdict(upload["ATOMS"])
 
     # (a) GET DATA FROM MALA (/ inference script)
 
-    # print(
-    #     "Running MALA-Inference. Passing: ",
-    #     read_atoms,
-    #     " and model-choice: ",
-    #     model_temp_path,
-    # )
-    mala_data = run_mala_prediction(read_atoms, model_temp_path)
+    mala_data = run_mala_prediction(
+        atoms_to_predict=read_atoms,
+        model_and_temp=model_temp_path,
+        session_id=upload["ID"],
+    )
     # contains 'band_energy', 'total_energy', 'density', 'density_of_states', 'energy_grid'
     # mala_data is stored in df_store dict under key 'MALA_DATA'. (See declaration of df_store below for more info)
     density = mala_data["density"]
@@ -914,6 +890,14 @@ def updateDF(trig, model_choice, temp_choice, upload):
     data_sc.z += y_axis[3] * (data0.y / y_axis[2])
     data_sc.z += x_axis[3] * (data0.x / x_axis[1])
 
+    unique_df = {
+        "x": data_sc.x.unique(),
+        "y": data_sc.y.unique(),
+        "z": data_sc.z.unique(),
+        "val": np.unique(density),
+    }
+
+
     """
            Importing Data 
                Parameters imported from:
@@ -948,18 +932,18 @@ def updateDF(trig, model_choice, temp_choice, upload):
         "SCALE": {"x_axis": x_axis, "y_axis": y_axis, "z_axis": z_axis},
     }
     print("end of DF update")
-    return df_store, df_store
+    return df_store, unique_df, False
 
 
 # SC SETTINGS STORING
 @app.callback(
-    Output("sc_settings", "data"),
+    Output("plot_settings", "data"),
     Output("sc-outline", "value"),
     Input("sc-size", "value"),
     Input("sc-outline", "value"),
     Input("sc-atoms", "value"),
     Input("sc-opac", "value"),
-    State("sc_settings", "data"),
+    State("plot_settings", "data"),
     Input("cell-boundaries", "value"),
 )
 def update_settings_store(size, outline, atoms, opac, saved, cell):
@@ -1004,179 +988,135 @@ def update_settings_store(size, outline, atoms, opac, saved, cell):
 
 # END UPDATE FOR STORED DATA
 
-# @app.callback(
-#     [
-#         Output("range-slider-cs-x", "min"),
-#         Output("range-slider-cs-x", "max"),
-#         Output("range-slider-cs-x", "step"),
-#         Output("range-slider-cs-y", "min"),
-#         Output("range-slider-cs-y", "max"),
-#         Output("range-slider-cs-y", "step"),
-#         Output("range-slider-cs-z", "min"),
-#         Output("range-slider-cs-z", "max"),
-#         Output("range-slider-cs-z", "step"),
-#         Output("range-slider-dense", "min"),
-#         Output("range-slider-dense", "max"),
-#         Output("range-slider-dense", "step"),
-#     ],
-#     [
-#         Input("df_store", "data"),
-#     ],
-# )
-# def update_tools(data):
-#     # print("OPT tools-update triggered by: ", dash.callback_context.triggered_id)
-#     if data is None:  # in case of reset:
-#         raise PreventUpdate
-#     else:
-#         df = pd.DataFrame(data["MALA_DF"]["scatter"])
-#
-#         return (
-#             0,
-#             len(np.unique(df["x"])) - 1,
-#             1,
-#             0,
-#             len(np.unique(df["y"])) - 1,
-#             1,
-#             0,
-#             len(np.unique(df["z"])) - 1,
-#             1,
-#             0,
-#             len(np.unique(df["val"])) - 1,
-#             1,
-#         )
+@app.callback(
+    [
+        Output("slider-x", "min"),
+        Output("slider-x", "max"),
+        Output("slider-x", "step"),
+        Output("slider-y", "min"),
+        Output("slider-y", "max"),
+        Output("slider-y", "step"),
+        Output("slider-z", "min"),
+        Output("slider-z", "max"),
+        Output("slider-z", "step"),
+        Output("slider-val", "min"),
+        Output("slider-val", "max"),
+        Output("slider-val", "step"),
+    ],
+    [
+        Input("unique_df", "data"),
+    ],
+)
+def update_tools(data):
+    # print("OPT tools-update triggered by: ", dash.callback_context.triggered_id)
+    if data is None:  # in case of reset:
+        raise PreventUpdate
+    else:
+        return (
+            0,
+            len(data["x"]) - 1,
+            1,
+            0,
+            len(data["y"]) - 1,
+            1,
+            0,
+            len(data["z"]) - 1,
+            1,
+            0,
+            len(data["val"]) - 1,
+            1,
+        )
 
+# # Updating slider-range indicators X
+@app.callback(
+    Output("x-min-indicator", "children"),
+    Output("x-max-indicator", "children"),
+    Input("slider-x", "value"),
+    State("unique_df", "data"),
+)
+def update_indicators_x(value, unique_data):
+    if unique_data is None:  # in case of reset:
+        raise PreventUpdate
 
-# TODO: maybe use popover instead of tooltip
-# Updating slider-range indicators X
-# @app.callback(
-#     Output("x-lower-bound", "children"),
-#     Output("x-higher-bound", "children"),
-#     Output("x-lower-bound", "trigger"),  # unused - doesn't seem to be editable on CB
-#     Input("range-slider-cs-x", "value"),
-#     Input("range-slider-cs-x", "disabled"),
-#     State("df_store", "data"),
-#     State("x-lower-bound", "trigger"),  # unused - needed for see above
-# )
-# def update_slider_bound_indicators_X(value, disabled, data, trigger):
-#     # print("OPT slider-bound-x-update triggered by: ", dash.callback_context.triggered_id)
-#     if data is None:  # in case of reset:
-#         raise PreventUpdate
-#
-#     # TODO: enabling/disabling hovermode of indicator doesn't work - doesn't seem to overwrite init-param
-#     if disabled:
-#         trigger = None
-#     else:
-#         trigger = "hover"
-#
-#     dfX = pd.DataFrame(data["MALA_DF"]["scatter"])["x"]
-#
-#     if value is None:
-#         lower = round(min(dfX), ndigits=5)
-#         higher = round(max(dfX), ndigits=5)
-#     else:
-#         lowB, highB = value
-#         lower = round(np.unique(dfX)[lowB], ndigits=5)
-#         higher = round(np.unique(dfX)[highB], ndigits=5)
-#     return lower, higher, trigger
+    u_data = np.array(unique_data["x"])
+
+    if value is None:
+        min_val = round(min(u_data), ndigits=5)
+        max_val = round(max(u_data), ndigits=5)
+    else:
+        min_v, max_v = value
+        min_val = round(u_data[min_v], ndigits=5)
+        max_val = round(u_data[max_v], ndigits=5)
+    return min_val, max_val
 
 
 # Updating slider-range indicators Y
-# @app.callback(
-#     Output("y-lower-bound", "children"),
-#     Output("y-higher-bound", "children"),
-#     Output("y-lower-bound", "trigger"),
-#     Input("range-slider-cs-y", "value"),
-#     Input("range-slider-cs-y", "disabled"),
-#     State("df_store", "data"),
-#     State("y-lower-bound", "trigger"),
-# )
-# def update_slider_bound_indicators_Y(value, disabled, data, trigger):
-#     # print("OPT slider-bound-y-update triggered by: ", dash.callback_context.triggered_id)
-#     if data is None:  # in case of reset:
-#         raise PreventUpdate
-#
-#     # TODO: enabling/disabling hovermode of indicator doesn't work - doesn't seem to overwrite init-param
-#     if disabled:
-#         trigger = None
-#     else:
-#         trigger = "hover"
-#
-#     dfY = pd.DataFrame(data["MALA_DF"]["scatter"])["y"]
-#
-#     if value is None:
-#         lower = round(min(dfY), ndigits=5)
-#         higher = round(max(dfY), ndigits=5)
-#     else:
-#         lowB, highB = value
-#         lower = round(np.unique(dfY)[lowB], ndigits=5)
-#         higher = round(np.unique(dfY)[highB], ndigits=5)
-#     return lower, higher, trigger
+@app.callback(
+    Output("y-lower-bound", "children"),
+    Output("y-higher-bound", "children"),
+    Input("slider-y", "value"),
+    State("unique_df", "data"),
+)
+def update_indicators_y(value, unique_data):
+    if unique_data is None:  # in case of reset:
+        raise PreventUpdate
+
+    u_data = np.array(unique_data["y"])
+
+    if value is None:
+        min_val = round(min(u_data), ndigits=5)
+        max_val = round(max(u_data), ndigits=5)
+    else:
+        min_v, max_v = value
+        min_val = round(u_data[min_v], ndigits=5)
+        max_val = round(u_data[max_v], ndigits=5)
+    return min_val, max_val
 
 
 # Updating slider-range indicators Z
-# @app.callback(
-#     Output("z-lower-bound", "children"),
-#     Output("z-higher-bound", "children"),
-#     Output("z-lower-bound", "trigger"),
-#     Input("range-slider-cs-z", "value"),
-#     Input("range-slider-cs-z", "disabled"),
-#     State("df_store", "data"),
-#     State("z-lower-bound", "trigger"),
-# )
-# def update_slider_bound_indicators_Z(value, disabled, data, trigger):
-#     # print("OPT slider-bound-z-update triggered by: ", dash.callback_context.triggered_id)
-#     if data is None:  # in case of reset:
-#         raise PreventUpdate
-#
-#     # TODO: enabling/disabling hovermode of indicator doesn't work - doesn't seem to overwrite init-param
-#     if disabled:
-#         trigger = None
-#     else:
-#         trigger = "hover"
-#
-#     dfZ = pd.DataFrame(data["MALA_DF"]["scatter"])["z"]
-#
-#     if value is None:
-#         lower = round(min(dfZ), ndigits=5)
-#         higher = round(max(dfZ), ndigits=5)
-#     else:
-#         lowB, highB = value
-#         lower = round(np.unique(dfZ)[lowB], ndigits=5)
-#         higher = round(np.unique(dfZ)[highB], ndigits=5)
-#     return lower, higher, trigger
+@app.callback(
+    Output("z-lower-bound", "children"),
+    Output("z-higher-bound", "children"),
+    Input("slider-z", "value"),
+    State("unique_df", "data"),
+)
+def update_indicators_z(value, unique_data):
+    if unique_data is None:  # in case of reset:
+        raise PreventUpdate
+
+    u_data = np.array(unique_data["z"])
+
+    if value is None:
+        min_val = round(min(u_data), ndigits=5)
+        max_val = round(max(u_data), ndigits=5)
+    else:
+        min_v, max_v = value
+        min_val = round(u_data[min_v], ndigits=5)
+        max_val = round(u_data[max_v], ndigits=5)
+    return min_val, max_val
 
 
 # Updating slider-range indicators density
-# @app.callback(
-#     Output("dense-lower-bound", "children"),
-#     Output("dense-higher-bound", "children"),
-#     Output("dense-lower-bound", "trigger"),
-#     Input("range-slider-dense", "value"),
-#     Input("range-slider-dense", "disabled"),
-#     State("df_store", "data"),
-#     State("dense-lower-bound", "trigger"),
-# )
-# def update_slider_bound_indicators_density(value, disabled, data, trigger):
-#     # print("OPT slider-bound-density-update triggered by: ", dash.callback_context.triggered_id)
-#     if data is None:  # in case of reset:
-#         raise PreventUpdate
-#
-#     # TODO: enabling/disabling hovermode of indicator doesn't work - doesn't seem to overwrite init-param
-#     if disabled:
-#         trigger = None
-#     else:
-#         trigger = "hover"
-#
-#     dfDense = pd.DataFrame(data["MALA_DF"]["scatter"])["val"]
-#
-#     if value is None:
-#         lower = round(min(dfDense), ndigits=5)
-#         higher = round(max(dfDense), ndigits=5)
-#     else:
-#         lowB, highB = value
-#         lower = round(np.unique(dfDense)[lowB], ndigits=5)
-#         higher = round(np.unique(dfDense)[highB], ndigits=5)
-#     return lower, higher, trigger
+@app.callback(
+    Output("dense-lower-bound", "children"),
+    Output("dense-higher-bound", "children"),
+    Input("slider-val", "value"),
+    State("unique_df", "data"),
+)
+def update_indicators_dense(value, unique_data):
+    if unique_data is None:  # in case of reset:
+        raise PreventUpdate
+
+    u_data = np.array(unique_data["val"])
+
+    if value is None:
+        min_val = round(min(u_data), ndigits=5)
+        max_val = round(max(u_data), ndigits=5)
+    else:
+        min_v, max_v = value
+        min_val = round(u_data[min_v], ndigits=5)
+        max_val = round(u_data[max_v], ndigits=5)
+    return min_val, max_val
 
 
 # LAYOUT CALLBACKS
@@ -1208,7 +1148,7 @@ cam_store can't be an input or else it triggers an update everytime the cam is m
     Output("scatter-plot", "figure", allow_duplicate=True),
     [
         # Settings
-        Input("sc_settings", "data"),
+        Input("plot_settings", "data"),
         Input("default-cam", "n_clicks"),
         Input("x-y-cam", "n_clicks"),
         Input("x-z-cam", "n_clicks"),
@@ -1233,6 +1173,7 @@ def updatePlot(
 ):
     # print("OPT update-Plot-trigger: ", dash.callback_context.triggered_id)
     # TODO: make this function more efficient
+    print("PLOT UPDATE", dash.callback_context.triggered_id)
     patched_fig = Patch()
 
     # DATA
@@ -1244,8 +1185,8 @@ def updatePlot(
     new_cam = stored_cam_settings
 
     # INIT PLOT
-    if dash.callback_context.triggered[0]["prop_id"] == "." or dash.callback_context.triggered == "df_store":
-        # print("INIT Plot")
+    if dash.callback_context.triggered[0]["prop_id"] == "." or dash.callback_context.triggered_id == "df_store":
+        print("INIT Plot")
         # Our main figure = scatter plot
 
         df = pd.DataFrame(f_data["MALA_DF"]["scatter"])
@@ -1311,7 +1252,7 @@ def updatePlot(
         )
 
     # SETTINGS
-    elif dash.callback_context.triggered_id == "sc_settings":
+    elif dash.callback_context.triggered_id == "plot_settings":
         # print("PLOT-Settings")
         patched_fig["data"][0]["marker"]["line"] = settings["outline"]
         patched_fig["data"][0]["marker"]["size"] = settings["size"]
@@ -1325,7 +1266,7 @@ def updatePlot(
     # CAMERA
 
     elif "cam" in dash.callback_context.triggered_id:
-        # print("PLOT-Cqm")
+        # print("PLOT-Cam")
         if dash.callback_context.triggered_id == "default-cam":
             new_cam = dict(
                 up=dict(x=0, y=0, z=1),
@@ -1386,18 +1327,18 @@ Sets transition options used during Plotly.react updates."
 
 """
 
+
 # TODO optimize by using relayout to update camera instead of cam_store (or smth else entirely)
-# TODO Rewrite this as clientside callback
 @app.callback(
     Output("scatter-plot", "figure"),
     # Tools
-    Input("range-slider-dense", "value"),
+    Input("slider-val", "value"),
     Input("active-dense", "active"),
-    Input("range-slider-cs-x", "value"),
+    Input("slider-x", "value"),
     Input("sc-active-x", "active"),
-    Input("range-slider-cs-y", "value"),
+    Input("slider-y", "value"),
     Input("sc-active-y", "active"),
-    Input("range-slider-cs-z", "value"),
+    Input("slider-z", "value"),
     Input("sc-active-z", "active"),
     # Data
     State("df_store", "data"),
@@ -1416,10 +1357,8 @@ def slicePlot(
     f_data,
     cam,
 ):
-    # print("OPT slicePlot triggered: ", dash.callback_context.triggered_id)
     if f_data is None:
         raise PreventUpdate
-
     df = pd.DataFrame(f_data["MALA_DF"]["scatter"])
     dfu = (
         df.copy()
@@ -1428,7 +1367,6 @@ def slicePlot(
     # TOOLS
     # filter-by-density
     if slider_range is not None and dense_inactive:  # Any slider Input there? Do:
-        print("density slider: ", slider_range)
         low, high = slider_range
         mask = (dfu["val"] >= np.unique(df["val"])[low]) & (
             dfu["val"] <= np.unique(df["val"])[high]
@@ -1437,7 +1375,6 @@ def slicePlot(
 
     # slice X
     if slider_range_cs_x is not None and cs_x_inactive:  # Any slider Input there? Do:
-        print("x slider range: ", slider_range_cs_x)
         low, high = slider_range_cs_x
         mask = (dfu["x"] >= np.unique(df["x"])[low]) & (
             dfu["x"] <= np.unique(df["x"])[high]
@@ -1446,7 +1383,6 @@ def slicePlot(
 
     # slice Y
     if slider_range_cs_y is not None and cs_y_inactive:  # Any slider Input there? Do:
-        print("y slider range: ", slider_range_cs_y)
         low, high = slider_range_cs_y
         mask = (dfu["y"] >= np.unique(df["y"])[low]) & (
             dfu["y"] <= np.unique(df["y"])[high]
@@ -1455,7 +1391,6 @@ def slicePlot(
 
     # slice Z
     if slider_range_cs_z is not None and cs_z_inactive:  # Any slider Input there? Do:
-        print("z slider range: ", slider_range_cs_z)
         low, high = slider_range_cs_z
         mask = (dfu["z"] >= np.unique(df["z"])[low]) & (
             dfu["z"] <= np.unique(df["z"])[high]
@@ -1469,7 +1404,6 @@ def slicePlot(
     patched_fig["data"][0]["marker"]["color"] = dfu["val"]
     # sadly the patch overwrites our cam positioning, which is why we have to re-patch it everytime
     patched_fig["layout"]["scene"]["camera"] = cam
-
     return patched_fig
 
 @app.callback(
