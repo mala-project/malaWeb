@@ -1,7 +1,7 @@
 # IMPORTS
 import json
 import os
-import pathlib
+from pathlib import Path
 from timeit import default_timer as timer
 
 import dash
@@ -993,15 +993,21 @@ def update_settings_store(size, outline, atoms, opac, saved, cell):
     Output("settings-downloader", "data"),
     Input("export-settings", "n_clicks"),
     State("plot_settings", "data"),
+    State("UP_STORE", "data"),
     prevent_initial_call=True
 )
-def export_settings(click, data):
+def export_settings(click, data, up_store):
     print(data)
     # Writing to settings.json
-    with open("settings.json", "w") as outfile:
-        json.dumps(data)
-
-    return dcc.send_file(path=os.getcwd()+"/settings.json", filename="settings.json")
+    if type(up_store) is not str:
+        raise PreventUpdate
+    else:
+        session_id = up_store['ID']
+        session_path = f"session/{session_id}".format(session_id=session_id)
+        with Path(session_path) as path:
+            print(path)
+            #path.write_text(json.dumps(data))
+            return dcc.send_file(path=os.getcwd()+"/settings.json", filename="settings.json")
 
 @app.callback(
     [
