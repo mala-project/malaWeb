@@ -18,7 +18,7 @@ plot_tools = dbc.Collapse(
                                 [
                                     dbc.Button(
                                         "X",
-                                        id="sc-active-x",
+                                        id="slice-x",
                                         active=False,
                                         outline=True,
                                         color="danger",
@@ -26,7 +26,7 @@ plot_tools = dbc.Collapse(
                                     ),
                                     dbc.Button(
                                         "Y",
-                                        id="sc-active-y",
+                                        id="slice-y",
                                         active=False,
                                         outline=True,
                                         color="success",
@@ -34,7 +34,7 @@ plot_tools = dbc.Collapse(
                                     ),
                                     dbc.Button(
                                         "Z",
-                                        id="sc-active-z",
+                                        id="slice-z",
                                         active=False,
                                         outline=True,
                                         color="primary",
@@ -42,7 +42,7 @@ plot_tools = dbc.Collapse(
                                     ),
                                     dbc.Button(
                                         "Density",
-                                        id="active-dense",
+                                        id="filter-val",
                                         active=False,
                                         outline=True,
                                         color="dark",

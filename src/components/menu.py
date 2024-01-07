@@ -218,7 +218,7 @@ sidebar = html.Div(
                                 target="supported-files",
                                 trigger="legacy",
                             ),
-                            # dash-uploader component (not vanilla)
+                            # dash-uploader component
                             du.Upload(
                                 id="session-data", text="Drag & Drop or Click to select"
                             ),

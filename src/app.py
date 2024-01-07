@@ -1,4 +1,5 @@
 # IMPORTS
+import base64
 import json
 import os
 from pathlib import Path
@@ -262,11 +263,11 @@ def toggle_tools(n_sc_s, is_open):
 
 # toggle rangesliders
 @app.callback(
-    Output("slider-x", "disabled"),
-    Output("sc-active-x", "active"),
-    Input("sc-active-x", "n_clicks"),
+    Output("slider-x", "disabled", allow_duplicate=True),
+    Output("slice-x", "active", allow_duplicate=True),
+    Input("slice-x", "n_clicks"),
     Input("slider-x", "disabled"),
-    State("sc-active-x", "active"),
+    State("slice-x", "active"),
     prevent_initial_call=True,
 )
 def toggle_x_cs(n_x, active, bc):
@@ -275,11 +276,11 @@ def toggle_x_cs(n_x, active, bc):
 
 
 @app.callback(
-    Output("slider-y", "disabled"),
-    Output("sc-active-y", "active"),
-    Input("sc-active-y", "n_clicks"),
+    Output("slider-y", "disabled", allow_duplicate=True),
+    Output("slice-y", "active", allow_duplicate=True),
+    Input("slice-y", "n_clicks"),
     Input("slider-y", "disabled"),
-    State("sc-active-y", "active"),
+    State("slice-y", "active"),
     prevent_initial_call=True,
 )
 def toggle_y_cs(n_x, active, bc):
@@ -288,11 +289,11 @@ def toggle_y_cs(n_x, active, bc):
 
 
 @app.callback(
-    Output("slider-z", "disabled"),
-    Output("sc-active-z", "active"),
-    Input("sc-active-z", "n_clicks"),
+    Output("slider-z", "disabled", allow_duplicate=True),
+    Output("slice-z", "active", allow_duplicate=True),
+    Input("slice-z", "n_clicks"),
     Input("slider-z", "disabled"),
-    State("sc-active-z", "active"),
+    State("slice-z", "active"),
     prevent_initial_call=True,
 )
 def toggle_z_cs(n_x, active, bc):
@@ -301,16 +302,16 @@ def toggle_z_cs(n_x, active, bc):
 
 
 @app.callback(
-    Output("slider-val", "disabled"),
-    Output("active-dense", "active"),
-    Output("active-dense", "disabled"),
-    Input("active-dense", "n_clicks"),
+    Output("slider-val", "disabled", allow_duplicate=True),
+    Output("filter-val", "active", allow_duplicate=True),
+    Output("filter-val", "disabled"),
+    Input("filter-val", "n_clicks"),
     State("slider-val", "disabled"),
-    State("active-dense", "active"),
+    State("filter-val", "active"),
     prevent_initial_call=True,
 )
 def toggle_density_sc(n_d, active, bc):
-    if dash.callback_context.triggered_id == "active-dense":
+    if dash.callback_context.triggered_id == "filter-val":
         return not active, not bc, False
     else:
         return True, False, True
@@ -318,10 +319,10 @@ def toggle_density_sc(n_d, active, bc):
 
 # TODO this can be included in tools_update
 @app.callback(
-    Output("slider-x", "value"),
-    Output("slider-y", "value"),
-    Output("slider-z", "value"),
-    Output("slider-val", "value"),
+    Output("slider-x", "value", allow_duplicate=True),
+    Output("slider-y", "value", allow_duplicate=True,),
+    Output("slider-z", "value", allow_duplicate=True,),
+    Output("slider-val", "value", allow_duplicate=True,),
     Input("reset-cs-x", "n_clicks"),
     Input("reset-cs-y", "n_clicks"),
     Input("reset-cs-z", "n_clicks"),
@@ -499,7 +500,7 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
         UP_STORE["ATOMS"] = r_atoms.todict()
         # delete uploaded file right after it's read by ASE - could be problematic, will see
         # TODO: delete session path either right here, or when session ends (how?)
-        pathlib.Path(str(status.latest_file.resolve())).unlink()
+        Path(str(status.latest_file.resolve())).unlink()
 
         if r_atoms.get_global_number_of_atoms() > ATOM_LIMIT:
             LIMIT_EXCEEDED = True
@@ -540,7 +541,7 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
                 name="Cell",
             )
         )
-        boundarie1 = go.Scatter3d(
+        boundary1 = go.Scatter3d(
             name="cell",
             x=x_points,
             y=y_points,
@@ -576,7 +577,7 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
                 showlegend=False,
             )
         )
-        boundarie2 = go.Scatter3d(
+        boundary2 = go.Scatter3d(
             name="cell",
             x=x_points,
             y=y_points,
@@ -602,7 +603,7 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
                 showlegend=False,
             )
         )
-        boundarie3 = go.Scatter3d(
+        boundary3 = go.Scatter3d(
             name="cell",
             x=x_points,
             y=y_points,
@@ -633,7 +634,7 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
                 showlegend=False,
             )
         )
-        boundarie4 = go.Scatter3d(
+        boundary4 = go.Scatter3d(
             name="cell",
             x=x_points,
             y=y_points,
@@ -644,7 +645,7 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
             showlegend=False,
         )
 
-        boundaries = [boundarie1, boundarie2, boundarie3, boundarie4]
+        boundaries = [boundary1, boundary2, boundary3, boundary4]
         fig.update_scenes(removeHoverLines)
         fig.add_trace(atoms_fig)
 
@@ -668,6 +669,87 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
 
 
 # END DASH UPLOADER
+
+# IMPORT SETTINGS - DCC Uploader
+
+# should also update the settings_components so backend settings are in sync with frontend
+# should include tools
+@app.callback(
+    Output("import-settings", "contents"),
+    Output("plot_settings", "data", allow_duplicate=True),
+    Output("slider-val", "value"),
+    Output("filter-val", "active"),
+    Output("slider-x", "value"),
+    Output("slice-x", "active"),
+    Output("slider-y", "value"),
+    Output("slice-y", "active"),
+    Output("slider-z", "value"),
+    Output("slice-z", "active"),
+    Input("import-settings", "contents"),
+    prevent_initial_call=True
+)
+def import_config(contents):
+    '''
+
+    Parameters
+    ----------
+    contents: base64 encoded string (JSON) that will be decoded, parsed and split up into returns for tools (multiple) and settings (one return to plot_settings)
+
+    Returns
+    -------
+
+    '''
+    print("config importer starting")
+    if contents is None:
+        raise PreventUpdate
+    else:
+        content_type, content_string = contents.split(',')
+        decoded = base64.b64decode(content_string)
+        json_decoded = json.loads(decoded)
+
+        print("importing: ", json_decoded)
+        if "tools" in json_decoded.keys():
+            imported_tools = json_decoded["tools"]
+            ...
+            # split this up into multiple returns (2 for each slider =8 total)
+
+            if "settings" in json_decoded.keys():
+                return (
+                    None, json_decoded["settings"],
+                    imported_tools["val_val"], imported_tools["val_act"],
+                    imported_tools["x_val"], imported_tools["x_act"],
+                    imported_tools["y_val"], imported_tools["y_act"],
+                    imported_tools["z_val"], imported_tools["z_act"]
+                    )
+            else:
+                return (
+                    None, dash.no_update,
+                    imported_tools["val_val"], imported_tools["val_act"],
+                    imported_tools["x_val"], imported_tools["x_act"],
+                    imported_tools["y_val"], imported_tools["y_act"],
+                    imported_tools["z_val"], imported_tools["z_act"]
+                    )
+
+        elif "settings" in json_decoded.keys():
+            return (
+                None, json_decoded["settings"],
+                dash.no_update, dash.no_update,
+                dash.no_update, dash.no_update,
+                dash.no_update, dash.no_update,
+                dash.no_update, dash.no_update
+                )
+
+        else:
+            return (
+                None, dash.no_update,
+                dash.no_update, dash.no_update,
+                dash.no_update, dash.no_update,
+                dash.no_update, dash.no_update,
+                dash.no_update, dash.no_update
+                )
+
+
+# END IMPORT SETTINGS
 
 # DATA DOWNLOAD CALLBACK
 @app.callback(
@@ -938,13 +1020,13 @@ def updateDF(trig, model_choice, temp_choice, upload):
 # SETTINGS STORING
 @app.callback(
     Output("plot_settings", "data"),
-    Output("sc-outline", "value"),
+    Output("show-outline", "value"),
     Input("sc-size", "value"),
-    Input("sc-outline", "value"),
-    Input("sc-atoms", "value"),
+    Input("show-outline", "value"),
+    Input("show-atoms", "value"),
     Input("sc-opac", "value"),
     State("plot_settings", "data"),
-    Input("cell-boundaries", "value"),
+    Input("show-cell", "value"),
 )
 def update_settings_store(size, outline, atoms, opac, saved, cell):
     # print("OPT settings-store-update triggered by: ", dash.callback_context.triggered_id)
@@ -969,15 +1051,15 @@ def update_settings_store(size, outline, atoms, opac, saved, cell):
         if opac < 1:
             outline = False
             settings["outline"] = dict(width=0, color="DarkSlateGrey")
-    elif dash.callback_context.triggered_id == "sc-outline":
+    elif dash.callback_context.triggered_id == "show-outline":
         # Define outline settings
         if outline:
             settings["outline"] = dict(width=1, color="DarkSlateGrey")
         else:
             settings["outline"] = dict(width=0, color="DarkSlateGrey")
-    elif dash.callback_context.triggered_id == "sc-atoms":
+    elif dash.callback_context.triggered_id == "show-atoms":
         settings["atoms"] = atoms
-    elif dash.callback_context.triggered_id == "cell-boundaries":
+    elif dash.callback_context.triggered_id == "show-cell":
         if cell:
             settings["cell"] = 5
         else:
@@ -989,25 +1071,50 @@ def update_settings_store(size, outline, atoms, opac, saved, cell):
 # END UPDATE FOR STORED DATA
 
 # EXPORT SETTINGS
+# TODO: include CAM-data
 @app.callback(
     Output("settings-downloader", "data"),
     Input("export-settings", "n_clicks"),
     State("plot_settings", "data"),
+    State("slider-val", "value"),
+    State("filter-val", "active"),
+    State("slider-x", "value"),
+    State("slice-x", "active"),
+    State("slider-y", "value"),
+    State("slice-y", "active"),
+    State("slider-z", "value"),
+    State("slice-z", "active"),
     State("UP_STORE", "data"),
     prevent_initial_call=True
 )
-def export_settings(click, data, up_store):
-    print(data)
+def export_settings(click, data, val_val, val_act, x_val, x_act, y_val, y_act, z_val, z_act, up_store):
     # Writing to settings.json
-    if type(up_store) is not str:
+    # TODO could use better type/null checks
+    if type(up_store["ID"]) is not str:
+        print("not exporting settings")
         raise PreventUpdate
     else:
+        print("exporting settings")
         session_id = up_store['ID']
         session_path = f"session/{session_id}".format(session_id=session_id)
-        with Path(session_path) as path:
-            print(path)
-            #path.write_text(json.dumps(data))
-            return dcc.send_file(path=os.getcwd()+"/settings.json", filename="settings.json")
+
+        # parse settings-file
+        config = {
+            'settings': data,
+            'tools': {
+                'val_val': val_val,
+                'val_act': val_act,
+                'x_val': x_val,
+                'x_act': x_act,
+                'y_val': y_val,
+                'y_act': y_act,
+                'z_val': z_val,
+                'z_act': z_act,
+            }
+        }
+        with open(Path(session_path+"/settings.json"), "w") as f:
+            json.dump(config, f)
+        return dcc.send_file(path=Path(session_path+"/settings.json"), filename="settings.json")
 
 @app.callback(
     [
@@ -1195,6 +1302,7 @@ def updatePlot(
     # print("OPT update-Plot-trigger: ", dash.callback_context.triggered_id)
     # TODO: make this function more efficient
     print("PLOT UPDATE", dash.callback_context.triggered_id)
+    print(settings)
     patched_fig = Patch()
 
     # DATA
@@ -1354,13 +1462,13 @@ Sets transition options used during Plotly.react updates."
     Output("scatter-plot", "figure"),
     # Tools
     Input("slider-val", "value"),
-    Input("active-dense", "active"),
+    Input("filter-val", "active"),
     Input("slider-x", "value"),
-    Input("sc-active-x", "active"),
+    Input("slice-x", "active"),
     Input("slider-y", "value"),
-    Input("sc-active-y", "active"),
+    Input("slice-y", "active"),
     Input("slider-z", "value"),
-    Input("sc-active-z", "active"),
+    Input("slice-z", "active"),
     # Data
     State("df_store", "data"),
     State("cam_store", "data"),

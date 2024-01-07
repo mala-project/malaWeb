@@ -59,19 +59,19 @@ sidebar = html.Div(
                     dbc.Checkbox(
                         label="Outline",
                         value=True,
-                        id="sc-outline",
+                        id="show-outline",
                         style={"textAlign": "left", "fontSize": "0.85em"},
                     ),
                     dbc.Checkbox(
                         label="Atoms",
                         value=True,
-                        id="sc-atoms",
+                        id="show-atoms",
                         style={"textAlign": "left", "fontSize": "0.85em"},
                     ),
                     dbc.Checkbox(
                         label="Cell",
                         value=True,
-                        id="cell-boundaries",
+                        id="show-cell",
                         style={"textAlign": "left", "fontSize": "0.85em"},
                     ),
                     html.Hr(),
@@ -106,17 +106,23 @@ sidebar = html.Div(
                     # - but maybe as "apply" button
                     # TODO: put inside collapsable card
                     dbc.Button(
-                        "Import",
-                        id="import-settings",
+                        dcc.Upload("Import",
+                                   id="import-settings",
+                                   multiple=False,
+                                   max_size=500,
+                                   accept=".json",
+                                   style={
+                                       "lineHeight": "0.85em",
+                                       "height": "min-content",
+                                       "fontSize": "0.85em",
+                                   }),
                         color="info",
                         style={
-                            "lineHeight": "0.85em",
                             "height": "min-content",
                             "width": "100%",
-                            "fontSize": "0.85em",
                         },
-                        disabled=True,
                     ),
+
                     dbc.Button(
                         "Export",
                         id="export-settings",
@@ -136,7 +142,6 @@ sidebar = html.Div(
     ],
     style={"textAlign": "center"},
 )
-
 
 """
 Inserting sidebar into Off-Canvas
