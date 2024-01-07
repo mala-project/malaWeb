@@ -261,61 +261,87 @@ def toggle_tools(n_sc_s, is_open):
         return not is_open
 
 
-# toggle rangesliders
+# toggle button x
 @app.callback(
-    Output("slider-x", "disabled", allow_duplicate=True),
     Output("slice-x", "active", allow_duplicate=True),
     Input("slice-x", "n_clicks"),
-    Input("slider-x", "disabled"),
     State("slice-x", "active"),
     prevent_initial_call=True,
 )
-def toggle_x_cs(n_x, active, bc):
+def toggle_x_slice(n_x, active):
     if n_x:
-        return not active, not bc
+        return not active
 
-
+# toggle slider x
 @app.callback(
-    Output("slider-y", "disabled", allow_duplicate=True),
+    Output("slider-x", "disabled", allow_duplicate=True),
+    Input("slice-x", "active"),
+    prevent_initial_call=True,
+)
+def toggle_x_slider(active):
+    return not active
+
+
+# toggle button y
+@app.callback(
     Output("slice-y", "active", allow_duplicate=True),
     Input("slice-y", "n_clicks"),
-    Input("slider-y", "disabled"),
     State("slice-y", "active"),
     prevent_initial_call=True,
 )
-def toggle_y_cs(n_x, active, bc):
+def toggle_y_slice(n_x, active):
     if n_x:
-        return not active, not bc
+        return not active
 
-
+# toggle slider y
 @app.callback(
-    Output("slider-z", "disabled", allow_duplicate=True),
+    Output("slider-y", "disabled", allow_duplicate=True),
+    Input("slice-y", "active"),
+    prevent_initial_call=True,
+)
+def toggle_y_slider(active):
+    return not active
+
+# toggle button z
+@app.callback(
     Output("slice-z", "active", allow_duplicate=True),
     Input("slice-z", "n_clicks"),
-    Input("slider-z", "disabled"),
     State("slice-z", "active"),
     prevent_initial_call=True,
 )
-def toggle_z_cs(n_x, active, bc):
+def toggle_z_slice(n_x, active):
     if n_x:
-        return not active, not bc
+        return not active
 
-
+# toggle slider z
 @app.callback(
-    Output("slider-val", "disabled", allow_duplicate=True),
+    Output("slider-z", "disabled", allow_duplicate=True),
+    Input("slice-z", "active"),
+    prevent_initial_call=True,
+)
+def toggle_z_slider(active):
+    return not active
+
+# toggle button val
+@app.callback(
     Output("filter-val", "active", allow_duplicate=True),
-    Output("filter-val", "disabled"),
     Input("filter-val", "n_clicks"),
-    State("slider-val", "disabled"),
     State("filter-val", "active"),
     prevent_initial_call=True,
 )
-def toggle_density_sc(n_d, active, bc):
-    if dash.callback_context.triggered_id == "filter-val":
-        return not active, not bc, False
-    else:
-        return True, False, True
-    # active actually is the disabled parameter!
+def toggle_val_slice(n_x, active):
+    if n_x:
+        return not active
+
+# toggle slider val
+@app.callback(
+    Output("slider-val", "disabled", allow_duplicate=True),
+    Input("filter-val", "active"),
+    prevent_initial_call=True,
+)
+def toggle_val_slider(active):
+    return not active
+
 
 # TODO this can be included in tools_update
 @app.callback(
@@ -710,7 +736,6 @@ def import_config(contents):
         print("importing: ", json_decoded)
         if "tools" in json_decoded.keys():
             imported_tools = json_decoded["tools"]
-            ...
             # split this up into multiple returns (2 for each slider =8 total)
 
             if "settings" in json_decoded.keys():
@@ -1133,13 +1158,15 @@ def export_settings(click, data, val_val, val_act, x_val, x_act, y_val, y_act, z
     ],
     [
         Input("unique_df", "data"),
+        Input("import-settings", "last_modified"),
     ],
 )
-def update_tools(data):
+def update_tools(data, config_imported):
     # print("OPT tools-update triggered by: ", dash.callback_context.triggered_id)
     if data is None:  # in case of reset:
         raise PreventUpdate
     else:
+        print("Tool update")
         return (
             0,
             len(data["x"]) - 1,
@@ -1302,7 +1329,6 @@ def updatePlot(
     # print("OPT update-Plot-trigger: ", dash.callback_context.triggered_id)
     # TODO: make this function more efficient
     print("PLOT UPDATE", dash.callback_context.triggered_id)
-    print(settings)
     patched_fig = Patch()
 
     # DATA
@@ -1489,6 +1515,7 @@ def slicePlot(
     if f_data is None:
         raise PreventUpdate
     df = pd.DataFrame(f_data["MALA_DF"]["scatter"])
+    print(df)
     dfu = (
         df.copy()
     )  # this is a subset of df after one if-case is run. For every if-case, we need the subset+the original
@@ -1509,6 +1536,8 @@ def slicePlot(
             dfu["x"] <= np.unique(df["x"])[high]
         )
         dfu = dfu[mask]
+        print("MASK: ", mask)
+        print("DF: ", dfu)
 
     # slice Y
     if slider_range_cs_y is not None and cs_y_inactive:  # Any slider Input there? Do:
