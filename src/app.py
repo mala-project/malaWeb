@@ -6,6 +6,7 @@ from pathlib import Path
 from timeit import default_timer as timer
 
 import dash
+import dash.exceptions
 import dash_bootstrap_components as dbc
 import flask
 
@@ -272,6 +273,7 @@ def toggle_x_slice(n_x, active):
     if n_x:
         return not active
 
+
 # toggle slider x
 @app.callback(
     Output("slider-x", "disabled", allow_duplicate=True),
@@ -293,6 +295,7 @@ def toggle_y_slice(n_x, active):
     if n_x:
         return not active
 
+
 # toggle slider y
 @app.callback(
     Output("slider-y", "disabled", allow_duplicate=True),
@@ -301,6 +304,7 @@ def toggle_y_slice(n_x, active):
 )
 def toggle_y_slider(active):
     return not active
+
 
 # toggle button z
 @app.callback(
@@ -313,6 +317,7 @@ def toggle_z_slice(n_x, active):
     if n_x:
         return not active
 
+
 # toggle slider z
 @app.callback(
     Output("slider-z", "disabled", allow_duplicate=True),
@@ -321,6 +326,7 @@ def toggle_z_slice(n_x, active):
 )
 def toggle_z_slider(active):
     return not active
+
 
 # toggle button val
 @app.callback(
@@ -332,6 +338,7 @@ def toggle_z_slider(active):
 def toggle_val_slice(n_x, active):
     if n_x:
         return not active
+
 
 # toggle slider val
 @app.callback(
@@ -346,9 +353,9 @@ def toggle_val_slider(active):
 # TODO this can be included in tools_update
 @app.callback(
     Output("slider-x", "value", allow_duplicate=True),
-    Output("slider-y", "value", allow_duplicate=True,),
-    Output("slider-z", "value", allow_duplicate=True,),
-    Output("slider-val", "value", allow_duplicate=True,),
+    Output("slider-y", "value", allow_duplicate=True, ),
+    Output("slider-z", "value", allow_duplicate=True, ),
+    Output("slider-val", "value", allow_duplicate=True, ),
     Input("reset-cs-x", "n_clicks"),
     Input("reset-cs-y", "n_clicks"),
     Input("reset-cs-z", "n_clicks"),
@@ -702,7 +709,14 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
 # should include tools
 @app.callback(
     Output("import-settings", "contents"),
-    Output("plot_settings", "data", allow_duplicate=True),
+    Output("show-outline", "value", allow_duplicate=True),
+    Output("show-atoms", "value"),
+    Output("show-cell", "value"),
+    Output("particle-size", "value"),
+    Output("opacity", "value"),
+
+    #Output("plot_settings", "data", allow_duplicate=True),
+
     Output("slider-val", "value"),
     Output("filter-val", "active"),
     Output("slider-x", "value"),
@@ -723,6 +737,7 @@ def import_config(contents):
 
     Returns
     -------
+    values to each component, which the update settings_store, which then updates the plot
 
     '''
     print("config importer starting")
@@ -739,39 +754,57 @@ def import_config(contents):
             # split this up into multiple returns (2 for each slider =8 total)
 
             if "settings" in json_decoded.keys():
+                # CASE 1: Settings and Tools are included in imported config
+                imported_settings = json_decoded["settings"]
                 return (
-                    None, json_decoded["settings"],
+                    None, imported_settings["outline"],
+                    imported_settings["atoms"], imported_settings["cell"],
+                    imported_settings["size"], imported_settings["opacity"],
+
                     imported_tools["val_val"], imported_tools["val_act"],
                     imported_tools["x_val"], imported_tools["x_act"],
                     imported_tools["y_val"], imported_tools["y_act"],
                     imported_tools["z_val"], imported_tools["z_act"]
-                    )
+                )
             else:
+                # CASE 2: No Settings, but Tools are imported in config
                 return (
                     None, dash.no_update,
+                    dash.no_update, dash.no_update,
+                    dash.no_update, dash.no_update,
+
                     imported_tools["val_val"], imported_tools["val_act"],
                     imported_tools["x_val"], imported_tools["x_act"],
                     imported_tools["y_val"], imported_tools["y_act"],
                     imported_tools["z_val"], imported_tools["z_act"]
-                    )
+                )
 
         elif "settings" in json_decoded.keys():
+            # CASE 3: Settings, but no Tools are imported in config
+            imported_settings = json_decoded["settings"]
             return (
-                None, json_decoded["settings"],
+                None, imported_settings["outline"],
+                imported_settings["atoms"], imported_settings["cell"],
+                imported_settings["size"], imported_settings["opacity"],
+
                 dash.no_update, dash.no_update,
                 dash.no_update, dash.no_update,
                 dash.no_update, dash.no_update,
                 dash.no_update, dash.no_update
-                )
+            )
 
         else:
+            # CASE 4: Nothing is imported to config
             return (
                 None, dash.no_update,
                 dash.no_update, dash.no_update,
                 dash.no_update, dash.no_update,
+
+                dash.no_update, dash.no_update,
+                dash.no_update, dash.no_update,
                 dash.no_update, dash.no_update,
                 dash.no_update, dash.no_update
-                )
+            )
 
 
 # END IMPORT SETTINGS
@@ -792,6 +825,7 @@ def download_data(click, up_data):
     except TypeError:
         print("No file uploaded")
         raise PreventUpdate
+
 
 # CALLBACK TO ACTIVATE RUN-MALA-button
 @app.callback(
@@ -913,7 +947,7 @@ def updateDF(trig, model_choice, temp_choice, upload):
     on MALA-call, give ATOMS-objs & model_choice
     -> returns density data and energy values +  a .cube-file
     """
-    #print("OPT df-update triggered by: ", dash.callback_context.triggered_id)
+    # print("OPT df-update triggered by: ", dash.callback_context.triggered_id)
     if upload is None:
         raise PreventUpdate
     model_temp_path = {"name": model_choice, "temperature": float(temp_choice)}
@@ -1004,7 +1038,6 @@ def updateDF(trig, model_choice, temp_choice, upload):
         "val": np.unique(density),
     }
 
-
     """
            Importing Data 
                Parameters imported from:
@@ -1046,51 +1079,59 @@ def updateDF(trig, model_choice, temp_choice, upload):
 @app.callback(
     Output("plot_settings", "data"),
     Output("show-outline", "value"),
-    Input("sc-size", "value"),
+    Input("particle-size", "value"),
     Input("show-outline", "value"),
     Input("show-atoms", "value"),
-    Input("sc-opac", "value"),
+    Input("opacity", "value"),
     State("plot_settings", "data"),
     Input("show-cell", "value"),
 )
-def update_settings_store(size, outline, atoms, opac, saved, cell):
+def update_config_store(size, outline, atoms, opac, saved, cell):
     # print("OPT settings-store-update triggered by: ", dash.callback_context.triggered_id)
+    print("updating settings_store")
+
+    # NO SETTINGS DATA STORED
+    # if dash.callback_context.triggered_id is initial CB
     if saved is None:
         # default settings
+
+        print("id: ", dash.ctx.triggered_id)
         settings = {
             "size": 10,  # particle size
-            "opac": 1,  # particle opacity
+            "opacity": 1,  # particle opacity
             "outline": dict(width=1, color="DarkSlateGrey"),  # particle outline
             "atoms": True,
-            "cell": 5,  # cell boundaries (color)
+            "cell": 5,  # cell boundaries (width)
         }
+        return settings, True
 
-    else:
-        settings = saved
-    if dash.callback_context.triggered_id == "sc-size":
-        settings["size"] = size
-    elif dash.callback_context.triggered_id == "sc-opac":
+    # SETTINGS DATA STORED
+    settings_patch = Patch()
+
+    if dash.callback_context.triggered_id == "particle-size":
+        settings_patch["size"] = size
+    elif dash.callback_context.triggered_id == "opacity":
         if opac is None:
             raise PreventUpdate
-        settings["opac"] = opac
+        settings_patch["opacity"] = opac
         if opac < 1:
             outline = False
-            settings["outline"] = dict(width=0, color="DarkSlateGrey")
+            settings_patch["outline"] = dict(width=0, color="DarkSlateGrey")
     elif dash.callback_context.triggered_id == "show-outline":
         # Define outline settings
         if outline:
-            settings["outline"] = dict(width=1, color="DarkSlateGrey")
+            settings_patch["outline"] = dict(width=1, color="DarkSlateGrey")
         else:
-            settings["outline"] = dict(width=0, color="DarkSlateGrey")
+            settings_patch["outline"] = dict(width=0, color="DarkSlateGrey")
     elif dash.callback_context.triggered_id == "show-atoms":
-        settings["atoms"] = atoms
+        settings_patch["atoms"] = atoms
     elif dash.callback_context.triggered_id == "show-cell":
         if cell:
-            settings["cell"] = 5
+            settings_patch["cell"] = 5
         else:
-            settings["cell"] = 0.01
+            settings_patch["cell"] = 0.01
             # for disabling cell-boundaries, we just show them in white for now - should reduce lines thickness
-    return settings, outline
+    return settings_patch, outline
 
 
 # END UPDATE FOR STORED DATA
@@ -1100,7 +1141,13 @@ def update_settings_store(size, outline, atoms, opac, saved, cell):
 @app.callback(
     Output("settings-downloader", "data"),
     Input("export-settings", "n_clicks"),
-    State("plot_settings", "data"),
+
+    State("show-outline", "value"),
+    State("show-atoms", "value"),
+    State("show-cell", "value"),
+    State("particle-size", "value"),
+    State("opacity", "value"),
+
     State("slider-val", "value"),
     State("filter-val", "active"),
     State("slider-x", "value"),
@@ -1112,7 +1159,8 @@ def update_settings_store(size, outline, atoms, opac, saved, cell):
     State("UP_STORE", "data"),
     prevent_initial_call=True
 )
-def export_settings(click, data, val_val, val_act, x_val, x_act, y_val, y_act, z_val, z_act, up_store):
+def export_settings(click, show_outline, show_atoms, show_cell, particle_size, opacity, val_val, val_act, x_val, x_act,
+                    y_val, y_act, z_val, z_act, up_store):
     # Writing to settings.json
     # TODO could use better type/null checks
     if type(up_store["ID"]) is not str:
@@ -1122,10 +1170,15 @@ def export_settings(click, data, val_val, val_act, x_val, x_act, y_val, y_act, z
         print("exporting settings")
         session_id = up_store['ID']
         session_path = f"session/{session_id}".format(session_id=session_id)
-
         # parse settings-file
         config = {
-            'settings': data,
+            'settings': {
+                'outline': show_outline,
+                'atoms': show_atoms,
+                'cell': show_cell,
+                'size': particle_size,
+                'opacity': opacity
+            },
             'tools': {
                 'val_val': val_val,
                 'val_act': val_act,
@@ -1137,9 +1190,10 @@ def export_settings(click, data, val_val, val_act, x_val, x_act, y_val, y_act, z
                 'z_act': z_act,
             }
         }
-        with open(Path(session_path+"/settings.json"), "w") as f:
+        with open(Path(session_path + "/settings.json"), "w") as f:
             json.dump(config, f)
-        return dcc.send_file(path=Path(session_path+"/settings.json"), filename="settings.json")
+        return dcc.send_file(path=Path(session_path + "/settings.json"), filename="settings.json")
+
 
 @app.callback(
     [
@@ -1181,6 +1235,7 @@ def update_tools(data, config_imported):
             len(data["val"]) - 1,
             1,
         )
+
 
 # # Updating slider-range indicators X
 @app.callback(
@@ -1411,7 +1466,8 @@ def updatePlot(
         # print("PLOT-Settings")
         patched_fig["data"][0]["marker"]["line"] = settings["outline"]
         patched_fig["data"][0]["marker"]["size"] = settings["size"]
-        patched_fig["data"][0]["marker"]["opacity"] = settings["opac"]
+        patched_fig["data"][0]["marker"]["opacity"] = settings["opacity"]
+        print("updatet opac to: ", settings["opacity"])
         for i in [1, 2, 3, 4]:
             patched_fig["data"][i]["line"]["width"] = settings["cell"]
         patched_fig["data"][5]["visible"] = settings["atoms"]
@@ -1501,16 +1557,16 @@ Sets transition options used during Plotly.react updates."
     prevent_initial_call=True,
 )
 def slicePlot(
-    slider_range,
-    dense_inactive,
-    slider_range_cs_x,
-    cs_x_inactive,
-    slider_range_cs_y,
-    cs_y_inactive,
-    slider_range_cs_z,
-    cs_z_inactive,
-    f_data,
-    cam,
+        slider_range,
+        dense_inactive,
+        slider_range_cs_x,
+        cs_x_inactive,
+        slider_range_cs_y,
+        cs_y_inactive,
+        slider_range_cs_z,
+        cs_z_inactive,
+        f_data,
+        cam,
 ):
     if f_data is None:
         raise PreventUpdate
@@ -1525,7 +1581,7 @@ def slicePlot(
     if slider_range is not None and dense_inactive:  # Any slider Input there? Do:
         low, high = slider_range
         mask = (dfu["val"] >= np.unique(df["val"])[low]) & (
-            dfu["val"] <= np.unique(df["val"])[high]
+                dfu["val"] <= np.unique(df["val"])[high]
         )
         dfu = dfu[mask]
 
@@ -1533,7 +1589,7 @@ def slicePlot(
     if slider_range_cs_x is not None and cs_x_inactive:  # Any slider Input there? Do:
         low, high = slider_range_cs_x
         mask = (dfu["x"] >= np.unique(df["x"])[low]) & (
-            dfu["x"] <= np.unique(df["x"])[high]
+                dfu["x"] <= np.unique(df["x"])[high]
         )
         dfu = dfu[mask]
         print("MASK: ", mask)
@@ -1543,7 +1599,7 @@ def slicePlot(
     if slider_range_cs_y is not None and cs_y_inactive:  # Any slider Input there? Do:
         low, high = slider_range_cs_y
         mask = (dfu["y"] >= np.unique(df["y"])[low]) & (
-            dfu["y"] <= np.unique(df["y"])[high]
+                dfu["y"] <= np.unique(df["y"])[high]
         )
         dfu = dfu[mask]
 
@@ -1551,7 +1607,7 @@ def slicePlot(
     if slider_range_cs_z is not None and cs_z_inactive:  # Any slider Input there? Do:
         low, high = slider_range_cs_z
         mask = (dfu["z"] >= np.unique(df["z"])[low]) & (
-            dfu["z"] <= np.unique(df["z"])[high]
+                dfu["z"] <= np.unique(df["z"])[high]
         )
         dfu = dfu[mask]
 
@@ -1563,6 +1619,7 @@ def slicePlot(
     # sadly the patch overwrites our cam positioning, which is why we have to re-patch it everytime
     patched_fig["layout"]["scene"]["camera"] = cam
     return patched_fig
+
 
 @app.callback(
     Output("orientation", "figure"),
@@ -1647,23 +1704,6 @@ def update_footer(f_data, state):
 
 # CALLBACKS FOR SIDEBAR
 
-
-# Update settings sidebar
-# TODO: this can probably be deleted
-@app.callback(
-    Output("sz/isosurf-label", "children"),
-    Output("opac-label", "style"),
-    Output("sc-opac", "style"),
-    Input("run-mala", "n_clicks"),
-    prevent_initial_call=True,
-)
-def updateSettings(run_mala):
-    # print("OPT settings-update triggered by: ", dash.callback_context.triggered_id)
-    return (
-        "Size",
-        {"visibility": "visible"},
-        {"visibility": "visible", "width": "5em", "marginLeft": "0.25em"},
-    )
 
 
 @app.callback(
