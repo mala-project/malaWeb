@@ -404,7 +404,7 @@ def reset_sliders(n_clicks_x, n_clicks_y, n_clicks_z, n_clicks_dense, data):
 
 # Storing camera position
 @app.callback(
-    Output("cam_store", "data"),
+    Output("cam_store", "data", allow_duplicate=True),
     [
         Input("default-cam", "n_clicks"),
         Input("x-y-cam", "n_clicks"),
@@ -715,8 +715,6 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
     Output("particle-size", "value"),
     Output("opacity", "value"),
 
-    #Output("plot_settings", "data", allow_duplicate=True),
-
     Output("slider-val", "value"),
     Output("filter-val", "active"),
     Output("slider-x", "value"),
@@ -725,6 +723,8 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
     Output("slice-y", "active"),
     Output("slider-z", "value"),
     Output("slice-z", "active"),
+
+    Output("cam_store", "data"),
     Input("import-settings", "contents"),
     prevent_initial_call=True
 )
@@ -737,10 +737,8 @@ def import_config(contents):
 
     Returns
     -------
-    values to each component, which the update settings_store, which then updates the plot
-
+    values to each component, either dash_no_update, or actual value parsed from input-data-JSON
     '''
-    print("config importer starting")
     if contents is None:
         raise PreventUpdate
     else:
@@ -748,63 +746,96 @@ def import_config(contents):
         decoded = base64.b64decode(content_string)
         json_decoded = json.loads(decoded)
 
-        print("importing: ", json_decoded)
-        if "tools" in json_decoded.keys():
-            imported_tools = json_decoded["tools"]
-            # split this up into multiple returns (2 for each slider =8 total)
+        settings_to_parse = "settings" in json_decoded.keys()
+        tools_to_parse = "tools" in json_decoded.keys()
+        cam_to_parse = "cam" in json_decoded.keys()
 
-            if "settings" in json_decoded.keys():
-                # CASE 1: Settings and Tools are included in imported config
-                imported_settings = json_decoded["settings"]
-                return (
-                    None, imported_settings["outline"],
-                    imported_settings["atoms"], imported_settings["cell"],
-                    imported_settings["size"], imported_settings["opacity"],
+        get_setting = lambda setting: json_decoded["settings"][setting] if settings_to_parse else dash.no_update
+        get_tool = lambda tool: json_decoded["tools"][tool] if tools_to_parse else dash.no_update
+        get_cam = lambda: json_decoded["cam"] if cam_to_parse else dash.no_update
 
-                    imported_tools["val_val"], imported_tools["val_act"],
-                    imported_tools["x_val"], imported_tools["x_act"],
-                    imported_tools["y_val"], imported_tools["y_act"],
-                    imported_tools["z_val"], imported_tools["z_act"]
-                )
-            else:
-                # CASE 2: No Settings, but Tools are imported in config
-                return (
-                    None, dash.no_update,
-                    dash.no_update, dash.no_update,
-                    dash.no_update, dash.no_update,
+        return (
+            None,
+            get_setting("outline"),
+            get_setting("atoms"),
+            get_setting("cell"),
+            get_setting("size"),
+            get_setting("opacity"),
 
-                    imported_tools["val_val"], imported_tools["val_act"],
-                    imported_tools["x_val"], imported_tools["x_act"],
-                    imported_tools["y_val"], imported_tools["y_act"],
-                    imported_tools["z_val"], imported_tools["z_act"]
-                )
+            get_tool("val_val"),
+            get_tool("val_act"),
+            get_tool("x_val"),
+            get_tool("x_act"),
+            get_tool("y_val"),
+            get_tool("y_act"),
+            get_tool("z_val"),
+            get_tool("z_act"),
 
-        elif "settings" in json_decoded.keys():
-            # CASE 3: Settings, but no Tools are imported in config
-            imported_settings = json_decoded["settings"]
-            return (
-                None, imported_settings["outline"],
-                imported_settings["atoms"], imported_settings["cell"],
-                imported_settings["size"], imported_settings["opacity"],
+            get_cam()
+        )
 
-                dash.no_update, dash.no_update,
-                dash.no_update, dash.no_update,
-                dash.no_update, dash.no_update,
-                dash.no_update, dash.no_update
-            )
 
-        else:
-            # CASE 4: Nothing is imported to config
-            return (
-                None, dash.no_update,
-                dash.no_update, dash.no_update,
-                dash.no_update, dash.no_update,
 
-                dash.no_update, dash.no_update,
-                dash.no_update, dash.no_update,
-                dash.no_update, dash.no_update,
-                dash.no_update, dash.no_update
-            )
+        # content_type, content_string = contents.split(',')
+        # decoded = base64.b64decode(content_string)
+        # json_decoded = json.loads(decoded)
+        #
+        # if "tools" in json_decoded.keys():
+        #     imported_tools = json_decoded["tools"]
+        #     # split this up into multiple returns (2 for each slider =8 total)
+        #
+        #     if "settings" in json_decoded.keys():
+        #         # CASE 1: Settings and Tools are included in imported config
+        #         imported_settings = json_decoded["settings"]
+        #         return (
+        #             None, imported_settings["outline"],
+        #             imported_settings["atoms"], imported_settings["cell"],
+        #             imported_settings["size"], imported_settings["opacity"],
+        #
+        #             imported_tools["val_val"], imported_tools["val_act"],
+        #             imported_tools["x_val"], imported_tools["x_act"],
+        #             imported_tools["y_val"], imported_tools["y_act"],
+        #             imported_tools["z_val"], imported_tools["z_act"]
+        #         )
+        #     else:
+        #         # CASE 2: No Settings, but Tools are imported in config
+        #         return (
+        #             None, dash.no_update,
+        #             dash.no_update, dash.no_update,
+        #             dash.no_update, dash.no_update,
+        #
+        #             imported_tools["val_val"], imported_tools["val_act"],
+        #             imported_tools["x_val"], imported_tools["x_act"],
+        #             imported_tools["y_val"], imported_tools["y_act"],
+        #             imported_tools["z_val"], imported_tools["z_act"]
+        #         )
+        #
+        # elif "settings" in json_decoded.keys():
+        #     # CASE 3: Settings, but no Tools are imported in config
+        #     imported_settings = json_decoded["settings"]
+        #     return (
+        #         None, imported_settings["outline"],
+        #         imported_settings["atoms"], imported_settings["cell"],
+        #         imported_settings["size"], imported_settings["opacity"],
+        #
+        #         dash.no_update, dash.no_update,
+        #         dash.no_update, dash.no_update,
+        #         dash.no_update, dash.no_update,
+        #         dash.no_update, dash.no_update
+        #     )
+        #
+        # else:
+        #     # CASE 4: Nothing is imported to config
+        #     return (
+        #         None, dash.no_update,
+        #         dash.no_update, dash.no_update,
+        #         dash.no_update, dash.no_update,
+        #
+        #         dash.no_update, dash.no_update,
+        #         dash.no_update, dash.no_update,
+        #         dash.no_update, dash.no_update,
+        #         dash.no_update, dash.no_update
+        #     )
 
 
 # END IMPORT SETTINGS
@@ -1083,10 +1114,9 @@ def updateDF(trig, model_choice, temp_choice, upload):
     Input("show-outline", "value"),
     Input("show-atoms", "value"),
     Input("opacity", "value"),
-    State("plot_settings", "data"),
     Input("show-cell", "value"),
 )
-def update_config_store(size, outline, atoms, opacity, saved, cell):
+def update_settings_store(size, outline, atoms, opacity, cell):
     """
     Parameters
     ----------
@@ -1094,13 +1124,15 @@ def update_config_store(size, outline, atoms, opacity, saved, cell):
     outline
     atoms
     opacity
-    saved
     cell
 
     Returns
     -------
     dict of settings-values
     bool for enabling/disabling Outline checkbox
+
+    -------
+    One change in the settings updates all settings in config
 
     """
     # On initial CB (default settings)
@@ -1115,32 +1147,25 @@ def update_config_store(size, outline, atoms, opacity, saved, cell):
         }
         return plot_settings, True
 
-    # SETTINGS DATA STORED
-    settings_patch = Patch()
-
-    if dash.callback_context.triggered_id == "particle-size":
-        settings_patch["size"] = size
-    elif dash.callback_context.triggered_id == "opacity":
-        if opacity is None:
-            raise PreventUpdate
-        settings_patch["opacity"] = opacity
-        if opacity < 1:
-            outline = False
-            settings_patch["outline"] = dict(width=0, color="DarkSlateGrey")
-    elif dash.callback_context.triggered_id == "show-outline":
+    else:
+        settings_patch = Patch()
         if outline:
             settings_patch["outline"] = dict(width=1, color="DarkSlateGrey")
         else:
             settings_patch["outline"] = dict(width=0, color="DarkSlateGrey")
-    elif dash.callback_context.triggered_id == "show-atoms":
         settings_patch["atoms"] = atoms
-    elif dash.callback_context.triggered_id == "show-cell":
         if cell:
             settings_patch["cell"] = 5
         else:
             settings_patch["cell"] = 0.01
             # for disabling cell-boundaries, we just draw them thinly
-    return settings_patch, outline
+        settings_patch["size"] = size
+        settings_patch["opacity"] = opacity
+        if opacity is not None:
+            if opacity < 1:
+                outline = False
+                settings_patch["outline"] = dict(width=0, color="DarkSlateGrey")
+        return settings_patch, outline
 
 
 # END UPDATE FOR STORED DATA
@@ -1166,34 +1191,35 @@ def update_config_store(size, outline, atoms, opacity, saved, cell):
     State("slider-z", "value"),
     State("slice-z", "active"),
     State("UP_STORE", "data"),
+
+    State("cam_store", "data"),
     prevent_initial_call=True
 )
 def export_settings(click, show_outline, show_atoms, show_cell, particle_size, opacity, val_val, val_act, x_val, x_act,
-                    y_val, y_act, z_val, z_act, up_store):
+                    y_val, y_act, z_val, z_act, up_store, cam_store):
     """
-
     Parameters
     ----------
-    click
-    show_outline
-    show_atoms
-    show_cell
-    particle_size
-    opacity
-    val_val
-    val_act
-    x_val
-    x_act
-    y_val
-    y_act
-    z_val
-    z_act
-    up_store
+    click: Int (number of button presses)
+    show_outline: Boolean
+    show_atoms: Boolean
+    show_cell: Boolean
+    particle_size: Int
+    opacity: Float between 0.1 and 1.0
+    val_val: Float
+    val_act: Float
+    x_val: Float
+    x_act: Float
+    y_val: Float
+    y_act: Float
+    z_val: Float
+    z_act: Float
+    up_store: dict
+    cam_store: dict
 
     Returns
     -------
     File-Download
-
     """
     # TODO could use better type/null checks
     if type(up_store["ID"]) is not str:
@@ -1219,7 +1245,8 @@ def export_settings(click, show_outline, show_atoms, show_cell, particle_size, o
                 'y_act': y_act,
                 'z_val': z_val,
                 'z_act': z_act,
-            }
+            },
+            'cam': cam_store
         }
         with open(Path(session_path + "/settings.json"), "w") as f:
             json.dump(config, f)
@@ -1498,7 +1525,7 @@ def updatePlot(
         patched_fig["data"][0]["marker"]["line"] = settings["outline"]
         patched_fig["data"][0]["marker"]["size"] = settings["size"]
         patched_fig["data"][0]["marker"]["opacity"] = settings["opacity"]
-        print("updatet opac to: ", settings["opacity"])
+        print("updatet plot-opac to: ", settings["opacity"])
         for i in [1, 2, 3, 4]:
             patched_fig["data"][i]["line"]["width"] = settings["cell"]
         patched_fig["data"][5]["visible"] = settings["atoms"]
