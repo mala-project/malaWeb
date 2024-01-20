@@ -77,7 +77,7 @@ upload_modal = dbc.Modal(
                         )
                     ),
                     id="collapse-atom-list",
-                    style={"max-height": "30rem"},
+                    style={"maxHeight": "30rem"},
                     is_open=False,
                 ),
                 dcc.Graph(id="atoms-preview"),

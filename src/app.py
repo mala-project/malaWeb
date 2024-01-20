@@ -1086,24 +1086,34 @@ def updateDF(trig, model_choice, temp_choice, upload):
     State("plot_settings", "data"),
     Input("show-cell", "value"),
 )
-def update_config_store(size, outline, atoms, opac, saved, cell):
-    # print("OPT settings-store-update triggered by: ", dash.callback_context.triggered_id)
-    print("updating settings_store")
+def update_config_store(size, outline, atoms, opacity, saved, cell):
+    """
+    Parameters
+    ----------
+    size
+    outline
+    atoms
+    opacity
+    saved
+    cell
 
-    # NO SETTINGS DATA STORED
-    # if dash.callback_context.triggered_id is initial CB
-    if saved is None:
+    Returns
+    -------
+    dict of settings-values
+    bool for enabling/disabling Outline checkbox
+
+    """
+    # On initial CB (default settings)
+    if dash.callback_context.triggered_id is None:
         # default settings
-
-        print("id: ", dash.ctx.triggered_id)
-        settings = {
+        plot_settings = {
             "size": 10,  # particle size
             "opacity": 1,  # particle opacity
             "outline": dict(width=1, color="DarkSlateGrey"),  # particle outline
             "atoms": True,
             "cell": 5,  # cell boundaries (width)
         }
-        return settings, True
+        return plot_settings, True
 
     # SETTINGS DATA STORED
     settings_patch = Patch()
@@ -1111,14 +1121,13 @@ def update_config_store(size, outline, atoms, opac, saved, cell):
     if dash.callback_context.triggered_id == "particle-size":
         settings_patch["size"] = size
     elif dash.callback_context.triggered_id == "opacity":
-        if opac is None:
+        if opacity is None:
             raise PreventUpdate
-        settings_patch["opacity"] = opac
-        if opac < 1:
+        settings_patch["opacity"] = opacity
+        if opacity < 1:
             outline = False
             settings_patch["outline"] = dict(width=0, color="DarkSlateGrey")
     elif dash.callback_context.triggered_id == "show-outline":
-        # Define outline settings
         if outline:
             settings_patch["outline"] = dict(width=1, color="DarkSlateGrey")
         else:
@@ -1130,7 +1139,7 @@ def update_config_store(size, outline, atoms, opac, saved, cell):
             settings_patch["cell"] = 5
         else:
             settings_patch["cell"] = 0.01
-            # for disabling cell-boundaries, we just show them in white for now - should reduce lines thickness
+            # for disabling cell-boundaries, we just draw them thinly
     return settings_patch, outline
 
 
@@ -1161,13 +1170,35 @@ def update_config_store(size, outline, atoms, opac, saved, cell):
 )
 def export_settings(click, show_outline, show_atoms, show_cell, particle_size, opacity, val_val, val_act, x_val, x_act,
                     y_val, y_act, z_val, z_act, up_store):
-    # Writing to settings.json
+    """
+
+    Parameters
+    ----------
+    click
+    show_outline
+    show_atoms
+    show_cell
+    particle_size
+    opacity
+    val_val
+    val_act
+    x_val
+    x_act
+    y_val
+    y_act
+    z_val
+    z_act
+    up_store
+
+    Returns
+    -------
+    File-Download
+
+    """
     # TODO could use better type/null checks
     if type(up_store["ID"]) is not str:
-        print("not exporting settings")
         raise PreventUpdate
     else:
-        print("exporting settings")
         session_id = up_store['ID']
         session_path = f"session/{session_id}".format(session_id=session_id)
         # parse settings-file
