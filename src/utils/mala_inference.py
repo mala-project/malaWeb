@@ -36,7 +36,7 @@ def run_mala_prediction(atoms_to_predict, model_and_temp, session_id,
         unique identifier for the session used for storing uploaded and downloadable files.
         Needed here for saving .cube at the correct location.
         Download component is expecting file with name "inference_data.cube"
-        Path would be: "../sessions/<session_id>/density.cube"
+        Path would be: "../sessions/<session_id>/inference_data.cube"
 
     Returns
     -------
@@ -139,10 +139,11 @@ def save_density_to_file(results, file_name):
     file_name : string
         Name of the file in which the density will be saved.
     """
+    print(results.keys())
     parameters = mala.Parameters()
     density_calculator = mala.Density(parameters)
     density_calculator.voxel = results["voxel"]
-    density_calculator.atoms = results["atoms"]
+    #density_calculator.atoms = results["atoms"]
     density_calculator.density = results["density"]
     density_calculator.grid_dimensions = results["grid_dimensions"]
     density_calculator.write_to_cube(file_name)

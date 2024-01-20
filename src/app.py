@@ -16,7 +16,7 @@ from dash.exceptions import PreventUpdate
 
 # utils
 from src.components import menu, settings, footer, main
-from src.utils.mala_inference import run_mala_prediction
+from src.utils.mala_inference import run_mala_prediction, save_density_to_file, save_dos_to_file
 
 # visualization
 import pandas as pd
@@ -845,10 +845,16 @@ def import_config(contents):
     Output("data-downloader", "data"),
     Input("download-data", "n_clicks"),
     State("UP_STORE", "data"),
+    State("df_store", "data"),
     prevent_initial_call=True
 )
-def download_data(click, up_data):
+def download_data(click, up_data, df):
+    print(df["MALA_DATA"])
+    # TODO: think of a way to pass ase.Atoms data to "save_density_to_file"; fix AttributeError
     try:
+        save_density_to_file(df["MALA_DATA"], "density_file")
+        save_dos_to_file(df["MALA_DATA"], "dos_file", "e-g_file")
+
         return dcc.send_file("./session/{}/inference_data.cube".format(up_data["ID"]))
     except FileNotFoundError:
         print("File not found")
