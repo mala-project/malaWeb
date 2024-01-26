@@ -43,7 +43,7 @@ atoms_table = dbc.Table(table_header + table_body, bordered=True)
 Popup-Modal on accepted file-session
 (called in sidebar below)
 """
-upload_modal = dbc.Modal(
+inference_modal = dbc.Modal(
     [
         dbc.ModalHeader(dbc.ModalTitle("Your Upload")),
         dbc.ModalBody(
@@ -151,7 +151,7 @@ upload_modal = dbc.Modal(
             style={"justifyContent": "center"},
         ),
     ],
-    id="session-modal",
+    id="inference_modal",
     size="lg",
     is_open=False,
 )
@@ -181,7 +181,7 @@ sidebar = html.Div(
             html.H6(
                 children="File-Upload",
                 style={"margin": "5px"},
-                id="open-session",
+                id="open-data-upload",
                 n_clicks=0,
             ),
             style={"textAlign": "center"},
@@ -239,7 +239,7 @@ sidebar = html.Div(
                     ),
                 )
             ),
-            id="collapse-session",
+            id="data-upload",
             is_open=True,
         ),
         dbc.Button(
@@ -278,7 +278,7 @@ sidebar = html.Div(
                 "fontSize": "0.85em",
             },
         ),
-        upload_modal,
+        inference_modal,
     ],
     className="sidebar",
 )

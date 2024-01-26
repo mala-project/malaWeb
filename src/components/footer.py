@@ -17,7 +17,7 @@ button = html.Div(
                             "Energy / Density of State",
                             style={"lineHeight": "0.65em", "font-size": "0.65em"},
                         ),
-                        id="open-bot",
+                        id="open-footer",
                         style={
                             "width": "10em",
                             "height": "1.2em",
@@ -33,7 +33,7 @@ button = html.Div(
                 )
             )
         ],
-        id="open-bot-canv",
+        id="open-footer-canvas",
         style={
             "height": "min-content",
             "background-color": "rgba(0, 0, 0, 0)",
@@ -159,7 +159,7 @@ oc_bar = html.Div(
     [
         dbc.Offcanvas(
             bar,
-            id="offcanvas-bot",
+            id="footer",
             is_open=False,
             style={
                 "height": "min-content",

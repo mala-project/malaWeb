@@ -74,7 +74,7 @@ plot_tools = dbc.Collapse(
                                         ),
                                         dbc.Col(
                                             html.Img(
-                                                id="reset-cs-x",
+                                                id="reset-slider-x",
                                                 src="/assets/x.svg",
                                                 n_clicks=0,
                                                 style={"width": "1.25em"},
@@ -111,7 +111,7 @@ plot_tools = dbc.Collapse(
                                         ),
                                         dbc.Col(
                                             html.Img(
-                                                id="reset-cs-y",
+                                                id="reset-slider-y",
                                                 src="/assets/x.svg",
                                                 n_clicks=0,
                                                 style={"width": "1.25em"},
@@ -147,7 +147,7 @@ plot_tools = dbc.Collapse(
                                         ),
                                         dbc.Col(
                                             html.Img(
-                                                id="reset-cs-z",
+                                                id="reset-slider-z",
                                                 src="/assets/x.svg",
                                                 n_clicks=0,
                                                 style={"width": "1.25em"},
@@ -183,7 +183,7 @@ plot_tools = dbc.Collapse(
                                         ),
                                         dbc.Col(
                                             html.Img(
-                                                id="reset-dense",
+                                                id="reset-slider-val",
                                                 src="/assets/x.svg",
                                                 n_clicks=0,
                                                 style={
@@ -215,6 +215,6 @@ plot_tools = dbc.Collapse(
             ]
         )
     ),
-    id="sc-tools-collapse",
+    id="tools",
     is_open=False,
 )
