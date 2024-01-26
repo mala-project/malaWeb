@@ -15,7 +15,7 @@ button = html.Div(
                     dbc.Button(
                         html.P(
                             "Energy / Density of State",
-                            style={"lineHeight": "0.65em", "font-size": "0.65em"},
+                            style={"lineHeight": "0.65em", "fontSize": "0.65em"},
                         ),
                         id="open-footer",
                         style={
@@ -36,7 +36,7 @@ button = html.Div(
         id="open-footer-canvas",
         style={
             "height": "min-content",
-            "background-color": "rgba(0, 0, 0, 0)",
+            "backgroundColor": "rgba(0, 0, 0, 0)",
             "border": "0",
         },
         is_open=False,
@@ -54,7 +54,7 @@ row1 = html.Tr(
     [
         html.Td(
             "Band energy",
-            style={"text-align": "center", "padding": 3, "font-size": "0.85em"},
+            style={"textAlign": "center", "padding": 3, "fontSize": "0.85em"},
         )
     ],
     style={"fontWeight": "bold"},
@@ -64,7 +64,7 @@ row2 = html.Tr(
         html.Td(
             0,
             id="bandEn",
-            style={"text-align": "right", "padding": 5, "font-size": "0.85em"},
+            style={"textAlign": "right", "padding": 5, "fontSize": "0.85em"},
         )
     ]
 )
@@ -72,17 +72,17 @@ row3 = html.Tr(
     [
         html.Td(
             "Total energy",
-            style={"text-align": "center", "padding": 3, "font-size": "0.85em"},
+            style={"textAlign": "center", "padding": 3, "fontSize": "0.85em"},
         )
     ],
-    style={"font-weight": "bold"},
+    style={"fontWeight": "bold"},
 )
 row4 = html.Tr(
     [
         html.Td(
             0,
             id="totalEn",
-            style={"text-align": "right", "padding": 5, "font-size": "0.85em"},
+            style={"textAlign": "right", "padding": 5, "fontSize": "0.85em"},
         )
     ]
 )
@@ -90,17 +90,17 @@ row5 = html.Tr(
     [
         html.Td(
             "Fermi energy",
-            style={"text-align": "center", "padding": 3, "font-size": "0.85em"},
+            style={"textAlign": "center", "padding": 3, "fontSize": "0.85em"},
         )
     ],
-    style={"font-weight": "bold"},
+    style={"fontWeight": "bold"},
 )
 row6 = html.Tr(
     [
         html.Td(
             "placeholder",
             id="fermiEn",
-            style={"text-align": "right", "padding": 5, "font-size": "0.85em"},
+            style={"textAlign": "right", "padding": 5, "fontSize": "0.85em"},
         )
     ]
 )
@@ -125,8 +125,8 @@ bar = dbc.Container(
                                 html.H6(
                                     "Density of State",
                                     style={
-                                        "font-size": "0.85em",
-                                        "font-weight": "bold",
+                                        "fontSize": "0.85em",
+                                        "fontWeight": "bold",
                                     },
                                 ),
                                 dcc.Graph(
@@ -165,12 +165,12 @@ oc_bar = html.Div(
                 "height": "min-content",
                 "width": "max-content",
                 "borderRadius": "5px",
-                "background-color": "rgba(248, 249, 250, 1)",
+                "backgroundColor": "rgba(248, 249, 250, 1)",
                 "left": "0",
                 "right": "0",
                 "margin": "auto",
                 "bottom": "0.5em",
-                "box-shadow": "rgba(0, 0, 0, 0.3) 0px 0px 16px -8px",
+                "boxShadow": "rgba(0, 0, 0, 0.3) 0px 0px 16px -8px",
                 "padding": -30,
             },
             scrollable=True,

@@ -6,6 +6,7 @@ from pathlib import Path
 from timeit import default_timer as timer
 
 import dash
+import dash.exceptions
 import dash_bootstrap_components as dbc
 import flask
 
@@ -275,6 +276,7 @@ def toggle_slice_x(n_x, active):
     if n_x:
         return not active
 
+
 # toggle slider x
 @app.callback(
     Output("slider-x", "disabled", allow_duplicate=True),
@@ -417,7 +419,7 @@ def reset_sliders(n_clicks_x, n_clicks_y, n_clicks_z, n_clicks_dense, data):
 
 
 @app.callback(
-    Output("cam_store", "data"),
+    Output("cam_store", "data", allow_duplicate=True),
     [
         Input("default-cam", "n_clicks"),
         Input("x-y-cam", "n_clicks"),
@@ -714,7 +716,12 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
 # IMPORT SETTINGS - DCC Uploader
 @app.callback(
     Output("import-settings", "contents"),
-    Output("plot_settings", "data", allow_duplicate=True),
+    Output("show-outline", "value", allow_duplicate=True),
+    Output("show-atoms", "value"),
+    Output("show-cell", "value"),
+    Output("particle-size", "value"),
+    Output("opacity", "value"),
+
     Output("slider-val", "value"),
     Output("filter-val", "active"),
     Output("slider-x", "value"),
@@ -723,6 +730,8 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
     Output("slice-y", "active"),
     Output("slider-z", "value"),
     Output("slice-z", "active"),
+
+    Output("cam_store", "data"),
     Input("import-settings", "contents"),
     prevent_initial_call=True
 )
@@ -731,6 +740,9 @@ def import_config(contents):
     contents: base64 encoded string (JSON) that will be decoded, parsed and split up into returns for tools (multiple)
               and settings (one return to plot_settings)
     Changes to these Outputs will apply the imported settings to the plot automatically
+    
+    Returns:
+    values to each component, either dash_no_update, or actual value parsed from input-data-JSON
     """
     if contents is None:
         raise PreventUpdate
@@ -742,44 +754,34 @@ def import_config(contents):
         if "tools" in json_decoded.keys():
             imported_tools = json_decoded["tools"]
             # split this up into multiple returns (2 for each slider =8 total)
+        settings_to_parse = "settings" in json_decoded.keys()
+        tools_to_parse = "tools" in json_decoded.keys()
+        cam_to_parse = "cam" in json_decoded.keys()
 
-            if "settings" in json_decoded.keys():
-                return (
-                    None, json_decoded["settings"],
-                    imported_tools["val_val"], imported_tools["val_act"],
-                    imported_tools["x_val"], imported_tools["x_act"],
-                    imported_tools["y_val"], imported_tools["y_act"],
-                    imported_tools["z_val"], imported_tools["z_act"]
-                    )
-            else:
-                return (
-                    None, dash.no_update,
-                    imported_tools["val_val"], imported_tools["val_act"],
-                    imported_tools["x_val"], imported_tools["x_act"],
-                    imported_tools["y_val"], imported_tools["y_act"],
-                    imported_tools["z_val"], imported_tools["z_act"]
-                    )
+        get_setting = lambda setting: json_decoded["settings"][setting] if settings_to_parse else dash.no_update
+        get_tool = lambda tool: json_decoded["tools"][tool] if tools_to_parse else dash.no_update
+        get_cam = lambda: json_decoded["cam"] if cam_to_parse else dash.no_update
 
-        elif "settings" in json_decoded.keys():
-            return (
-                None, json_decoded["settings"],
-                dash.no_update, dash.no_update,
-                dash.no_update, dash.no_update,
-                dash.no_update, dash.no_update,
-                dash.no_update, dash.no_update
-                )
+        return (
+            None,
+            get_setting("outline"),
+            get_setting("atoms"),
+            get_setting("cell"),
+            get_setting("size"),
+            get_setting("opacity"),
 
-        else:
-            return (
-                None, dash.no_update,
-                dash.no_update, dash.no_update,
-                dash.no_update, dash.no_update,
-                dash.no_update, dash.no_update,
-                dash.no_update, dash.no_update
-                )
+            get_tool("val_val"),
+            get_tool("val_act"),
+            get_tool("x_val"),
+            get_tool("x_act"),
+            get_tool("y_val"),
+            get_tool("y_act"),
+            get_tool("z_val"),
+            get_tool("z_act"),
 
+            get_cam()
+        )
 
-# END IMPORT SETTINGS
 
 # DATA DOWNLOAD CALLBACK
 @app.callback(
@@ -1011,7 +1013,6 @@ def update_dataframes(trig, model_choice, temp_choice, upload):
         "val": np.unique(density),
     }
 
-
     """
            Importing Data 
                Parameters imported from:
@@ -1052,53 +1053,62 @@ def update_dataframes(trig, model_choice, temp_choice, upload):
 @app.callback(
     Output("plot_settings", "data"),
     Output("show-outline", "value"),
-    Input("sc-size", "value"),
+    Input("particle-size", "value"),
     Input("show-outline", "value"),
     Input("show-atoms", "value"),
-    Input("sc-opac", "value"),
-    State("plot_settings", "data"),
+    Input("opacity", "value"),
     Input("show-cell", "value"),
 )
-def update_settings_store(size, outline, atoms, opac, saved, cell):
+def update_settings_store(size, outline, atoms, opacity, cell):
     """
-    Stores the settings for the plot in a dcc.Store-component
+    Parameters
+    ----------
+    size
+    outline
+    atoms
+    opacity
+    cell
+
+    Returns
+    -------
+    dict of settings-values
+    bool for enabling/disabling Outline checkbox
+
+    -------
+    One change in the settings updates all settings in config
+
     """
-    if saved is None:
+    # On initial CB (default settings)
+    if dash.callback_context.triggered_id is None:
         # default settings
-        settings = {
+        plot_settings = {
             "size": 10,  # particle size
-            "opac": 1,  # particle opacity
+            "opacity": 1,  # particle opacity
             "outline": dict(width=1, color="DarkSlateGrey"),  # particle outline
             "atoms": True,
-            "cell": 5,  # cell boundaries (color)
+            "cell": 5,  # cell boundaries (width)
         }
+        return plot_settings, True
 
     else:
-        settings = saved
-    if dash.callback_context.triggered_id == "sc-size":
-        settings["size"] = size
-    elif dash.callback_context.triggered_id == "sc-opac":
-        if opac is None:
-            raise PreventUpdate
-        settings["opac"] = opac
-        if opac < 1:
-            outline = False
-            settings["outline"] = dict(width=0, color="DarkSlateGrey")
-    elif dash.callback_context.triggered_id == "show-outline":
-        # Define outline settings
+        settings_patch = Patch()
         if outline:
-            settings["outline"] = dict(width=1, color="DarkSlateGrey")
+            settings_patch["outline"] = dict(width=1, color="DarkSlateGrey")
         else:
-            settings["outline"] = dict(width=0, color="DarkSlateGrey")
-    elif dash.callback_context.triggered_id == "show-atoms":
-        settings["atoms"] = atoms
-    elif dash.callback_context.triggered_id == "show-cell":
+            settings_patch["outline"] = dict(width=0, color="DarkSlateGrey")
+        settings_patch["atoms"] = atoms
         if cell:
-            settings["cell"] = 5
+            settings_patch["cell"] = 5
         else:
-            settings["cell"] = 0.01
-            # for disabling cell-boundaries, we just show them in white for now - should reduce lines thickness
-    return settings, outline
+            settings_patch["cell"] = 0.01
+            # for disabling cell-boundaries, we just draw them thinly
+        settings_patch["size"] = size
+        settings_patch["opacity"] = opacity
+        if opacity is not None:
+            if opacity < 1:
+                outline = False
+                settings_patch["outline"] = dict(width=0, color="DarkSlateGrey")
+        return settings_patch, outline
 
 
 # EXPORT SETTINGS
@@ -1106,7 +1116,13 @@ def update_settings_store(size, outline, atoms, opac, saved, cell):
 @app.callback(
     Output("settings-downloader", "data"),
     Input("export-settings", "n_clicks"),
-    State("plot_settings", "data"),
+
+    State("show-outline", "value"),
+    State("show-atoms", "value"),
+    State("show-cell", "value"),
+    State("particle-size", "value"),
+    State("opacity", "value"),
+
     State("slider-val", "value"),
     State("filter-val", "active"),
     State("slider-x", "value"),
@@ -1116,11 +1132,37 @@ def update_settings_store(size, outline, atoms, opac, saved, cell):
     State("slider-z", "value"),
     State("slice-z", "active"),
     State("UP_STORE", "data"),
+
+    State("cam_store", "data"),
     prevent_initial_call=True
 )
-def export_settings(click, data, val_val, val_act, x_val, x_act, y_val, y_act, z_val, z_act, up_store):
+def export_settings(click, show_outline, show_atoms, show_cell, particle_size, opacity, val_val, val_act, x_val, x_act,
+                    y_val, y_act, z_val, z_act, up_store, cam_store):
     """
     Takes values of all configurations (settings, tools, cam) and stores them in a JSON-file, which is then sent to user
+    ----------
+    Parameters
+    ----------
+    click: Int (number of button presses)
+    show_outline: Boolean
+    show_atoms: Boolean
+    show_cell: Boolean
+    particle_size: Int
+    opacity: Float between 0.1 and 1.0
+    val_val: Float
+    val_act: Float
+    x_val: Float
+    x_act: Float
+    y_val: Float
+    y_act: Float
+    z_val: Float
+    z_act: Float
+    up_store: dict
+    cam_store: dict
+
+    Returns
+    -------
+    File-Download
     """
     # TODO could use better type/null checks
     if type(up_store["ID"]) is not str:
@@ -1128,10 +1170,15 @@ def export_settings(click, data, val_val, val_act, x_val, x_act, y_val, y_act, z
     else:
         session_id = up_store['ID']
         session_path = f"session/{session_id}".format(session_id=session_id)
-
         # parse settings-file
         config = {
-            'settings': data,
+            'settings': {
+                'outline': show_outline,
+                'atoms': show_atoms,
+                'cell': show_cell,
+                'size': particle_size,
+                'opacity': opacity
+            },
             'tools': {
                 'val_val': val_val,
                 'val_act': val_act,
@@ -1141,11 +1188,12 @@ def export_settings(click, data, val_val, val_act, x_val, x_act, y_val, y_act, z
                 'y_act': y_act,
                 'z_val': z_val,
                 'z_act': z_act,
-            }
+            },
+            'cam': cam_store
         }
-        with open(Path(session_path+"/settings.json"), "w") as f:
+        with open(Path(session_path + "/settings.json"), "w") as f:
             json.dump(config, f)
-        return dcc.send_file(path=Path(session_path+"/settings.json"), filename="settings.json")
+        return dcc.send_file(path=Path(session_path + "/settings.json"), filename="settings.json")
 
 
 @app.callback(
@@ -1446,7 +1494,7 @@ def update_plot(
         print("PLOT-Settings")
         patched_fig["data"][0]["marker"]["line"] = settings["outline"]
         patched_fig["data"][0]["marker"]["size"] = settings["size"]
-        patched_fig["data"][0]["marker"]["opacity"] = settings["opac"]
+        patched_fig["data"][0]["marker"]["opacity"] = settings["opacity"]
         for i in [1, 2, 3, 4]:
             patched_fig["data"][i]["line"]["width"] = settings["cell"]
         patched_fig["data"][5]["visible"] = settings["atoms"]
@@ -1537,7 +1585,7 @@ def slice_plot(
     if slider_range is not None and dense_inactive:  # Any slider Input there? Do:
         low, high = slider_range
         mask = (dfu["val"] >= np.unique(df["val"])[low]) & (
-            dfu["val"] <= np.unique(df["val"])[high]
+                dfu["val"] <= np.unique(df["val"])[high]
         )
         dfu = dfu[mask]
 
@@ -1545,7 +1593,7 @@ def slice_plot(
     if slider_range_cs_x is not None and cs_x_inactive:  # Any slider Input there? Do:
         low, high = slider_range_cs_x
         mask = (dfu["x"] >= np.unique(df["x"])[low]) & (
-            dfu["x"] <= np.unique(df["x"])[high]
+                dfu["x"] <= np.unique(df["x"])[high]
         )
         dfu = dfu[mask]
 
@@ -1553,7 +1601,7 @@ def slice_plot(
     if slider_range_cs_y is not None and cs_y_inactive:  # Any slider Input there? Do:
         low, high = slider_range_cs_y
         mask = (dfu["y"] >= np.unique(df["y"])[low]) & (
-            dfu["y"] <= np.unique(df["y"])[high]
+                dfu["y"] <= np.unique(df["y"])[high]
         )
         dfu = dfu[mask]
 
@@ -1561,7 +1609,7 @@ def slice_plot(
     if slider_range_cs_z is not None and cs_z_inactive:  # Any slider Input there? Do:
         low, high = slider_range_cs_z
         mask = (dfu["z"] >= np.unique(df["z"])[low]) & (
-            dfu["z"] <= np.unique(df["z"])[high]
+                dfu["z"] <= np.unique(df["z"])[high]
         )
         dfu = dfu[mask]
 
@@ -1573,6 +1621,7 @@ def slice_plot(
     # sadly the patch overwrites our cam positioning, which is why we have to re-patch it everytime
     patched_fig["layout"]["scene"]["camera"] = cam
     return patched_fig
+
 
 @app.callback(
     Output("orientation", "figure"),
