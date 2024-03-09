@@ -1,23 +1,21 @@
 # IMPORTS
 import base64
 import json
-import os
 from pathlib import Path
-from timeit import default_timer as timer
 
 import dash
 import dash.exceptions
 import dash_bootstrap_components as dbc
-import flask
+from dash_extensions import enrich
 
-from dash.dependencies import Input, Output, State, ClientsideFunction
-from dash import Dash, dcc, html, Patch, clientside_callback
+from dash.dependencies import Input, Output, State
+from dash import Dash, dcc, html, Patch
 from dash.exceptions import PreventUpdate
 
 # utils
 from src.components import menu, settings, footer, main
 from src.utils.exceptions import upload_exception
-from src.utils.mala_inference import run_mala_prediction
+from src.utils.mala_inference import run_mala_prediction, save_density_to_file, save_dos_to_file
 
 # visualization
 import pandas as pd
@@ -35,7 +33,8 @@ import dash_uploader as du
 
 # CONSTANTS
 ATOM_LIMIT = 200
-# TODO implement caching of the dataset to improve performance
+# TODO: use dash-extension Enrichments to improve performance (ServersideOutputTransform)
+# TODO implement caching/Memoization of the dataset to improve performance
 # as in: https://dash.plotly.com/performance
 
 # TODO: implement patching so that figures are updated, not recreated
@@ -89,9 +88,6 @@ print(
 )
 print("STARTING UP...")
 
-"""
-
-"""
 app = Dash(
     __name__,
     external_stylesheets=[dbc.icons.BOOTSTRAP, dbc.themes.BOOTSTRAP],
@@ -152,6 +148,7 @@ p_layout_landing = dbc.Container(
 )
 
 app.layout = p_layout_landing
+
 
 # CALLBACKS & FUNCTIONS
 
@@ -371,9 +368,9 @@ def toggle_val_slider(active):
 # TODO this can be included in tools_update
 @app.callback(
     Output("slider-x", "value", allow_duplicate=True),
-    Output("slider-y", "value", allow_duplicate=True,),
-    Output("slider-z", "value", allow_duplicate=True,),
-    Output("slider-val", "value", allow_duplicate=True,),
+    Output("slider-y", "value", allow_duplicate=True, ),
+    Output("slider-z", "value", allow_duplicate=True, ),
+    Output("slider-val", "value", allow_duplicate=True, ),
     Input("reset-slider-x", "n_clicks"),
     Input("reset-slider-y", "n_clicks"),
     Input("reset-slider-z", "n_clicks"),
@@ -865,9 +862,9 @@ def open_inference_modal(upload, edit_input, page_state, data):
     Input("model-choice", "value"),
     prevent_initial_call=True,
 )
-def init_temp_choice(model_choice):
+def update_temp_choice(model_choice):
     """
-    Initializes the temperature input depending on model-choice.
+    Updates the temperature input depending on model-choice.
     If a temp-range is given by model-choice, the input is enabled and the range is set as min/max
     """
     if model_choice is None:
@@ -930,14 +927,20 @@ def update_dataframes(trig, model_choice, temp_choice, upload):
     # ASE.reading to receive ATOMS-objs, to pass to MALA-inference
     # no ValueError Exception needed, bc this is done directly on session
     read_atoms = ase.Atoms.fromdict(upload["ATOMS"])
+    session_id = upload["ID"]
 
     # (a) GET DATA FROM MALA (/ inference script)
 
     mala_data = run_mala_prediction(
         atoms_to_predict=read_atoms,
         model_and_temp=model_temp_path,
-        session_id=upload["ID"],
+        session_id=session_id,
     )
+
+    # save results to file(s)
+    save_density_to_file(mala_data, "density_prediction.cube")
+    save_dos_to_file(mala_data, f"session/{session_id}/dos_prediction.npy", f"session/{session_id}/energy_grid_prediction.npy")
+
     # contains 'band_energy', 'total_energy', 'density', 'density_of_states', 'energy_grid'
     # mala_data is stored in df_store dict under key 'MALA_DATA'. (See declaration of df_store below for more info)
     density = mala_data["density"]
@@ -1240,79 +1243,82 @@ def update_tools(data, config_imported):
         )
 
 
-@app.callback(
-    Output("x-min-indicator", "children"),
-    Output("x-max-indicator", "children"),
-    Input("slider-x", "value"),
-    State("unique_df", "data"),
-)
-def update_indicators_x(value, unique_data):
-    """
-    Updates the slider-range indicators for slider-x
-    """
-    if unique_data is None:  # in case of reset:
-        raise PreventUpdate
+# disabling semi-important slider indicators for now for better performance
+# idea: don't calculate actual values, but just the index of the slider-value
 
-    u_data = np.array(unique_data["x"])
-
-    if value is None:
-        min_val = round(min(u_data), ndigits=5)
-        max_val = round(max(u_data), ndigits=5)
-    else:
-        min_v, max_v = value
-        min_val = round(u_data[min_v], ndigits=5)
-        max_val = round(u_data[max_v], ndigits=5)
-    return min_val, max_val
-
-
-@app.callback(
-    Output("y-lower-bound", "children"),
-    Output("y-higher-bound", "children"),
-    Input("slider-y", "value"),
-    State("unique_df", "data"),
-)
-def update_indicators_y(value, unique_data):
-    """
-    Updates the slider-range indicators for slider-y
-    """
-    if unique_data is None:  # in case of reset:
-        raise PreventUpdate
-
-    u_data = np.array(unique_data["y"])
-
-    if value is None:
-        min_val = round(min(u_data), ndigits=5)
-        max_val = round(max(u_data), ndigits=5)
-    else:
-        min_v, max_v = value
-        min_val = round(u_data[min_v], ndigits=5)
-        max_val = round(u_data[max_v], ndigits=5)
-    return min_val, max_val
+# @app.callback(
+#     Output("x-min-indicator", "children"),
+#     Output("x-max-indicator", "children"),
+#     Input("slider-x", "value"),
+#     State("unique_df", "data"),
+# )
+# def update_indicators_x(value, unique_data):
+#     """
+#     Updates the slider-range indicators for slider-x
+#     """
+#     if unique_data is None:  # in case of reset:
+#         raise PreventUpdate
+#
+#     u_data = np.array(unique_data["x"])
+#
+#     if value is None:
+#         min_val = round(min(u_data), ndigits=5)
+#         max_val = round(max(u_data), ndigits=5)
+#     else:
+#         min_v, max_v = value
+#         min_val = round(u_data[min_v], ndigits=5)
+#         max_val = round(u_data[max_v], ndigits=5)
+#     return min_val, max_val
 
 
-@app.callback(
-    Output("z-lower-bound", "children"),
-    Output("z-higher-bound", "children"),
-    Input("slider-z", "value"),
-    State("unique_df", "data"),
-)
-def update_indicators_z(value, unique_data):
-    """
-    Updates the slider-range indicators for slider-z
-    """
-    if unique_data is None:  # in case of reset:
-        raise PreventUpdate
+# @app.callback(
+#     Output("y-lower-bound", "children"),
+#     Output("y-higher-bound", "children"),
+#     Input("slider-y", "value"),
+#     State("unique_df", "data"),
+# )
+# def update_indicators_y(value, unique_data):
+#     """
+#     Updates the slider-range indicators for slider-y
+#     """
+#     if unique_data is None:  # in case of reset:
+#         raise PreventUpdate
+#
+#     u_data = np.array(unique_data["y"])
+#
+#     if value is None:
+#         min_val = round(min(u_data), ndigits=5)
+#         max_val = round(max(u_data), ndigits=5)
+#     else:
+#         min_v, max_v = value
+#         min_val = round(u_data[min_v], ndigits=5)
+#         max_val = round(u_data[max_v], ndigits=5)
+#     return min_val, max_val
 
-    u_data = np.array(unique_data["z"])
 
-    if value is None:
-        min_val = round(min(u_data), ndigits=5)
-        max_val = round(max(u_data), ndigits=5)
-    else:
-        min_v, max_v = value
-        min_val = round(u_data[min_v], ndigits=5)
-        max_val = round(u_data[max_v], ndigits=5)
-    return min_val, max_val
+# @app.callback(
+#     Output("z-lower-bound", "children"),
+#     Output("z-higher-bound", "children"),
+#     Input("slider-z", "value"),
+#     State("unique_df", "data"),
+# )
+# def update_indicators_z(value, unique_data):
+#     """
+#     Updates the slider-range indicators for slider-z
+#     """
+#     if unique_data is None:  # in case of reset:
+#         raise PreventUpdate
+#
+#     u_data = np.array(unique_data["z"])
+#
+#     if value is None:
+#         min_val = round(min(u_data), ndigits=5)
+#         max_val = round(max(u_data), ndigits=5)
+#     else:
+#         min_v, max_v = value
+#         min_val = round(u_data[min_v], ndigits=5)
+#         max_val = round(u_data[max_v], ndigits=5)
+#     return min_val, max_val
 
 
 @app.callback(
@@ -1321,7 +1327,7 @@ def update_indicators_z(value, unique_data):
     Input("slider-val", "value"),
     State("unique_df", "data"),
 )
-def update_indicators_dense(value, unique_data):
+def update_indicators_val(value, unique_data):
     """
     Updates the slider-range indicators for slider-val
     """
@@ -1558,16 +1564,16 @@ def update_plot(
     prevent_initial_call=True,
 )
 def slice_plot(
-    slider_range,
-    dense_inactive,
-    slider_range_cs_x,
-    cs_x_inactive,
-    slider_range_cs_y,
-    cs_y_inactive,
-    slider_range_cs_z,
-    cs_z_inactive,
-    f_data,
-    cam,
+        slider_range,
+        dense_inactive,
+        slider_range_cs_x,
+        cs_x_inactive,
+        slider_range_cs_y,
+        cs_y_inactive,
+        slider_range_cs_z,
+        cs_z_inactive,
+        f_data,
+        cam,
 ):
     """
     Updates the scatter-plot according to the tools by filtering the data
@@ -1576,40 +1582,43 @@ def slice_plot(
     if f_data is None:
         raise PreventUpdate
     df = pd.DataFrame(f_data["MALA_DF"]["scatter"])
-    dfu = (
-        df.copy()
-    )  # this is a subset of df after one if-case is run. For every if-case, we need the subset+the original
+    dfu = (df.copy())
+    # this is a subset of df after one if-case is run. For every if-case, we need the subset+the original
 
     # TOOLS
     # filter-by-density
     if slider_range is not None and dense_inactive:  # Any slider Input there? Do:
         low, high = slider_range
-        mask = (dfu["val"] >= np.unique(df["val"])[low]) & (
-                dfu["val"] <= np.unique(df["val"])[high]
+        unique = np.unique(df["val"])
+        mask = (dfu["val"] >= unique[low]) & (
+                dfu["val"] <= unique[high]
         )
         dfu = dfu[mask]
 
     # slice X
     if slider_range_cs_x is not None and cs_x_inactive:  # Any slider Input there? Do:
         low, high = slider_range_cs_x
-        mask = (dfu["x"] >= np.unique(df["x"])[low]) & (
-                dfu["x"] <= np.unique(df["x"])[high]
+        unique = np.unique(df["x"])
+        mask = (dfu["x"] >= unique[low]) & (
+                dfu["x"] <= unique[high]
         )
         dfu = dfu[mask]
 
     # slice Y
     if slider_range_cs_y is not None and cs_y_inactive:  # Any slider Input there? Do:
         low, high = slider_range_cs_y
-        mask = (dfu["y"] >= np.unique(df["y"])[low]) & (
-                dfu["y"] <= np.unique(df["y"])[high]
+        unique = np.unique(df["y"])
+        mask = (dfu["y"] >= unique[low]) & (
+                dfu["y"] <= unique[high]
         )
         dfu = dfu[mask]
 
     # slice Z
     if slider_range_cs_z is not None and cs_z_inactive:  # Any slider Input there? Do:
         low, high = slider_range_cs_z
-        mask = (dfu["z"] >= np.unique(df["z"])[low]) & (
-                dfu["z"] <= np.unique(df["z"])[high]
+        unique = np.unique(df["z"])
+        mask = (dfu["z"] >= unique[low]) & (
+                dfu["z"] <= unique[high]
         )
         dfu = dfu[mask]
 

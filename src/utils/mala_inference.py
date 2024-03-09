@@ -6,7 +6,10 @@ import mala
 import numpy as np
 
 # Set up the path to the model.
-MODELS = json.load(open("../src/models/model_paths.json"))
+MODELS = json.load(open("../src/models/model_list.json"))
+MODELS = [{'id': model['value'], 'label': model['label'], 'path': model['path']} for model in MODELS]
+test = [x["path"] for x in MODELS if x['id'] == "Be|298"]
+print(test[0])
 
 model_paths = {
     "Be|298": "Be_model",
@@ -82,7 +85,8 @@ def run_mala_prediction(atoms_to_predict, model_and_temp, session_id,
         return results
     else:
         parameters, network, data_handler, predictor = mala.Predictor.load_run(
-            MODELS[model_and_temp["name"]], path="models"
+            # MODELS[model_and_temp["name"]], path="models"
+            [x["path"] for x in MODELS if x['id'] == "Be|298"][0], path="models"
         )
         predicted_ldos = predictor.predict_for_atoms(atoms_to_predict)
 
@@ -142,7 +146,7 @@ def save_density_to_file(results, file_name):
     parameters = mala.Parameters()
     density_calculator = mala.Density(parameters)
     density_calculator.voxel = results["voxel"]
-    density_calculator.atoms = results["atoms"]
+    #density_calculator.atoms = results["atoms"]
     density_calculator.density = results["density"]
     density_calculator.grid_dimensions = results["grid_dimensions"]
     density_calculator.write_to_cube(file_name)
