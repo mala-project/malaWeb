@@ -368,51 +368,57 @@ def toggle_val_slider(active):
 # TODO this can be included in tools_update
 @app.callback(
     Output("slider-x", "value", allow_duplicate=True),
-    Output("slider-y", "value", allow_duplicate=True, ),
-    Output("slider-z", "value", allow_duplicate=True, ),
-    Output("slider-val", "value", allow_duplicate=True, ),
+    Output("slider-y", "value", allow_duplicate=True),
+    Output("slider-z", "value", allow_duplicate=True),
+    Output("slider-val", "value", allow_duplicate=True),
+
+    Input("slider-x", "max"),
+    Input("slider-y", "max"),
+    Input("slider-z", "max"),
+    Input("slider-val", "max"),
+
     Input("reset-slider-x", "n_clicks"),
     Input("reset-slider-y", "n_clicks"),
     Input("reset-slider-z", "n_clicks"),
     Input("reset-slider-val", "n_clicks"),
-    State("df_store", "data"),
     prevent_initial_call=True,
 )
-def reset_sliders(n_clicks_x, n_clicks_y, n_clicks_z, n_clicks_dense, data):
+def reset_sliders(slider_x_max, slider_y_max, slider_z_max, slider_val_max,
+        n_clicks_x, n_clicks_y, n_clicks_z, n_clicks_dense):
     """
     resets the sliders to their initial state on reset-button click
     """
-    df = pd.DataFrame(data["MALA_DF"]["scatter"])
-    if dash.callback_context.triggered_id == "reset-slider-x":
-        return (
-            [0, len(np.unique(df["x"])) - 1],
-            dash.no_update,
-            dash.no_update,
-            dash.no_update,
-        )
-    elif dash.callback_context.triggered_id == "reset-slider-y":
-        return (
-            dash.no_update,
-            [0, len(np.unique(df["y"])) - 1],
-            dash.no_update,
-            dash.no_update,
-        )
-    elif dash.callback_context.triggered_id == "reset-slider-z":
-        return (
-            dash.no_update,
-            dash.no_update,
-            [0, len(np.unique(df["z"])) - 1],
-            dash.no_update,
-        )
-    elif dash.callback_context.triggered_id == "reset-slider-val":
-        return (
-            dash.no_update,
-            dash.no_update,
-            dash.no_update,
-            [0, len(np.unique(df["val"])) - 1],
-        )
-    else:
-        raise PreventUpdate
+    match dash.callback_context.triggered_id:
+        case "reset-slider-x":
+            return (
+                [0, slider_x_max],
+                dash.no_update,
+                dash.no_update,
+                dash.no_update,
+            )
+        case "reset-slider-y":
+            return (
+                dash.no_update,
+                [0, slider_y_max],
+                dash.no_update,
+                dash.no_update,
+            )
+        case "reset-slider-z":
+            return (
+                dash.no_update,
+                dash.no_update,
+                [0, slider_z_max],
+                dash.no_update,
+            )
+        case "reset-slider-val":
+            return (
+                dash.no_update,
+                dash.no_update,
+                dash.no_update,
+                [0, slider_val_max],
+            )
+        case _:
+            raise PreventUpdate
 
 
 @app.callback(
@@ -938,8 +944,9 @@ def update_dataframes(trig, model_choice, temp_choice, upload):
     )
 
     # save results to file(s)
-    save_density_to_file(mala_data, "density_prediction.cube")
-    save_dos_to_file(mala_data, f"session/{session_id}/dos_prediction.npy", f"session/{session_id}/energy_grid_prediction.npy")
+    #   mala_data["density"] was reshaped, leading to this not working currently
+    # save_density_to_file(mala_data, "density_prediction.cube")
+    # save_dos_to_file(mala_data, f"session/{session_id}/dos_prediction.npy", f"session/{session_id}/energy_grid_prediction.npy")
 
     # contains 'band_energy', 'total_energy', 'density', 'density_of_states', 'energy_grid'
     # mala_data is stored in df_store dict under key 'MALA_DATA'. (See declaration of df_store below for more info)
@@ -999,7 +1006,7 @@ def update_dataframes(trig, model_choice, temp_choice, upload):
     data0["z"] *= z_axis[3]
     data_sc = data0.copy()
 
-    # SHEARING für scatter_3d - linearcombination
+    # SHEARING for scatter_3d - linearcombination
     data_sc.x += y_axis[1] * (data0.y / y_axis[2])
     data_sc.x += z_axis[1] * (data0.z / z_axis[3])
 
@@ -1651,6 +1658,7 @@ def update_orientation(saved):
 
 
 # TODO this can be optimized by patching
+# TODO substitute df_store with smaller dcc.Store
 @app.callback(
     Output("dos-plot", "figure"),
     Output("bandEn", "children"),
