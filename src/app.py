@@ -1,17 +1,14 @@
 # IMPORTS
 import base64
 import json
-import os
 from pathlib import Path
-from timeit import default_timer as timer
 
 import dash
 import dash.exceptions
 import dash_bootstrap_components as dbc
-import flask
 
-from dash.dependencies import Input, Output, State, ClientsideFunction
-from dash import Dash, dcc, html, Patch, clientside_callback
+from dash.dependencies import Input, Output, State
+from dash import Dash, dcc, html, Patch
 from dash.exceptions import PreventUpdate
 
 # utils
@@ -28,9 +25,13 @@ import plotly.graph_objs as go
 # I/O
 import ase.io
 import dash_uploader as du
+from flask_caching import Cache
 
 # could be used to refactor callbacks into a seperate file callbacks.py
 # from callbacks import get_callbacks
+
+# HOSTING:
+# while in /src/ run: gunicorn app:server -b :8000
 
 
 # CONSTANTS
@@ -97,6 +98,18 @@ app = Dash(
     external_stylesheets=[dbc.icons.BOOTSTRAP, dbc.themes.BOOTSTRAP],
     suppress_callback_exceptions=True,
 )
+cache = Cache(app.server, config={
+    # 'CACHE_TYPE': 'redis',
+    # Note that filesystem cache doesn't work on systems with ephemeral
+    # filesystems like Heroku.
+    'CACHE_TYPE': 'simple',
+    'CACHE_DIR': 'cache-directory',
+
+    # should be equal to maximum number of users on the app at a single time
+    # higher numbers will store more data in the filesystem / redis cache
+    'CACHE_THRESHOLD': 200
+})
+
 server = app.server
 app.title = "MALAweb"
 
@@ -155,6 +168,9 @@ app.layout = p_layout_landing
 
 # CALLBACKS & FUNCTIONS
 
+#
+# def get_data_df(session_id):
+#     @cache.cached()
 
 # RESET BUTTON
 @app.callback(
@@ -907,6 +923,7 @@ def init_temp_choice(model_choice):
 )
 def update_dataframes(trig, model_choice, temp_choice, upload):
     """
+    TODO: saving UP_STORE-data (reordered to DF) in df_store is a duplicate that should be eliminated
     Input
     :param trig: =INPUT - Pressing button "run-mala" triggers callback
     :param model_choice: =STATE - info on the cell-system (substance+temp(-range)), separated by |
@@ -1036,7 +1053,21 @@ def update_dataframes(trig, model_choice, temp_choice, upload):
     """
 
     # _______________________________________________________________________________________
-
+    """
+    df_store.MALA_DF
+    contains:
+    - default = unsheared datapoints
+    - scatter = sheared datapoints
+    
+    df_store.MALA_DATA
+    contains:
+    - data received from MALA-api (= unsheared datapoints? + energy values (+?)
+    
+    df_store.INPUT_DF
+    contains:
+    
+    
+    """
     df_store = {
         "MALA_DF": {
             "default": data0.to_dict("records"),
@@ -1046,6 +1077,7 @@ def update_dataframes(trig, model_choice, temp_choice, upload):
         "INPUT_DF": atoms_data.to_dict("records"),
         "SCALE": {"x_axis": x_axis, "y_axis": y_axis, "z_axis": z_axis},
     }
+    print("df_store: ", df_store.keys())
     return df_store, unique_df, False
 
 
@@ -1395,7 +1427,6 @@ def update_plot(
     - cam_store is needed, so that the cam-position is not reset on f.e. update by settings
     """
     # TODO: make this function more efficient
-    print("PLOT UPDATE", dash.callback_context.triggered_id)
     patched_fig = Patch()
 
     # DATA
@@ -1416,7 +1447,6 @@ def update_plot(
         They do not overwrite the figure, but patch their respective parameters of the initialised figure
         -> better performance
         """
-        print("INIT Plot")
         # Our main figure = scatter plot
 
         df = pd.DataFrame(f_data["MALA_DF"]["scatter"])
@@ -1491,7 +1521,6 @@ def update_plot(
             visibility of cell boundaries (width 1 / 0) and 
             visibility of atoms
         """
-        print("PLOT-Settings")
         patched_fig["data"][0]["marker"]["line"] = settings["outline"]
         patched_fig["data"][0]["marker"]["size"] = settings["size"]
         patched_fig["data"][0]["marker"]["opacity"] = settings["opacity"]
@@ -1504,7 +1533,6 @@ def update_plot(
     # CAMERA
 
     elif "cam" in dash.callback_context.triggered_id:
-        print("PLOT-Cam")
         """
         CAMERA
             set camera-position according to the clicked button, 
