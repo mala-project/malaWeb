@@ -16,7 +16,8 @@ from dash.exceptions import PreventUpdate
 
 # utils
 from src.components import menu, settings, footer, main
-from src.utils.mala_inference import run_mala_prediction, save_density_to_file, save_dos_to_file
+from src.utils.exceptions import upload_exception
+from src.utils.mala_inference import run_mala_prediction
 
 # visualization
 import pandas as pd
@@ -152,44 +153,43 @@ p_layout_landing = dbc.Container(
 
 app.layout = p_layout_landing
 
-
-# Could be used to refactor callbacks to a seperate file
-
-
 # CALLBACKS & FUNCTIONS
 
-# Change of Page_State Store
+
+# RESET BUTTON
 @app.callback(
     Output("page_state", "data", allow_duplicate=True),
     Output("df_store", "data", allow_duplicate=True),
     Output("settings-offcanvas", "is_open", allow_duplicate=True),
-    Output("offcanvas-bot", "is_open", allow_duplicate=True),
+    Output("footer", "is_open", allow_duplicate=True),
     Output("UP_STORE", "data", allow_duplicate=True),
     Output("download-data", "disabled", allow_duplicate=True),
     Input("reset-data", "n_clicks"),
     prevent_initial_call=True,
 )
 def click_reset(click):
+    """
+    Resets the app to its initial state on reset button click (menu)
+    """
     return "landing", None, False, False, None, True
 
 
-# sidebar_l collapses
+# MENU COLLAPSABLE
 @app.callback(
-    Output("collapse-session", "is_open"),
-    Input("open-session", "n_clicks"),
-    Input("collapse-session", "is_open"),
+    Output("data-upload", "is_open"),
+    Input("open-data-upload", "n_clicks"),
+    Input("data-upload", "is_open"),
     prevent_initial_call=True,
 )
 def toggle_upload_section(n_header, is_open):
+    """
+    opens/collapses the upload section on menu
+    """
     if n_header:
         return not is_open
 
 
-# end of sidebar_l collapses
-
-
-# Modal collapsable
-# sidebar_l collapses
+# Collapsable in INFERENCE_MODAL
 @app.callback(
     Output("collapse-atom-list", "is_open"),
     Output("open-atom-list-arrow", "children"),
@@ -198,6 +198,10 @@ def toggle_upload_section(n_header, is_open):
     prevent_initial_call=True,
 )
 def toggle_uploaded_atoms(n_header, is_open):
+    """
+    opens/collapses the uploaded atoms list in inference-modal;
+    turns arrow up/down accordingly
+    """
     txt = "⌃"
     if n_header:
         if is_open:
@@ -205,36 +209,36 @@ def toggle_uploaded_atoms(n_header, is_open):
         return not is_open, txt
 
 
-# BOTTOM bar callbacks
-
-
+# FOOTER
 @app.callback(
-    Output("open-bot-canv", "is_open"),
+    Output("open-footer-canvas", "is_open"),
     Input("page_state", "data"),
-    State("offcanvas-bot", "is_open"),
+    State("footer", "is_open"),
     prevent_initial_call=True,
 )
-def toggle_bot_button(page_state, canv_open):
+def toggle_footer_button(page_state, canv_open):
+    """
+    shows/hides the open-footer button (placed on offcanvas)
+    BUG: button is hidden by ESC-key and unreachable
+    """
     if page_state == "plotting":
         if not canv_open:
             return True
-        else:
-            return False
 
     else:
         return False
 
 
-# show button if we're plotting and if bot-canvas is closed
-
-
 @app.callback(
-    Output("offcanvas-bot", "is_open"),
-    Input("open-bot", "n_clicks"),
+    Output("footer", "is_open"),
+    Input("open-footer", "n_clicks"),
     Input("page_state", "data"),
     prevent_initial_call=True,
 )
-def toggle_bot_canv(open_cl, page_state):
+def toggle_footer(open_cl, page_state):
+    """
+    shows/hides the footer (placed on offcanvas)
+    """
     if page_state == "plotting":
         if dash.callback_context.triggered_id[0:4] == "open":
             return True
@@ -244,32 +248,31 @@ def toggle_bot_canv(open_cl, page_state):
         return False
 
 
-# END BOTTOM BAR CALLBACKS
-
-
-# CALLBACKS FOR SCATTERPLOT
-
-
-# collapsable cross-section and density tools
+# PLOT
 @dash.callback(
-    Output("sc-tools-collapse", "is_open"),
-    Input("open-sc-tools", "n_clicks"),
-    State("sc-tools-collapse", "is_open"),
+    Output("tools", "is_open"),
+    Input("open-tools", "n_clicks"),
+    State("tools", "is_open"),
     prevent_initial_call=True,
 )
 def toggle_tools(n_sc_s, is_open):
+    """
+    opens/collapses the tools section below plot
+    """
     if n_sc_s:
         return not is_open
 
 
-# toggle button x
 @app.callback(
     Output("slice-x", "active", allow_duplicate=True),
     Input("slice-x", "n_clicks"),
     State("slice-x", "active"),
     prevent_initial_call=True,
 )
-def toggle_x_slice(n_x, active):
+def toggle_slice_x(n_x, active):
+    """
+    visually enables/disables the x-slider-button on click
+    """
     if n_x:
         return not active
 
@@ -281,113 +284,130 @@ def toggle_x_slice(n_x, active):
     prevent_initial_call=True,
 )
 def toggle_x_slider(active):
+    """
+    enables/disables the x-slider on slice-x click
+    """
     return not active
 
 
-# toggle button y
 @app.callback(
     Output("slice-y", "active", allow_duplicate=True),
     Input("slice-y", "n_clicks"),
     State("slice-y", "active"),
     prevent_initial_call=True,
 )
-def toggle_y_slice(n_x, active):
+def toggle_slice_y(n_x, active):
+    """
+    visually enables/disables the y-slider-button
+    """
     if n_x:
         return not active
 
 
-# toggle slider y
 @app.callback(
     Output("slider-y", "disabled", allow_duplicate=True),
     Input("slice-y", "active"),
     prevent_initial_call=True,
 )
 def toggle_y_slider(active):
+    """
+    enables/disables the y-slider on slice-y click
+    """
     return not active
 
 
-# toggle button z
 @app.callback(
     Output("slice-z", "active", allow_duplicate=True),
     Input("slice-z", "n_clicks"),
     State("slice-z", "active"),
     prevent_initial_call=True,
 )
-def toggle_z_slice(n_x, active):
+def toggle_slice_z(n_x, active):
+    """
+    visually enables/disables the z-slider-button
+    """
     if n_x:
         return not active
 
 
-# toggle slider z
 @app.callback(
     Output("slider-z", "disabled", allow_duplicate=True),
     Input("slice-z", "active"),
     prevent_initial_call=True,
 )
 def toggle_z_slider(active):
+    """
+    enables/disables the z-slider on slice-z click
+    """
     return not active
 
 
-# toggle button val
 @app.callback(
     Output("filter-val", "active", allow_duplicate=True),
     Input("filter-val", "n_clicks"),
     State("filter-val", "active"),
     prevent_initial_call=True,
 )
-def toggle_val_slice(n_x, active):
+def toggle_slice_val(n_x, active):
+    """
+    visually enables/disables the val-slider-button
+    """
     if n_x:
         return not active
 
 
-# toggle slider val
 @app.callback(
     Output("slider-val", "disabled", allow_duplicate=True),
     Input("filter-val", "active"),
     prevent_initial_call=True,
 )
 def toggle_val_slider(active):
+    """
+    enables/disables the val-slider on slice-val click
+    """
     return not active
 
 
 # TODO this can be included in tools_update
 @app.callback(
     Output("slider-x", "value", allow_duplicate=True),
-    Output("slider-y", "value", allow_duplicate=True, ),
-    Output("slider-z", "value", allow_duplicate=True, ),
-    Output("slider-val", "value", allow_duplicate=True, ),
-    Input("reset-cs-x", "n_clicks"),
-    Input("reset-cs-y", "n_clicks"),
-    Input("reset-cs-z", "n_clicks"),
-    Input("reset-dense", "n_clicks"),
+    Output("slider-y", "value", allow_duplicate=True,),
+    Output("slider-z", "value", allow_duplicate=True,),
+    Output("slider-val", "value", allow_duplicate=True,),
+    Input("reset-slider-x", "n_clicks"),
+    Input("reset-slider-y", "n_clicks"),
+    Input("reset-slider-z", "n_clicks"),
+    Input("reset-slider-val", "n_clicks"),
     State("df_store", "data"),
     prevent_initial_call=True,
 )
 def reset_sliders(n_clicks_x, n_clicks_y, n_clicks_z, n_clicks_dense, data):
-    # print("OPT slider reset triggered by: ", dash.callback_context.triggered_id)
+    """
+    resets the sliders to their initial state on reset-button click
+    """
     df = pd.DataFrame(data["MALA_DF"]["scatter"])
-    if dash.callback_context.triggered_id == "reset-cs-x":
+    if dash.callback_context.triggered_id == "reset-slider-x":
         return (
             [0, len(np.unique(df["x"])) - 1],
             dash.no_update,
             dash.no_update,
             dash.no_update,
         )
-    elif dash.callback_context.triggered_id == "reset-cs-y":
+    elif dash.callback_context.triggered_id == "reset-slider-y":
         return (
             dash.no_update,
             [0, len(np.unique(df["y"])) - 1],
             dash.no_update,
             dash.no_update,
         )
-    elif dash.callback_context.triggered_id == "reset-cs-z":
+    elif dash.callback_context.triggered_id == "reset-slider-z":
         return (
             dash.no_update,
             dash.no_update,
             [0, len(np.unique(df["z"])) - 1],
             dash.no_update,
         )
-    elif dash.callback_context.triggered_id == "reset-dense":
+    elif dash.callback_context.triggered_id == "reset-slider-val":
         return (
             dash.no_update,
             dash.no_update,
@@ -395,14 +415,9 @@ def reset_sliders(n_clicks_x, n_clicks_y, n_clicks_z, n_clicks_dense, data):
             [0, len(np.unique(df["val"])) - 1],
         )
     else:
-        # print("STATUS: something unknown triggered slider reset")
         raise PreventUpdate
 
 
-# end of collapsable cross-section settings
-
-
-# Storing camera position
 @app.callback(
     Output("cam_store", "data", allow_duplicate=True),
     [
@@ -416,8 +431,11 @@ def reset_sliders(n_clicks_x, n_clicks_y, n_clicks_z, n_clicks_dense, data):
 )
 def store_cam(default_clicks, x_y_clicks, x_z_clicks, y_z_clicks, user_in):
     # user_in is the camera position set by mouse movement, it has to be updated on every mouse input on the fig
-    # print("OPT cam_store triggered by: ", dash.callback_context.triggered_id)
     # set stored_cam_setting according to which button was last pressed
+    """
+    Changes camera position on button click (default, x-y, x-z, y-z);
+    Stores camera position after mouse movement/input on plot
+    """
     if dash.callback_context.triggered_id[0:-4] == "default":
         return dict(
             up=dict(x=0, y=0, z=1),
@@ -452,25 +470,23 @@ def store_cam(default_clicks, x_y_clicks, x_z_clicks, y_z_clicks, user_in):
                 return user_in["scene.camera"]
         # stops the update in case the callback is triggered by zooming/smth else
     else:
-        # print("unknown trigger caused cam_pos_update")
         raise PreventUpdate
 
-    # Feels very unelegant -> this is always run twice when switching to scatter for example
-    # END OF SCATTER CALLBACKS
-
-
-# UPDATE STORED DATA
+    # Feels very inelegant, but it works
 
 
 # page state
 # TODO this should be optimized to not transfer the all the data everytime
 @app.callback(
     Output("page_state", "data"),
-    [Input("df_store", "data"), State("page_state", "data")],
+    Input("df_store", "data"),
+    State("page_state", "data"),
     prevent_initial_call=True,
 )
-def updatePageState(trig1, state):
-    # print("OPT page state triggered by: ", dash.callback_context.triggered_id)
+def update_page_state(trig1, state):
+    """
+    Updates the page-state (landing, plotting, inference) on df_store update
+    """
     new_state = "landing"
     if dash.callback_context.triggered_id == "df_store":
         if trig1 is not None:
@@ -484,13 +500,6 @@ def updatePageState(trig1, state):
 
 
 # DASH-UPLOADER
-# after file-session, return session-status (if successful) and dict with file-path and session-id (for future verif?)
-def upload_exception():
-    # print("excepted file error")
-    return None, "File not supported", dash.no_update, dash.no_update, "session-failure"
-    # = FILE NOT SUPPORTED AS ASE INPUT (some formats listed in supported-files for ase are output only. This will only be filtered here)
-
-
 @du.callback(
     output=[
         Output("output-session-state", "children"),
@@ -509,14 +518,13 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
     :param status: All the info necessary to access (latest) uploaded files
 
     Output
-    session-state: Upload-state below session-area
-    UP_STORE: dcc.Store-component, storing uploader-ID and path of uploaded file
-    atom-limit-warning: Boolean for displaying long-computation-time-warning
-    atoms_list: Table containing all atoms read by ASE
-    atoms-preview: Figure previewing ASE-read Atoms
-    session-data: Changing border-color of this component according to session-status
+    session-state: Upload-state below session-area;
+    UP_STORE: dcc.Store-component, storing uploader-ID and path of uploaded file;
+    atom-limit-warning: Boolean for displaying long-computation-time-warning;
+    atoms_list: Table containing all atoms read by ASE;
+    atoms-preview: Figure previewing ASE-read Atoms;
+    session-data: Changing border-color of this component according to session-status;
     """
-    # print("OPT session triggered by: ", dash.callback_context.triggered_id)
     UP_STORE = {
         "ID": status.upload_id,
         "PATH": str(status.latest_file.resolve()),
@@ -689,6 +697,8 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
         r_atoms, UPDATE_TEXT, UP_STORE, table_rows, border_style = upload_exception()
     except ase.io.formats.UnknownFileTypeError:
         r_atoms, UPDATE_TEXT, UP_STORE, table_rows, border_style = upload_exception()
+        # = FILE NOT SUPPORTED AS ASE INPUT
+        # (some formats listed in supported-files for ase are output only. This will only be filtered here)
 
     return (
         UPDATE_TEXT,
@@ -704,9 +714,6 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
 # END DASH UPLOADER
 
 # IMPORT SETTINGS - DCC Uploader
-
-# should also update the settings_components so backend settings are in sync with frontend
-# should include tools
 @app.callback(
     Output("import-settings", "contents"),
     Output("show-outline", "value", allow_duplicate=True),
@@ -729,16 +736,14 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
     prevent_initial_call=True
 )
 def import_config(contents):
-    '''
-
-    Parameters
-    ----------
-    contents: base64 encoded string (JSON) that will be decoded, parsed and split up into returns for tools (multiple) and settings (one return to plot_settings)
-
-    Returns
-    -------
+    """
+    contents: base64 encoded string (JSON) that will be decoded, parsed and split up into returns for tools (multiple)
+              and settings (one return to plot_settings)
+    Changes to these Outputs will apply the imported settings to the plot automatically
+    
+    Returns:
     values to each component, either dash_no_update, or actual value parsed from input-data-JSON
-    '''
+    """
     if contents is None:
         raise PreventUpdate
     else:
@@ -746,6 +751,9 @@ def import_config(contents):
         decoded = base64.b64decode(content_string)
         json_decoded = json.loads(decoded)
 
+        if "tools" in json_decoded.keys():
+            imported_tools = json_decoded["tools"]
+            # split this up into multiple returns (2 for each slider =8 total)
         settings_to_parse = "settings" in json_decoded.keys()
         tools_to_parse = "tools" in json_decoded.keys()
         cam_to_parse = "cam" in json_decoded.keys()
@@ -775,87 +783,19 @@ def import_config(contents):
         )
 
 
-
-        # content_type, content_string = contents.split(',')
-        # decoded = base64.b64decode(content_string)
-        # json_decoded = json.loads(decoded)
-        #
-        # if "tools" in json_decoded.keys():
-        #     imported_tools = json_decoded["tools"]
-        #     # split this up into multiple returns (2 for each slider =8 total)
-        #
-        #     if "settings" in json_decoded.keys():
-        #         # CASE 1: Settings and Tools are included in imported config
-        #         imported_settings = json_decoded["settings"]
-        #         return (
-        #             None, imported_settings["outline"],
-        #             imported_settings["atoms"], imported_settings["cell"],
-        #             imported_settings["size"], imported_settings["opacity"],
-        #
-        #             imported_tools["val_val"], imported_tools["val_act"],
-        #             imported_tools["x_val"], imported_tools["x_act"],
-        #             imported_tools["y_val"], imported_tools["y_act"],
-        #             imported_tools["z_val"], imported_tools["z_act"]
-        #         )
-        #     else:
-        #         # CASE 2: No Settings, but Tools are imported in config
-        #         return (
-        #             None, dash.no_update,
-        #             dash.no_update, dash.no_update,
-        #             dash.no_update, dash.no_update,
-        #
-        #             imported_tools["val_val"], imported_tools["val_act"],
-        #             imported_tools["x_val"], imported_tools["x_act"],
-        #             imported_tools["y_val"], imported_tools["y_act"],
-        #             imported_tools["z_val"], imported_tools["z_act"]
-        #         )
-        #
-        # elif "settings" in json_decoded.keys():
-        #     # CASE 3: Settings, but no Tools are imported in config
-        #     imported_settings = json_decoded["settings"]
-        #     return (
-        #         None, imported_settings["outline"],
-        #         imported_settings["atoms"], imported_settings["cell"],
-        #         imported_settings["size"], imported_settings["opacity"],
-        #
-        #         dash.no_update, dash.no_update,
-        #         dash.no_update, dash.no_update,
-        #         dash.no_update, dash.no_update,
-        #         dash.no_update, dash.no_update
-        #     )
-        #
-        # else:
-        #     # CASE 4: Nothing is imported to config
-        #     return (
-        #         None, dash.no_update,
-        #         dash.no_update, dash.no_update,
-        #         dash.no_update, dash.no_update,
-        #
-        #         dash.no_update, dash.no_update,
-        #         dash.no_update, dash.no_update,
-        #         dash.no_update, dash.no_update,
-        #         dash.no_update, dash.no_update
-        #     )
-
-
-# END IMPORT SETTINGS
-
 # DATA DOWNLOAD CALLBACK
 @app.callback(
     Output("data-downloader", "data"),
     Input("download-data", "n_clicks"),
     State("UP_STORE", "data"),
-    State("df_store", "data"),
     prevent_initial_call=True
 )
-def download_data(click, up_data, df):
-    print(df["MALA_DATA"])
-    # TODO: think of a way to pass ase.Atoms data to "save_density_to_file"; fix AttributeError
+def download_data(click, up_data):
+    """
+    Send Download-prompt of MALA-data. The file was created on Inference, and is stored in the session-folder
+    """
     try:
-        save_density_to_file(df["MALA_DATA"], "density_file")
-        save_dos_to_file(df["MALA_DATA"], "dos_file", "e-g_file")
-
-        return dcc.send_file("./session/{}/inference_data.cube".format(up_data["ID"]))
+        return dcc.send_file(f"./session/{up_data['ID']}/inference_data.cube")
     except FileNotFoundError:
         print("File not found")
         raise PreventUpdate
@@ -864,7 +804,6 @@ def download_data(click, up_data, df):
         raise PreventUpdate
 
 
-# CALLBACK TO ACTIVATE RUN-MALA-button
 @app.callback(
     Output("run-mala", "disabled", allow_duplicate=True),
     Input("run-mala", "n_clicks"),
@@ -873,7 +812,11 @@ def download_data(click, up_data, df):
     Input("model-temp", "value"),
     prevent_initial_call=True,
 )
-def activate_runMALA_button(click, disabled, model, temp):
+def activate_run_mala_button(click, disabled, model, temp):
+    """
+    Enables the run-mala button, if a model and a temperature is selected
+    TODO: Fix bug where button is disabled for the previously used model after (reset + ) upload of new data
+    """
     if dash.callback_context.triggered_id == "run-mala" and disabled:
         raise PreventUpdate
     elif dash.callback_context.triggered_id == "run-mala":
@@ -884,13 +827,8 @@ def activate_runMALA_button(click, disabled, model, temp):
         return True
 
 
-# END OF CB
-
-
-# CALLBACK TO OPEN UPLOAD-MODAL
-# BUG: modal immediately closes after reuploading
 @app.callback(
-    Output("session-modal", "is_open"),
+    Output("inference_modal", "is_open"),
     [
         Input("UP_STORE", "data"),
         Input("edit-input", "n_clicks"),
@@ -899,8 +837,13 @@ def activate_runMALA_button(click, disabled, model, temp):
     ],
     prevent_initial_call=True,
 )
-def open_UP_MODAL(upload, edit_input, page_state, data):
-    # print("OPT modal opener triggered by: ", dash.callback_context.triggered_id)
+def open_inference_modal(upload, edit_input, page_state, data):
+    """
+    Opens inference-modal on upload of Atoms, and/or on click of edit-input button.
+    Closes inference-modal on click of "Start MALA" button (after inference and background updates)
+    TODO: fix Bug where modal immediately closes after file-upload after reset(!)
+    --> not happening if not resetting, but uploading new file
+    """
     if (
             dash.callback_context.triggered_id == "page_state" and page_state == "plotting"
     ) or dash.callback_context.triggered_id == "df_store":
@@ -914,9 +857,6 @@ def open_UP_MODAL(upload, edit_input, page_state, data):
         return False
 
 
-# END OF CB
-
-
 @app.callback(
     Output("model-temp", "value"),
     Output("model-temp", "disabled"),
@@ -926,7 +866,10 @@ def open_UP_MODAL(upload, edit_input, page_state, data):
     prevent_initial_call=True,
 )
 def init_temp_choice(model_choice):
-    # print("OPT temp init triggered by: ", dash.callback_context.triggered_id)
+    """
+    Initializes the temperature input depending on model-choice.
+    If a temp-range is given by model-choice, the input is enabled and the range is set as min/max
+    """
     if model_choice is None:
         raise PreventUpdate
     # splitting string input in substance and (possible) temperature(s)
@@ -940,9 +883,6 @@ def init_temp_choice(model_choice):
 
     else:
         return int(temp), True, None, None
-
-
-#   UPDATE DF
 
 
 # Trigger: button "run-mala", button "reset"
@@ -965,11 +905,10 @@ def init_temp_choice(model_choice):
     State("UP_STORE", "data"),
     prevent_initial_call=True,
 )
-def updateDF(trig, model_choice, temp_choice, upload):
+def update_dataframes(trig, model_choice, temp_choice, upload):
     """
     Input
     :param trig: =INPUT - Pressing button "run-mala" triggers callback
-    :param reset: =INPUT - trigger for reset of stored data
     :param model_choice: =STATE - info on the cell-system (substance+temp(-range)), separated by |
     :param temp_choice: =STATE - chosen temperature - either defined by model-choice, or direct input inbetween range
     :param upload: =STATE - dict(session ID, filepath, ASE-Atoms-Obj as dict)
@@ -984,7 +923,6 @@ def updateDF(trig, model_choice, temp_choice, upload):
     on MALA-call, give ATOMS-objs & model_choice
     -> returns density data and energy values +  a .cube-file
     """
-    # print("OPT df-update triggered by: ", dash.callback_context.triggered_id)
     if upload is None:
         raise PreventUpdate
     model_temp_path = {"name": model_choice, "temperature": float(temp_choice)}
@@ -1108,7 +1046,6 @@ def updateDF(trig, model_choice, temp_choice, upload):
         "INPUT_DF": atoms_data.to_dict("records"),
         "SCALE": {"x_axis": x_axis, "y_axis": y_axis, "z_axis": z_axis},
     }
-    print("end of DF update")
     return df_store, unique_df, False
 
 
@@ -1174,8 +1111,6 @@ def update_settings_store(size, outline, atoms, opacity, cell):
         return settings_patch, outline
 
 
-# END UPDATE FOR STORED DATA
-
 # EXPORT SETTINGS
 # TODO: include CAM-data
 @app.callback(
@@ -1204,6 +1139,8 @@ def update_settings_store(size, outline, atoms, opacity, cell):
 def export_settings(click, show_outline, show_atoms, show_cell, particle_size, opacity, val_val, val_act, x_val, x_act,
                     y_val, y_act, z_val, z_act, up_store, cam_store):
     """
+    Takes values of all configurations (settings, tools, cam) and stores them in a JSON-file, which is then sent to user
+    ----------
     Parameters
     ----------
     click: Int (number of button presses)
@@ -1280,11 +1217,13 @@ def export_settings(click, show_outline, show_atoms, show_cell, particle_size, o
     ],
 )
 def update_tools(data, config_imported):
-    # print("OPT tools-update triggered by: ", dash.callback_context.triggered_id)
+    """
+    Updates the slider-ranges according to the imported config or the data uploaded by the user
+    TODO: Check if imported tool-config is compatible with uploaded data
+    """
     if data is None:  # in case of reset:
         raise PreventUpdate
     else:
-        print("Tool update")
         return (
             0,
             len(data["x"]) - 1,
@@ -1301,7 +1240,6 @@ def update_tools(data, config_imported):
         )
 
 
-# # Updating slider-range indicators X
 @app.callback(
     Output("x-min-indicator", "children"),
     Output("x-max-indicator", "children"),
@@ -1309,6 +1247,9 @@ def update_tools(data, config_imported):
     State("unique_df", "data"),
 )
 def update_indicators_x(value, unique_data):
+    """
+    Updates the slider-range indicators for slider-x
+    """
     if unique_data is None:  # in case of reset:
         raise PreventUpdate
 
@@ -1324,7 +1265,6 @@ def update_indicators_x(value, unique_data):
     return min_val, max_val
 
 
-# Updating slider-range indicators Y
 @app.callback(
     Output("y-lower-bound", "children"),
     Output("y-higher-bound", "children"),
@@ -1332,6 +1272,9 @@ def update_indicators_x(value, unique_data):
     State("unique_df", "data"),
 )
 def update_indicators_y(value, unique_data):
+    """
+    Updates the slider-range indicators for slider-y
+    """
     if unique_data is None:  # in case of reset:
         raise PreventUpdate
 
@@ -1347,7 +1290,6 @@ def update_indicators_y(value, unique_data):
     return min_val, max_val
 
 
-# Updating slider-range indicators Z
 @app.callback(
     Output("z-lower-bound", "children"),
     Output("z-higher-bound", "children"),
@@ -1355,6 +1297,9 @@ def update_indicators_y(value, unique_data):
     State("unique_df", "data"),
 )
 def update_indicators_z(value, unique_data):
+    """
+    Updates the slider-range indicators for slider-z
+    """
     if unique_data is None:  # in case of reset:
         raise PreventUpdate
 
@@ -1370,7 +1315,6 @@ def update_indicators_z(value, unique_data):
     return min_val, max_val
 
 
-# Updating slider-range indicators density
 @app.callback(
     Output("dense-lower-bound", "children"),
     Output("dense-higher-bound", "children"),
@@ -1378,6 +1322,9 @@ def update_indicators_z(value, unique_data):
     State("unique_df", "data"),
 )
 def update_indicators_dense(value, unique_data):
+    """
+    Updates the slider-range indicators for slider-val
+    """
     if unique_data is None:  # in case of reset:
         raise PreventUpdate
 
@@ -1403,19 +1350,15 @@ def update_indicators_dense(value, unique_data):
     State("df_store", "data"),
     prevent_initial_call=True,
 )
-def updateMC0(state, data):
-    # print("OPT update mc0 triggered by: ", dash.callback_context.triggered_id)
+def update_main_content(state, data):
+    """
+    Updates the content of the main-content cell 0
+    """
     if data is None or state == "landing":
         return main.landing
 
     elif state == "plotting":
         return main.plot
-
-
-"""
-# cam-position buttons have to stay as parameters, so they trigger an update. 
-cam_store can't be an input or else it triggers an update everytime the cam is moved
-"""
 
 
 @app.callback(
@@ -1434,7 +1377,7 @@ cam_store can't be an input or else it triggers an update everytime the cam is m
     ],
     prevent_initial_call="initial_duplicate",
 )
-def updatePlot(
+def update_plot(
         settings,
         cam_default,
         cam_xy,
@@ -1445,7 +1388,12 @@ def updatePlot(
         fig,
         boundaries_fig,
 ):
-    # print("OPT update-Plot-trigger: ", dash.callback_context.triggered_id)
+    """
+    Updates the scatter-plot
+    - cam-position buttons have to stay as Inputs, so they trigger an update.
+    - cam_store can't be an Input or else it triggers an update everytime the cam is moved by user
+    - cam_store is needed, so that the cam-position is not reset on f.e. update by settings
+    """
     # TODO: make this function more efficient
     print("PLOT UPDATE", dash.callback_context.triggered_id)
     patched_fig = Patch()
@@ -1460,6 +1408,14 @@ def updatePlot(
 
     # INIT PLOT
     if dash.callback_context.triggered[0]["prop_id"] == "." or dash.callback_context.triggered_id == "df_store":
+        """
+        INIT PLOT
+        Create a Figure that overwrites the default figure (a single blue dot)
+        This is only run on the initial call of this callback (id ".")
+        All following operations are optional and only triggered if their parameters change (they are trigger of this CB)
+        They do not overwrite the figure, but patch their respective parameters of the initialised figure
+        -> better performance
+        """
         print("INIT Plot")
         # Our main figure = scatter plot
 
@@ -1527,11 +1483,18 @@ def updatePlot(
 
     # SETTINGS
     elif dash.callback_context.triggered_id == "plot_settings":
-        # print("PLOT-Settings")
+        """
+        SETTINGS
+        Set:
+            outline (width), 
+            size (in px), opacity (0.1 - 1), 
+            visibility of cell boundaries (width 1 / 0) and 
+            visibility of atoms
+        """
+        print("PLOT-Settings")
         patched_fig["data"][0]["marker"]["line"] = settings["outline"]
         patched_fig["data"][0]["marker"]["size"] = settings["size"]
         patched_fig["data"][0]["marker"]["opacity"] = settings["opacity"]
-        print("updatet plot-opac to: ", settings["opacity"])
         for i in [1, 2, 3, 4]:
             patched_fig["data"][i]["line"]["width"] = settings["cell"]
         patched_fig["data"][5]["visible"] = settings["atoms"]
@@ -1541,7 +1504,14 @@ def updatePlot(
     # CAMERA
 
     elif "cam" in dash.callback_context.triggered_id:
-        # print("PLOT-Cam")
+        print("PLOT-Cam")
+        """
+        CAMERA
+            set camera-position according to the clicked button, 
+                                        OR 
+                        - if no button has been clicked - 
+            to the most recently stored manually adjusted camera position
+        """
         if dash.callback_context.triggered_id == "default-cam":
             new_cam = dict(
                 up=dict(x=0, y=0, z=1),
@@ -1566,41 +1536,8 @@ def updatePlot(
                 center=dict(x=0, y=0, z=0),
                 eye=dict(x=3.00, y=0, z=0),
             )
-        # print("patched cam")
         patched_fig["layout"]["scene"]["camera"] = new_cam
-
-    """
-    INIT PLOT
-        Create a Figure that overwrites the default figure (a single blue dot)
-        This is only run on the initial call of this callback (id ".")
-        All following operations are optional and only triggered if their parameters change (they are trigger of this CB)
-        They do not overwrite the figure, but patch their respective parameters of the initialised figure
-        -> better performance
-    
-    SETTINGS
-        Set:
-            outline (width), 
-            size (in px), opacity (0.1 - 1), 
-            visibility of cell boundaries (width 1 / 0) and 
-            visibility of atoms
-    
-    CAMERA
-        set camera-position according to the clicked button, 
-                                    OR 
-                    - if no button has been clicked - 
-        to the most recently stored manually adjusted camera position
-    """
-
     return patched_fig
-
-
-""" maybe interesting: animations on plot change:
-
-https://plotly.com/python-api-reference/generated/plotly.graph_objects.Figure.html
-"transition
-Sets transition options used during Plotly.react updates."
-
-"""
 
 
 # TODO optimize by using relayout to update camera instead of cam_store (or smth else entirely)
@@ -1620,22 +1557,25 @@ Sets transition options used during Plotly.react updates."
     State("cam_store", "data"),
     prevent_initial_call=True,
 )
-def slicePlot(
-        slider_range,
-        dense_inactive,
-        slider_range_cs_x,
-        cs_x_inactive,
-        slider_range_cs_y,
-        cs_y_inactive,
-        slider_range_cs_z,
-        cs_z_inactive,
-        f_data,
-        cam,
+def slice_plot(
+    slider_range,
+    dense_inactive,
+    slider_range_cs_x,
+    cs_x_inactive,
+    slider_range_cs_y,
+    cs_y_inactive,
+    slider_range_cs_z,
+    cs_z_inactive,
+    f_data,
+    cam,
 ):
+    """
+    Updates the scatter-plot according to the tools by filtering the data
+    TODO: Try doing this Clientside for performance improvements
+    """
     if f_data is None:
         raise PreventUpdate
     df = pd.DataFrame(f_data["MALA_DF"]["scatter"])
-    print(df)
     dfu = (
         df.copy()
     )  # this is a subset of df after one if-case is run. For every if-case, we need the subset+the original
@@ -1656,8 +1596,6 @@ def slicePlot(
                 dfu["x"] <= np.unique(df["x"])[high]
         )
         dfu = dfu[mask]
-        print("MASK: ", mask)
-        print("DF: ", dfu)
 
     # slice Y
     if slider_range_cs_y is not None and cs_y_inactive:  # Any slider Input there? Do:
@@ -1690,8 +1628,10 @@ def slicePlot(
     Input("cam_store", "data"),
     prevent_initial_call=True,
 )
-def updateOrientation(saved):
-    # print("OPT Orientation update triggered by: ", dash.callback_context.triggered_id)
+def update_orientation(saved):
+    """
+    Updates the orientation-figure
+    """
     eye = saved["eye"]
     # TODO make zoom-level static
 
@@ -1711,7 +1651,9 @@ def updateOrientation(saved):
     prevent_initial_call=True,
 )
 def update_footer(f_data, state):
-    # print("OPT update footer triggered by: ", dash.callback_context.triggered_id)
+    """
+    Updates the footer content: Energy-table and DOS-plot
+    """
     if state == "landing":
         raise PreventUpdate
 
@@ -1748,26 +1690,18 @@ def update_footer(f_data, state):
         )
 
         # TABLE data
-        # take the first
         band_en = f_data["MALA_DATA"]["band_energy"]
         total_en = f_data["MALA_DATA"]["total_energy"]
         fermi_en = f_data["MALA_DATA"]["fermi_energy"]
 
     else:
+        # Defaults in case of reset or data missing for some reaso
         fig = px.scatter()
-
         band_en = "-"
         total_en = "-"
         fermi_en = "-"
 
     return fig, band_en, total_en, fermi_en
-
-
-# END OF CALLBACKS FOR DOS PLOT
-
-
-# CALLBACKS FOR SIDEBAR
-
 
 
 @app.callback(
@@ -1778,6 +1712,9 @@ def update_footer(f_data, state):
     prevent_initial_call=True,
 )
 def toggle_settings_bar(page_state, n1, is_open):
+    """
+    Opens the settings-offcanvas on click of open-settings-button
+    """
     if dash.callback_context.triggered_id == "page_state" and page_state == "plotting":
         return True
     elif dash.callback_context.triggered_id[0:4] == "open":
@@ -1792,7 +1729,9 @@ def toggle_settings_bar(page_state, n1, is_open):
     prevent_initial_call=True,
 )
 def toggle_settings_button(state):
-    # print("OPT settings-button toggled by: ", dash.callback_context.triggered_id)
+    """
+    Toggles the visibility of the settings-button depending on page-state
+    """
     if state == "plotting":
         return {
             "visibility": "visible",
@@ -1806,13 +1745,12 @@ def toggle_settings_button(state):
         }
 
 
-# toggle canvas
-@app.callback(  # sidebar_l canvas
+@app.callback(
     Output("menu-offcanvas", "is_open"),
     Input("open-menu-button", "n_clicks"),
     prevent_initial_call=True,
 )
-def toggle_menu_offcanvas(toggle_menu):
+def open_menu(open_menu_click):
     return True
 
 

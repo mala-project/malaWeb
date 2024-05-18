@@ -151,7 +151,7 @@ plot = [
                                 "Tools",
                                 style={"lineHeight": "0.65em", "fontSize": "0.65em"},
                             ),
-                            id="open-sc-tools",
+                            id="open-tools",
                             style={"width": "5em", "height": "1.2em"},
                             n_clicks=0,
                         ),
