@@ -471,7 +471,6 @@ def store_cam(default_clicks, x_y_clicks, x_z_clicks, y_z_clicks, user_in):
         else:
             if "scene.camera" in user_in.keys():
                 return user_in["scene.camera"]
-        # stops the update in case the callback is triggered by zooming/smth else
     else:
         raise PreventUpdate
 
@@ -1122,7 +1121,6 @@ def update_settings_store(size, outline, atoms, opacity, cell):
 
 
 # EXPORT SETTINGS
-# TODO: include CAM-data
 @app.callback(
     Output("settings-downloader", "data"),
     Input("export-settings", "n_clicks"),
@@ -1327,7 +1325,7 @@ def update_tools(data, config_imported):
 #         max_val = round(u_data[max_v], ndigits=5)
 #     return min_val, max_val
 
-
+# SLOW
 @app.callback(
     Output("dense-lower-bound", "children"),
     Output("dense-higher-bound", "children"),
