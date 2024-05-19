@@ -1,11 +1,13 @@
 # IMPORTS
 import base64
 import json
+import sys
 from pathlib import Path
 
 import dash
 import dash.exceptions
 import dash_bootstrap_components as dbc
+import pandas
 
 from dash.dependencies import Input, Output, State
 from dash import Dash, dcc, html, Patch
@@ -99,15 +101,15 @@ app = Dash(
     suppress_callback_exceptions=True,
 )
 cache = Cache(app.server, config={
-    # 'CACHE_TYPE': 'redis',
+    'DEBUG': True,
+    'CACHE_TYPE': 'FileSystemCache',
     # Note that filesystem cache doesn't work on systems with ephemeral
     # filesystems like Heroku.
-    'CACHE_TYPE': 'simple',
     'CACHE_DIR': 'cache-directory',
 
     # should be equal to maximum number of users on the app at a single time
     # higher numbers will store more data in the filesystem / redis cache
-    'CACHE_THRESHOLD': 200
+    'CACHE_THRESHOLD': 200000
 })
 
 server = app.server
@@ -167,10 +169,6 @@ p_layout_landing = dbc.Container(
 app.layout = p_layout_landing
 
 # CALLBACKS & FUNCTIONS
-
-#
-# def get_data_df(session_id):
-#     @cache.cached()
 
 # RESET BUTTON
 @app.callback(
@@ -911,6 +909,7 @@ def init_temp_choice(model_choice):
 # AND "PARSING" DATA FOR CONTINUED USE
 
 
+@cache.cached()
 @app.callback(
     Output("df_store", "data"),
     Output("unique_df", "data"),
@@ -1078,6 +1077,7 @@ def update_dataframes(trig, model_choice, temp_choice, upload):
         "SCALE": {"x_axis": x_axis, "y_axis": y_axis, "z_axis": z_axis},
     }
     print("df_store: ", df_store.keys())
+    cache.set('df', df_store, timeout=0)
     return df_store, unique_df, False
 
 
@@ -1144,7 +1144,6 @@ def update_settings_store(size, outline, atoms, opacity, cell):
 
 
 # EXPORT SETTINGS
-# TODO: include CAM-data
 @app.callback(
     Output("settings-downloader", "data"),
     Input("export-settings", "n_clicks"),
@@ -1403,7 +1402,7 @@ def update_main_content(state, data):
         Input("x-z-cam", "n_clicks"),
         Input("y-z-cam", "n_clicks"),
         State("cam_store", "data"),
-        Input("df_store", "data"),
+        #Input("df_store", "data"),
         State("scatter-plot", "figure"),
         State("BOUNDARIES_STORE", "data"),
     ],
@@ -1416,7 +1415,7 @@ def update_plot(
         cam_xz,
         cam_yz,
         stored_cam_settings,
-        f_data,
+        #f_data,
         fig,
         boundaries_fig,
 ):
@@ -1430,6 +1429,7 @@ def update_plot(
     patched_fig = Patch()
 
     # DATA
+    f_data = cache.get('df')
     # the density-Dataframe that we're updating, taken from df_store (=f_data)
     if f_data is None:
         raise PreventUpdate
@@ -1581,7 +1581,7 @@ def update_plot(
     Input("slider-z", "value"),
     Input("slice-z", "active"),
     # Data
-    State("df_store", "data"),
+    #State("df_store", "data"),
     State("cam_store", "data"),
     prevent_initial_call=True,
 )
@@ -1594,13 +1594,14 @@ def slice_plot(
     cs_y_inactive,
     slider_range_cs_z,
     cs_z_inactive,
-    f_data,
+    #f_data,
     cam,
 ):
     """
     Updates the scatter-plot according to the tools by filtering the data
     TODO: Try doing this Clientside for performance improvements
     """
+    f_data = cache.get('df')
     if f_data is None:
         raise PreventUpdate
     df = pd.DataFrame(f_data["MALA_DF"]["scatter"])
