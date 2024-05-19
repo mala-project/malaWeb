@@ -33,7 +33,8 @@ from flask_caching import Cache
 # from callbacks import get_callbacks
 
 # HOSTING:
-# while in /src/ run: gunicorn app:server -b :8000
+# local development: while in /src/ run: gunicorn app:server -b :8000
+# host for other devices: gunicorn app:server -w 4 -b [host-ip]:8051
 
 
 # CONSTANTS
@@ -111,7 +112,7 @@ cache = Cache(app.server, config={
     # higher numbers will store more data in the filesystem / redis cache
     'CACHE_THRESHOLD': 200000
 })
-
+# TODO: sessionbezogenes caching
 server = app.server
 app.title = "MALAweb"
 
@@ -1786,4 +1787,4 @@ def open_menu(open_menu_click):
 # END OF CALLBACKS FOR SIDEBAR
 
 if __name__ == "__main__":
-    app.run_server(debug=True, host="0.0.0.0", port="8050")
+    app.run_server(debug=True)
