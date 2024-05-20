@@ -8,3 +8,4 @@
 /src/lammps_input.tmp
 /src/mala.pw.scf.in
 /src/utils/__pycache__/
+/src/cache-directory/
