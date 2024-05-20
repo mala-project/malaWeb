@@ -947,13 +947,14 @@ def update_dataframes(trig, model_choice, temp_choice, upload):
     # ASE.reading to receive ATOMS-objs, to pass to MALA-inference
     # no ValueError Exception needed, bc this is done directly on session
     read_atoms = ase.Atoms.fromdict(upload["ATOMS"])
+    session_id = upload["ID"]
 
     # (a) GET DATA FROM MALA (/ inference script)
 
     mala_data = run_mala_prediction(
         atoms_to_predict=read_atoms,
         model_and_temp=model_temp_path,
-        session_id=upload["ID"],
+        session_id=session_id,
     )
     # contains 'band_energy', 'total_energy', 'density', 'density_of_states', 'energy_grid'
     # mala_data is stored in df_store dict under key 'MALA_DATA'. (See declaration of df_store below for more info)
@@ -1078,7 +1079,7 @@ def update_dataframes(trig, model_choice, temp_choice, upload):
         "SCALE": {"x_axis": x_axis, "y_axis": y_axis, "z_axis": z_axis},
     }
     print("df_store: ", df_store.keys())
-    cache.set('df', df_store, timeout=0)
+    cache.set(f'df{session_id}', df_store, timeout=0)
     return df_store, unique_df, False
 
 
@@ -1406,6 +1407,7 @@ def update_main_content(state, data):
         #Input("df_store", "data"),
         State("scatter-plot", "figure"),
         State("BOUNDARIES_STORE", "data"),
+        State("UP_STORE", "data"),
     ],
     prevent_initial_call="initial_duplicate",
 )
@@ -1419,6 +1421,7 @@ def update_plot(
         #f_data,
         fig,
         boundaries_fig,
+        upload
 ):
     """
     Updates the scatter-plot
@@ -1428,9 +1431,10 @@ def update_plot(
     """
     # TODO: make this function more efficient
     patched_fig = Patch()
+    session_id = upload["ID"]
 
     # DATA
-    f_data = cache.get('df')
+    f_data = cache.get(f'df{session_id}')
     # the density-Dataframe that we're updating, taken from df_store (=f_data)
     if f_data is None:
         raise PreventUpdate
@@ -1584,6 +1588,7 @@ def update_plot(
     # Data
     #State("df_store", "data"),
     State("cam_store", "data"),
+    State("UP_STORE", "data"),
     prevent_initial_call=True,
 )
 def slice_plot(
@@ -1597,12 +1602,14 @@ def slice_plot(
     cs_z_inactive,
     #f_data,
     cam,
+    upload
 ):
     """
     Updates the scatter-plot according to the tools by filtering the data
     TODO: Try doing this Clientside for performance improvements
     """
-    f_data = cache.get('df')
+    session_id = upload["ID"]
+    f_data = cache.get(f'df{session_id}')
     if f_data is None:
         raise PreventUpdate
     df = pd.DataFrame(f_data["MALA_DF"]["scatter"])
