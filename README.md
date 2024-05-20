@@ -44,25 +44,22 @@ The data read by ASE will be displayed in a popup window for running an Inferenc
 * (1) The interactive visualization will open up.
 * (2) The Sidebar to the left contains:
   * Upload section
+  * [new] Download button that saves MALA's results locally (needs work)
   * The edit button for opening up the Inference pop up again, to enable running another inference (f.e. same data, different model)
   * The reset button to delete the uploaded data and reset the visualization
 * (3) The Settings panel on the right hand side gives options for:
   * &#x20;Predefined camera angles
   * Rendering options for the 'voxels' and their size, opacity and outlines as well as atoms and cell boundaries.
+  * [new] Import of config (settings, tools, camera angle) in JSON format
+  * [new] Download of config (settings, tools, camera angle) in JSON format
 * (4) The Tools panel just below the visualization lets you render layers in all 3 axis, as well as filter voxels by their density value. Layer settings can quickly be en- and disabled by pressing the respective axis button and reset by pressing X to the sliders right.
 * (5) The bottom of the page has a button for opening up information on different energies and a graph of the density of state.
 
 ## Todos
+* Correct shifted cell
+* Explore Client-Side plot updates for slicing
+* Fix Download of MALA's data
 
-Goals for V1 are:
-
-* Rework "edit" and "reset" button
-
-Goals for V1.1 are:
-
-* Implement a different visualization (opposed to plotlys 3D scatter plot) like CrystalToolkit (https://github.com/materialsproject/crystaltoolkit). Scatterplots have their limits f.e. in accuracy (not voxel) and performance of big datasets
-* Optimize Dash callbacks --> f.e. further implement the newly introduced patch-methods
-* Reduce Panda Dataframe iterations f.e. in Plot-Slicing --> better DF filtering
-* (Maybe) For the setup: Create an environment.yml, as the app will most likely be installed in a conda env
-* Prepare the app for hosting, possibly with HPC-capabilities
-* General overhaul according to concept
+Long Term:
+* Create a MALA-API that grants access to a (powerfull / optimized) MALA-Host, to reduce load on App-host and improve inference speed
+* Import option for MALA data, so that malaWeb can also be used for just visualizing
