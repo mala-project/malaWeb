@@ -107,10 +107,9 @@ cache = Cache(app.server, config={
     # Note that filesystem cache doesn't work on systems with ephemeral
     # filesystems like Heroku.
     'CACHE_DIR': 'cache-directory',
-
     # should be equal to maximum number of users on the app at a single time
     # higher numbers will store more data in the filesystem / redis cache
-    'CACHE_THRESHOLD': 200000
+    'CACHE_THRESHOLD': 20
 })
 # TODO: sessionbezogenes caching
 server = app.server
@@ -180,12 +179,16 @@ app.layout = p_layout_landing
     Output("UP_STORE", "data", allow_duplicate=True),
     Output("download-data", "disabled", allow_duplicate=True),
     Input("reset-data", "n_clicks"),
+    State("UP_STORE", "data"),
     prevent_initial_call=True,
 )
-def click_reset(click):
+def click_reset(click, upload_data):
     """
     Resets the app to its initial state on reset button click (menu)
     """
+    if upload_data is not None:
+        session_id = upload_data["ID"]
+        cache.delete(f"df{session_id}")
     return "landing", None, False, False, None, True
 
 
