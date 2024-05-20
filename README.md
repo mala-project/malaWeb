@@ -1,4 +1,4 @@
-# malaWeb (for local hosting)
+# malaWeb
 
 Web app to visualize on-the-fly MALA predictions.
 
@@ -22,8 +22,8 @@ Make sure the installed version of packaging is not higher than 21. For a versio
 
 ## Usage
 
-After installing dependencies, run app.py.\
-The app will be accessible locally under http://0.0.0.0:8050/. This can be changed at the very end of app.py.
+After installing dependencies, run `gunicorn app:server -w 4 -b [host-ip]:8051`
+Change 8051 to whatever port you want and exchange [host-ip] for the IP adress of the hosting server. Other devices on the same network can access malaWeb via that IP:port
 
 \
 In the File-Upload section, upload an ASE-readable file\
