@@ -1404,7 +1404,6 @@ def update_main_content(state, data):
         Input("x-z-cam", "n_clicks"),
         Input("y-z-cam", "n_clicks"),
         State("cam_store", "data"),
-        #Input("df_store", "data"),
         State("scatter-plot", "figure"),
         State("BOUNDARIES_STORE", "data"),
         State("UP_STORE", "data"),
@@ -1418,7 +1417,6 @@ def update_plot(
         cam_xz,
         cam_yz,
         stored_cam_settings,
-        #f_data,
         fig,
         boundaries_fig,
         upload
@@ -1586,7 +1584,6 @@ def update_plot(
     Input("slider-z", "value"),
     Input("slice-z", "active"),
     # Data
-    #State("df_store", "data"),
     State("cam_store", "data"),
     State("UP_STORE", "data"),
     prevent_initial_call=True,
@@ -1600,7 +1597,6 @@ def slice_plot(
     cs_y_inactive,
     slider_range_cs_z,
     cs_z_inactive,
-    #f_data,
     cam,
     upload
 ):
