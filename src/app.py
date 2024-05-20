@@ -1,17 +1,16 @@
 # IMPORTS
 import base64
 import json
-import os
+import sys
 from pathlib import Path
-from timeit import default_timer as timer
 
 import dash
 import dash.exceptions
 import dash_bootstrap_components as dbc
-import flask
+import pandas
 
-from dash.dependencies import Input, Output, State, ClientsideFunction
-from dash import Dash, dcc, html, Patch, clientside_callback
+from dash.dependencies import Input, Output, State
+from dash import Dash, dcc, html, Patch
 from dash.exceptions import PreventUpdate
 
 # utils
@@ -28,9 +27,14 @@ import plotly.graph_objs as go
 # I/O
 import ase.io
 import dash_uploader as du
+from flask_caching import Cache
 
 # could be used to refactor callbacks into a seperate file callbacks.py
 # from callbacks import get_callbacks
+
+# HOSTING:
+# local development: while in /src/ run: gunicorn app:server -b :8000
+# host for other devices: gunicorn app:server -w 4 -b [host-ip]:8051
 
 
 # CONSTANTS
@@ -97,6 +101,17 @@ app = Dash(
     external_stylesheets=[dbc.icons.BOOTSTRAP, dbc.themes.BOOTSTRAP],
     suppress_callback_exceptions=True,
 )
+cache = Cache(app.server, config={
+    'DEBUG': True,
+    'CACHE_TYPE': 'FileSystemCache',
+    # Note that filesystem cache doesn't work on systems with ephemeral
+    # filesystems like Heroku.
+    'CACHE_DIR': 'cache-directory',
+    # should be equal to maximum number of users on the app at a single time
+    # higher numbers will store more data in the filesystem / redis cache
+    'CACHE_THRESHOLD': 20
+})
+# TODO: sessionbezogenes caching
 server = app.server
 app.title = "MALAweb"
 
@@ -155,7 +170,6 @@ app.layout = p_layout_landing
 
 # CALLBACKS & FUNCTIONS
 
-
 # RESET BUTTON
 @app.callback(
     Output("page_state", "data", allow_duplicate=True),
@@ -165,12 +179,16 @@ app.layout = p_layout_landing
     Output("UP_STORE", "data", allow_duplicate=True),
     Output("download-data", "disabled", allow_duplicate=True),
     Input("reset-data", "n_clicks"),
+    State("UP_STORE", "data"),
     prevent_initial_call=True,
 )
-def click_reset(click):
+def click_reset(click, upload_data):
     """
     Resets the app to its initial state on reset button click (menu)
     """
+    if upload_data is not None:
+        session_id = upload_data["ID"]
+        cache.delete(f"df{session_id}")
     return "landing", None, False, False, None, True
 
 
@@ -895,6 +913,7 @@ def init_temp_choice(model_choice):
 # AND "PARSING" DATA FOR CONTINUED USE
 
 
+@cache.cached()
 @app.callback(
     Output("df_store", "data"),
     Output("unique_df", "data"),
@@ -907,6 +926,7 @@ def init_temp_choice(model_choice):
 )
 def update_dataframes(trig, model_choice, temp_choice, upload):
     """
+    TODO: saving UP_STORE-data (reordered to DF) in df_store is a duplicate that should be eliminated
     Input
     :param trig: =INPUT - Pressing button "run-mala" triggers callback
     :param model_choice: =STATE - info on the cell-system (substance+temp(-range)), separated by |
@@ -930,13 +950,14 @@ def update_dataframes(trig, model_choice, temp_choice, upload):
     # ASE.reading to receive ATOMS-objs, to pass to MALA-inference
     # no ValueError Exception needed, bc this is done directly on session
     read_atoms = ase.Atoms.fromdict(upload["ATOMS"])
+    session_id = upload["ID"]
 
     # (a) GET DATA FROM MALA (/ inference script)
 
     mala_data = run_mala_prediction(
         atoms_to_predict=read_atoms,
         model_and_temp=model_temp_path,
-        session_id=upload["ID"],
+        session_id=session_id,
     )
     # contains 'band_energy', 'total_energy', 'density', 'density_of_states', 'energy_grid'
     # mala_data is stored in df_store dict under key 'MALA_DATA'. (See declaration of df_store below for more info)
@@ -1036,7 +1057,21 @@ def update_dataframes(trig, model_choice, temp_choice, upload):
     """
 
     # _______________________________________________________________________________________
-
+    """
+    df_store.MALA_DF
+    contains:
+    - default = unsheared datapoints
+    - scatter = sheared datapoints
+    
+    df_store.MALA_DATA
+    contains:
+    - data received from MALA-api (= unsheared datapoints? + energy values (+?)
+    
+    df_store.INPUT_DF
+    contains:
+    
+    
+    """
     df_store = {
         "MALA_DF": {
             "default": data0.to_dict("records"),
@@ -1046,6 +1081,8 @@ def update_dataframes(trig, model_choice, temp_choice, upload):
         "INPUT_DF": atoms_data.to_dict("records"),
         "SCALE": {"x_axis": x_axis, "y_axis": y_axis, "z_axis": z_axis},
     }
+    print("df_store: ", df_store.keys())
+    cache.set(f'df{session_id}', df_store, timeout=0)
     return df_store, unique_df, False
 
 
@@ -1112,7 +1149,6 @@ def update_settings_store(size, outline, atoms, opacity, cell):
 
 
 # EXPORT SETTINGS
-# TODO: include CAM-data
 @app.callback(
     Output("settings-downloader", "data"),
     Input("export-settings", "n_clicks"),
@@ -1371,9 +1407,9 @@ def update_main_content(state, data):
         Input("x-z-cam", "n_clicks"),
         Input("y-z-cam", "n_clicks"),
         State("cam_store", "data"),
-        Input("df_store", "data"),
         State("scatter-plot", "figure"),
         State("BOUNDARIES_STORE", "data"),
+        State("UP_STORE", "data"),
     ],
     prevent_initial_call="initial_duplicate",
 )
@@ -1384,9 +1420,9 @@ def update_plot(
         cam_xz,
         cam_yz,
         stored_cam_settings,
-        f_data,
         fig,
         boundaries_fig,
+        upload
 ):
     """
     Updates the scatter-plot
@@ -1395,10 +1431,11 @@ def update_plot(
     - cam_store is needed, so that the cam-position is not reset on f.e. update by settings
     """
     # TODO: make this function more efficient
-    print("PLOT UPDATE", dash.callback_context.triggered_id)
     patched_fig = Patch()
+    session_id = upload["ID"]
 
     # DATA
+    f_data = cache.get(f'df{session_id}')
     # the density-Dataframe that we're updating, taken from df_store (=f_data)
     if f_data is None:
         raise PreventUpdate
@@ -1416,7 +1453,6 @@ def update_plot(
         They do not overwrite the figure, but patch their respective parameters of the initialised figure
         -> better performance
         """
-        print("INIT Plot")
         # Our main figure = scatter plot
 
         df = pd.DataFrame(f_data["MALA_DF"]["scatter"])
@@ -1491,7 +1527,6 @@ def update_plot(
             visibility of cell boundaries (width 1 / 0) and 
             visibility of atoms
         """
-        print("PLOT-Settings")
         patched_fig["data"][0]["marker"]["line"] = settings["outline"]
         patched_fig["data"][0]["marker"]["size"] = settings["size"]
         patched_fig["data"][0]["marker"]["opacity"] = settings["opacity"]
@@ -1504,7 +1539,6 @@ def update_plot(
     # CAMERA
 
     elif "cam" in dash.callback_context.triggered_id:
-        print("PLOT-Cam")
         """
         CAMERA
             set camera-position according to the clicked button, 
@@ -1553,8 +1587,8 @@ def update_plot(
     Input("slider-z", "value"),
     Input("slice-z", "active"),
     # Data
-    State("df_store", "data"),
     State("cam_store", "data"),
+    State("UP_STORE", "data"),
     prevent_initial_call=True,
 )
 def slice_plot(
@@ -1566,13 +1600,15 @@ def slice_plot(
     cs_y_inactive,
     slider_range_cs_z,
     cs_z_inactive,
-    f_data,
     cam,
+    upload
 ):
     """
     Updates the scatter-plot according to the tools by filtering the data
     TODO: Try doing this Clientside for performance improvements
     """
+    session_id = upload["ID"]
+    f_data = cache.get(f'df{session_id}')
     if f_data is None:
         raise PreventUpdate
     df = pd.DataFrame(f_data["MALA_DF"]["scatter"])
@@ -1757,4 +1793,4 @@ def open_menu(open_menu_click):
 # END OF CALLBACKS FOR SIDEBAR
 
 if __name__ == "__main__":
-    app.run_server(debug=True, host="0.0.0.0", port="8050")
+    app.run_server(debug=True)
