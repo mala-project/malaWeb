@@ -226,7 +226,7 @@ sidebar = html.Div(
                             # print(ase.io.formats.ioformats),
                             # -> TODO property "fileformat" could be used in du.Upload() to restrict uploadable extensions (safety-reasons for web-hosting)
                             html.Div(
-                                "Awaiting session..",
+                                "Awaiting upload..",
                                 id="output-session-state",
                                 style={
                                     "margin": "2px",
@@ -259,12 +259,14 @@ sidebar = html.Div(
         dbc.Button(
             "Edit",
             id="edit-input",
-            color="success",
+            color="info",
             style={
                 "lineHeight": "0.85em",
                 "height": "min-content",
                 "width": "100%",
                 "fontSize": "0.85em",
+                "backgroundColor": "#f3ab5c",
+                "borderColor": "#f3ab5c",
             },
         ),
         dbc.Button(
@@ -276,6 +278,8 @@ sidebar = html.Div(
                 "height": "min-content",
                 "width": "100%",
                 "fontSize": "0.85em",
+                "backgroundColor": "#eb5c64",
+                "borderColor": "#eb5c64",
             },
         ),
         inference_modal,
@@ -297,11 +301,11 @@ oc_sidebar = html.Div(
             backdrop=False,
             style={
                 "width": "12rem",
+                "height": "min-content",
                 "marginTop": "3rem",
                 "left": "0",
                 "borderTopRightRadius": "5px",
                 "borderBottomRightRadius": "5px",
-                "height": "min-content",
                 "boxShadow": "rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px",
             },
         )

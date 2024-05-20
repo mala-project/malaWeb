@@ -11,7 +11,6 @@
     justify-content: center;
 }
 
-
 .upload-failure {
     border-color: red;
 }
@@ -19,3 +18,5 @@
 .upload-success {
     border-color: green;
 }
+
+

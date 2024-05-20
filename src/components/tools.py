@@ -23,6 +23,7 @@ plot_tools = dbc.Collapse(
                                         outline=True,
                                         color="danger",
                                         n_clicks=0,
+                                        style={"height": "2.7em"}
                                     ),
                                     dbc.Button(
                                         "Y",
@@ -31,6 +32,7 @@ plot_tools = dbc.Collapse(
                                         outline=True,
                                         color="success",
                                         n_clicks=0,
+                                        style={"height": "2.7em"}
                                     ),
                                     dbc.Button(
                                         "Z",
@@ -39,6 +41,7 @@ plot_tools = dbc.Collapse(
                                         outline=True,
                                         color="primary",
                                         n_clicks=0,
+                                        style={"height": "2.7em"}
                                     ),
                                     dbc.Button(
                                         "Density",
@@ -47,6 +50,7 @@ plot_tools = dbc.Collapse(
                                         outline=True,
                                         color="dark",
                                         n_clicks=0,
+                                        style={"height": "2.7em"}
                                     ),
                                 ],
                                 vertical=True,
@@ -70,15 +74,10 @@ plot_tools = dbc.Collapse(
                                                 marks=None,
                                                 pushable=10,  # the sheared plane needs a range of values to be able to slice down to approx. 1 layer
                                                 updatemode="drag",
-                                            )
+                                            ), style={"marginTop": "0.25em"},
                                         ),
                                         dbc.Col(
-                                            html.Img(
-                                                id="reset-slider-x",
-                                                src="/assets/x.svg",
-                                                n_clicks=0,
-                                                style={"width": "1.25em"},
-                                            ),
+                                            html.I(className="bi bi-x-lg", id="reset-slider-x"),
                                             width=1,
                                         ),
                                     ],
@@ -107,15 +106,10 @@ plot_tools = dbc.Collapse(
                                                 max=1,
                                                 marks=None,
                                                 updatemode="drag",
-                                            )
+                                            ), style={"marginTop": "0.25em"},
                                         ),
                                         dbc.Col(
-                                            html.Img(
-                                                id="reset-slider-y",
-                                                src="/assets/x.svg",
-                                                n_clicks=0,
-                                                style={"width": "1.25em"},
-                                            ),
+                                            html.I(className="bi bi-x-lg", id="reset-slider-y"),
                                             width=1,
                                         ),
                                     ]
@@ -143,15 +137,10 @@ plot_tools = dbc.Collapse(
                                                 max=1,
                                                 marks=None,
                                                 updatemode="drag",
-                                            )
+                                            ), style={"marginTop": "0.25em"},
                                         ),
                                         dbc.Col(
-                                            html.Img(
-                                                id="reset-slider-z",
-                                                src="/assets/x.svg",
-                                                n_clicks=0,
-                                                style={"width": "1.25em"},
-                                            ),
+                                            html.I(className="bi bi-x-lg", id="reset-slider-z"),
                                             width=1,
                                         ),
                                     ]
@@ -179,18 +168,10 @@ plot_tools = dbc.Collapse(
                                                 max=1,
                                                 marks=None,
                                                 updatemode="drag",
-                                            )
+                                            ), style={"marginTop": "0.25em"},
                                         ),
                                         dbc.Col(
-                                            html.Img(
-                                                id="reset-slider-val",
-                                                src="/assets/x.svg",
-                                                n_clicks=0,
-                                                style={
-                                                    "width": "1.25em",
-                                                    "position": "float",
-                                                },
-                                            ),
+                                            html.I(className="bi bi-x-lg", id="reset-slider-val"),
                                             width=1,
                                         ),
                                     ]

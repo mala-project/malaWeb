@@ -53,61 +53,47 @@ Energy Table
 row1 = html.Tr(
     [
         html.Td(
-            "Band energy",
-            style={"textAlign": "center", "padding": 3, "fontSize": "0.85em"},
+            "Total energy",
+            style={"background-color": "#f8f9fa", "textAlign": "center", "padding-block": "1em 1em", "padding-inline-end": "3em", "fontSize": "0.85em", "fontWeight": "bold"},
+        ),
+        html.Td(
+            0,
+            id="totalEn",
+            style={"textAlign": "right", "padding": "1em", "padding-inline-start": "3em", "fontSize": "0.85em"},
         )
     ],
-    style={"fontWeight": "bold"},
 )
 row2 = html.Tr(
     [
         html.Td(
+            "Band energy",
+            style={"background-color": "#f8f9fa", "textAlign": "center", "padding-block": "1em 1em", "padding-inline-end": "3em", "fontSize": "0.85em", "fontWeight": "bold"},
+        ),
+        html.Td(
             0,
             id="bandEn",
-            style={"textAlign": "right", "padding": 5, "fontSize": "0.85em"},
+            style={"textAlign": "right", "padding": "1em", "padding-inline-start": "3em", "fontSize": "0.85em"},
         )
     ]
 )
 row3 = html.Tr(
     [
         html.Td(
-            "Total energy",
-            style={"textAlign": "center", "padding": 3, "fontSize": "0.85em"},
-        )
-    ],
-    style={"fontWeight": "bold"},
-)
-row4 = html.Tr(
-    [
+            "Fermi energy",
+            style={"background-color": "#f8f9fa", "textAlign": "center", "padding-block": "1em 1em", "padding-inline-end": "3em", "fontSize": "0.85em", "fontWeight": "bold"},
+        ),
         html.Td(
             0,
-            id="totalEn",
-            style={"textAlign": "right", "padding": 5, "fontSize": "0.85em"},
-        )
-    ]
-)
-row5 = html.Tr(
-    [
-        html.Td(
-            "Fermi energy",
-            style={"textAlign": "center", "padding": 3, "fontSize": "0.85em"},
-        )
-    ],
-    style={"fontWeight": "bold"},
-)
-row6 = html.Tr(
-    [
-        html.Td(
-            "placeholder",
             id="fermiEn",
-            style={"textAlign": "right", "padding": 5, "fontSize": "0.85em"},
+            style={"textAlign": "right", "padding": "1em", "padding-inline-start": "3em", "fontSize": "0.85em"},
         )
     ]
 )
-table_body = [html.Tbody([row1, row2, row3, row4, row5, row6])]
+
+table_body = [html.Tbody([row1, row2, row3])]
 
 table = dbc.Table(
-    table_body, bordered=True, striped=True, style={"padding": 0, "margin": 0}
+    table_body, bordered=True, style={"padding": 0, "margin": 0}
 )
 
 """

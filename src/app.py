@@ -96,7 +96,7 @@ print("STARTING UP...")
 
 app = Dash(
     __name__,
-    external_stylesheets=[dbc.icons.BOOTSTRAP, dbc.themes.BOOTSTRAP],
+    external_stylesheets=[dbc.icons.BOOTSTRAP, dbc.themes.BOOTSTRAP, dbc.icons.BOOTSTRAP],
     suppress_callback_exceptions=True,
 )
 cache = Cache(app.server, config={
@@ -1684,6 +1684,8 @@ def update_orientation(saved):
     """
     Updates the orientation-figure
     """
+    if saved is None:
+        raise PreventUpdate
     eye = saved["eye"]
     # TODO make zoom-level static
 
