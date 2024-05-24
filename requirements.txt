@@ -12,4 +12,3 @@ dash-extensions>=1.0.7
 gunicorn>=20.1.0
 materials-learning-algorithms>=1.2.1
 torch>=2.3.0
-lammps>=2023.8.2.3.1
