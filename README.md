@@ -4,14 +4,18 @@ Web app to visualize on-the-fly MALA predictions.
 
 ## Description
 
-malaWeb is a Plotly Dash based web application used for the visualization of 3D volumetric data. By inputting atom positions and cell information in ASE-accepted data formats, MALA can be run to make predictions on the volumetric data inside the given cell. It is currently made to be run on a local machine with its own MALA installation. Be aware that larger model predictions will take a lot of time. The default atom limit for predictions is 200.
+malaWeb is a Plotly Dash based web application used for the visualization of 3D volumetric data. By inputting atom positions and cell information in ASE-accepted data formats, MALA can be run to make predictions on the volumetric data inside the given cell. This branch is meant to be run on a local machine with its own MALA installation.\
+malaWeb uses a FileSystemCache to reduce some network traffic, but other Cache-Backend options like redis are possible too.\
+See here for alternatives: https://flask-caching.readthedocs.io/en/latest/#built-in-cache-backends \
+
+
+Be aware that larger model predictions will take a lot of time. The default atom limit for predictions is 200.
 
 ## Installation
 
 Running a MALA inference requires a working installation of MALA and its dependencies (torch, LAMMPS, QuantumEspresso, ..), as well as model data.\
 See https://github.com/mala-project/mala/blob/develop/docs/source/install/installing\_mala.rst on how to install.\
-Some model data is currently included in this malaWeb repository, stored in "models"-folder and listed in "model\_list.json". It is recommended to install MALA in an anaconda virtual environment.
-
+Some model data is currently included in this malaWeb repository, stored in "models"-folder and listed in "model\_list.json".
 After MALA is installed, just run the setup.py file to install malaWebs dependencies.
 
 * In directory with setup.py, run `pip install -e .`
