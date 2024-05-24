@@ -1,30 +1,25 @@
-# malaWeb
+# malaWeb BRANCH render
 
 Web app to visualize on-the-fly MALA predictions.
 
 ## Description
 
-malaWeb is a Plotly Dash based web application used for the visualization of 3D volumetric data. By inputting atom positions and cell information in ASE-accepted data formats, MALA can be run to make predictions on the volumetric data inside the given cell. It is currently made to be run on a local machine with its own MALA installation. Be aware that larger model predictions will take a lot of time. The default atom limit for predictions is 200.
+malaWeb is a Plotly Dash based web application used for the visualization of 3D volumetric data. By inputting atom positions and cell information in ASE-accepted data formats, MALA can be run to make predictions on the volumetric data inside the given cell. This branch is used to test hosting capabilities on the free hosting service [render](https://render.com/). The free plan does not seem to allow compiling of external libraries like MALA, lammps, QE etc. Eventhough MALA can be installed via pip, lammps and QE can't (in a compatible way). It seems that without a dockerized MALA install with all it's dependencies, deploying MALA to render is not possible.
+For deploying via Docker, see: https://docs.render.com/deploy-an-image.
+
+Be aware that larger model predictions will take a lot of time. The default atom limit for predictions is 200.
 
 ## Installation
 
-Running a MALA inference requires a working installation of MALA and its dependencies (torch, LAMMPS, QuantumEspresso, ..), as well as model data.\
-See https://github.com/mala-project/mala/blob/develop/docs/source/install/installing\_mala.rst on how to install.\
-Some model data is currently included in this malaWeb repository, stored in "models"-folder and listed in "model\_list.json". It is recommended to install MALA in an anaconda virtual environment.
-
-After MALA is installed, just run the setup.py file to install malaWebs dependencies.
-
-* In directory with setup.py, run `pip install -e .`
+See [this](https://www.youtube.com/watch?v=XWJBJoV5yww) video for instructions on deploying to render.
 
 Make sure the installed version of the dash uploader component is the newest pre-release version 0.7.0 or newer, as this introduces new syntax. https://github.com/fohrloop/dash-uploader#-dash-uploader-070-pre-release-available
 
 Make sure the installed version of packaging is not higher than 21. For a version check, the dash uploader component uses an attribute "LegacyVersion" that has been deprecated in later versions. See this thread: https://github.com/pypa/packaging/issues/321
 
+
+
 ## Usage
-
-After installing dependencies, run `gunicorn app:server -w 4 -b [host-ip]:8051`
-Change 8051 to whatever port you want and exchange [host-ip] for the IP adress of the hosting server. Other devices on the same network can access malaWeb via that IP:port
-
 \
 In the File-Upload section, upload an ASE-readable file\
 (See: https://wiki.fysik.dtu.dk/ase/ase/io/io.html -> Table -> Formats with either R or RW capabilities).\
