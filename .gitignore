@@ -8,3 +8,8 @@
 /src/utils/__pycache__/
 /src/cache-directory/
 *.tmp
+*.iml
+*.xml
+*.txt
+/malaWeb.egg-info
+/.idea
