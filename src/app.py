@@ -403,7 +403,7 @@ def toggle_val_slider(active):
     prevent_initial_call=True,
 )
 def reset_sliders(slider_x_max, slider_y_max, slider_z_max, slider_val_max,
-        n_clicks_x, n_clicks_y, n_clicks_z, n_clicks_dense):
+                  n_clicks_x, n_clicks_y, n_clicks_z, n_clicks_dense):
     """
     resets the sliders to their initial state on reset-button click
     """
@@ -761,7 +761,7 @@ def import_config(contents):
     contents: base64 encoded string (JSON) that will be decoded, parsed and split up into returns for tools (multiple)
               and settings (one return to plot_settings)
     Changes to these Outputs will apply the imported settings to the plot automatically
-    
+
     Returns:
     values to each component, either dash_no_update, or actual value parsed from input-data-JSON
     """
@@ -1026,14 +1026,14 @@ def update_dataframes(trig, model_choice, temp_choice, upload):
     data_sc = data0.copy()
 
     # SHEARING for scatter_3d - linearcombination
-    data_sc.x += y_axis[1] * (data0.y / y_axis[2])
-    data_sc.x += z_axis[1] * (data0.z / z_axis[3])
-
-    data_sc.y += x_axis[2] * (data0.x / x_axis[1])
-    data_sc.y += z_axis[2] * (data0.z / z_axis[3])
-
-    data_sc.z += y_axis[3] * (data0.y / y_axis[2])
-    data_sc.z += x_axis[3] * (data0.x / x_axis[1])
+    # data_sc.x += y_axis[1] * (data0.y / y_axis[2])
+    # data_sc.x += z_axis[1] * (data0.z / z_axis[3])
+    #
+    # data_sc.y += x_axis[2] * (data0.x / x_axis[1])
+    # data_sc.y += z_axis[2] * (data0.z / z_axis[3])
+    #
+    # data_sc.z += y_axis[3] * (data0.y / y_axis[2])
+    # data_sc.z += x_axis[3] * (data0.x / x_axis[1])
 
     unique_df = {
         "x": data_sc.x.unique(),
@@ -1070,15 +1070,15 @@ def update_dataframes(trig, model_choice, temp_choice, upload):
     contains:
     - default = unsheared datapoints
     - scatter = sheared datapoints
-    
+
     df_store.MALA_DATA
     contains:
     - data received from MALA-api (= unsheared datapoints? + energy values (+?)
-    
+
     df_store.INPUT_DF
     contains:
-    
-    
+
+
     """
     df_store = {
         "MALA_DF": {
@@ -1283,6 +1283,7 @@ def update_tools(data, config_imported):
             1,
         )
 
+
 # SLOW
 # TODO: optimize these
 
@@ -1476,22 +1477,19 @@ def update_plot(
         # Cell
         fig_bound = boundaries_fig
 
-        patched_fig = go.Figure(go.Scatter3d(
+        patched_fig = go.Figure(go.Volume(
             x=df["x"],
             y=df["y"],
             z=df["z"],
-            mode='markers',
-            marker=dict(
-                size=10,
-                color=df["val"],  # set color to an array/list of desired values
-                colorscale='Hot',  # choose a colorscale; could also be a custom one:
-                # (https://plotly.com/python/reference/scatter3d/#scatter3d-marker-colorscale)
-                opacity=1,
-                cauto=False,
-                cmin=min(df["val"]),  # set static reference points for colorscale, to prevent color changes when clipping data
-                cmax=max(df["val"])
-            ),
-            hoverinfo="x+y+z"
+
+            colorscale='Hot',  # choose a colorscale; could also be a custom one:
+            # (https://plotly.com/python/reference/scatter3d/#scatter3d-marker-colorscale)
+            value=df["val"],
+            opacityscale=[[0, 0.1], [1, 1]],
+            surface={
+                "count": 20,
+            }
+
         ))
 
         patched_fig.update_layout(
@@ -1505,9 +1503,9 @@ def update_plot(
         patched_fig.update_coloraxes(
             colorbar={"thickness": 10, "title": "", "len": 0.9}
         )
-        patched_fig.update_traces(
-            patch={"marker": {"size": settings["size"], "line": settings["outline"]}}
-        )
+        # patched_fig.update_traces(
+        #     patch={"marker": {"size": settings["size"], "line": settings["outline"]}}
+        # )
 
         # adding helper-figure to keep camera-zoom the same, regardless of data(-slicing)-changes
         # equals the cell boundaries, but has slight offset to the main plot (due to not voxels, but ertices being scatter plotted)
@@ -1611,16 +1609,16 @@ def update_plot(
     prevent_initial_call=True,
 )
 def slice_plot(
-    slider_range,
-    dense_inactive,
-    slider_range_cs_x,
-    cs_x_inactive,
-    slider_range_cs_y,
-    cs_y_inactive,
-    slider_range_cs_z,
-    cs_z_inactive,
-    cam,
-    upload
+        slider_range,
+        dense_inactive,
+        slider_range_cs_x,
+        cs_x_inactive,
+        slider_range_cs_y,
+        cs_y_inactive,
+        slider_range_cs_z,
+        cs_z_inactive,
+        cam,
+        upload
 ):
     """
     Updates the scatter-plot according to the tools by filtering the data
