@@ -906,16 +906,6 @@ def update_temp_choice(model_choice):
         return int(temp), True, None, None
 
 
-# Trigger: button "run-mala", button "reset"
-# (indirectly) Opens a popup, showing
-#   - the uploaded Atoms with a checkmark;
-#   - possibly giving a prerender of only the atoms;
-#   - giving a warning if more than (ATOM_LIMIT) Atoms are selected
-#   - has a "Start MALA" Button
-# !!  THIS IS RUNNING MALA INFERENCE  !!
-# AND "PARSING" DATA FOR CONTINUED USE
-
-
 @cache.cached()
 @app.callback(
     Output("df_store", "data"),
@@ -930,6 +920,14 @@ def update_temp_choice(model_choice):
 def update_dataframes(trig, model_choice, temp_choice, upload):
     """
     TODO: saving UP_STORE-data (reordered to DF) in df_store is a duplicate that should be eliminated
+    (indirectly) Opens a popup, showing
+      - the uploaded Atoms with a checkmark;
+      - possibly giving a prerender of only the atoms;
+      - giving a warning if more than (ATOM_LIMIT) Atoms are selected
+      - has a "Start MALA" Button
+    !!  THIS IS RUNNING MALA INFERENCE  !!
+    AND "PARSING" DATA FOR CONTINUED USE
+
     Input
     :param trig: =INPUT - Pressing button "run-mala" triggers callback
     :param model_choice: =STATE - info on the cell-system (substance+temp(-range)), separated by |
@@ -1478,16 +1476,24 @@ def update_plot(
         # Cell
         fig_bound = boundaries_fig
 
-        patched_fig = px.scatter_3d(
-            df,
-            x="x",
-            y="y",
-            z="z",
-            color="val",
-            hover_data=["val"],
-            color_continuous_scale=px.colors.sequential.Inferno_r,
-            range_color=[min(df["val"]), max(df["val"])],
-        )
+        patched_fig = go.Figure(go.Scatter3d(
+            x=df["x"],
+            y=df["y"],
+            z=df["z"],
+            mode='markers',
+            marker=dict(
+                size=10,
+                color=df["val"],  # set color to an array/list of desired values
+                colorscale='Hot',  # choose a colorscale; could also be a custom one:
+                # (https://plotly.com/python/reference/scatter3d/#scatter3d-marker-colorscale)
+                opacity=1,
+                cauto=False,
+                cmin=min(df["val"]),  # set static reference points for colorscale, to prevent color changes when clipping data
+                cmax=max(df["val"])
+            ),
+            hoverinfo="x+y+z"
+        ))
+
         patched_fig.update_layout(
             margin=dict(l=0, r=0, b=0, t=0),
             paper_bgcolor="#f8f9fa",
