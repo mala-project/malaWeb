@@ -5,7 +5,8 @@
 /test/
 /test_data/
 /src/mala.pw.scf.in
-/src/utils/__pycache__/
+**/__pycache__/
+**/.idea/
 /src/cache-directory/
 *.tmp
 *.iml
@@ -13,3 +14,4 @@
 *.txt
 /malaWeb.egg-info
 /.idea
+*.pyc
