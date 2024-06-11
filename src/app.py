@@ -1476,23 +1476,53 @@ def update_plot(
         # Cell
         fig_bound = boundaries_fig
 
-        patched_fig = go.Figure(go.Scatter3d(
-            x=df["x"],
-            y=df["y"],
-            z=df["z"],
-            mode='markers',
-            marker=dict(
-                size=10,
-                color=df["val"],  # set color to an array/list of desired values
-                colorscale='Hot',  # choose a colorscale; could also be a custom one:
-                # (https://plotly.com/python/reference/scatter3d/#scatter3d-marker-colorscale)
-                opacity=1,
-                cauto=False,
-                cmin=min(df["val"]),  # set static reference points for colorscale, to prevent color changes when clipping data
-                cmax=max(df["val"])
-            ),
-            hoverinfo="x+y+z"
-        ))
+        # patched_fig = go.Figure(go.Scatter3d(
+        #     x=df["x"],
+        #     y=df["y"],
+        #     z=df["z"],
+        #     mode='markers',
+        #     marker=dict(
+        #         size=10,
+        #         color=df["val"],  # set color to an array/list of desired values
+        #         colorscale='Hot',  # choose a colorscale; could also be a custom one:
+        #         # (https://plotly.com/python/reference/scatter3d/#scatter3d-marker-colorscale)
+        #         opacity=1,
+        #         cauto=False,
+        #         cmin=min(df["val"]),  # set static reference points for colorscale, to prevent color changes when clipping data
+        #         cmax=max(df["val"])
+        #     ),
+        #     hoverinfo="x+y+z"
+        # ))
+
+        top = df.copy()
+        top = top['val'].unique()
+        top.sort()
+
+        df_1 = df[df['val'] >= top[90]]
+        df_1 = df[df["val"] <= top[100]]
+
+        df_2 = df[df['val'] >= top[190]]
+        df_2 = df[df["val"] <= top[200]]
+
+        patched_fig = go.Figure(
+            go.Mesh3d(
+                x=df_1["x"],
+                y=df_1["y"],
+                z=df_1["z"],
+                intensity=df_1["val"],
+                alphahull=20,
+                flatshading=False
+            )
+        )
+        # patched_fig.add_trace(
+        #     go.Mesh3d(
+        #         x=df_2["x"],
+        #         y=df_2["y"],
+        #         z=df_2["z"],
+        #         alphahull=0,
+        #         color='lightpink'
+        #     )
+        # )
 
         patched_fig.update_layout(
             margin=dict(l=0, r=0, b=0, t=0),
@@ -1505,9 +1535,9 @@ def update_plot(
         patched_fig.update_coloraxes(
             colorbar={"thickness": 10, "title": "", "len": 0.9}
         )
-        patched_fig.update_traces(
-            patch={"marker": {"size": settings["size"], "line": settings["outline"]}}
-        )
+        # patched_fig.update_traces(
+        #     patch={"marker": {"size": settings["size"], "line": settings["outline"]}}
+        # )
 
         # adding helper-figure to keep camera-zoom the same, regardless of data(-slicing)-changes
         # equals the cell boundaries, but has slight offset to the main plot (due to not voxels, but ertices being scatter plotted)
@@ -1546,9 +1576,9 @@ def update_plot(
             visibility of cell boundaries (width 1 / 0) and 
             visibility of atoms
         """
-        patched_fig["data"][0]["marker"]["line"] = settings["outline"]
-        patched_fig["data"][0]["marker"]["size"] = settings["size"]
-        patched_fig["data"][0]["marker"]["opacity"] = settings["opacity"]
+        # patched_fig["data"][0]["marker"]["line"] = settings["outline"]
+        # patched_fig["data"][0]["marker"]["size"] = settings["size"]
+        # patched_fig["data"][0]["marker"]["opacity"] = settings["opacity"]
         for i in [1, 2, 3, 4]:
             patched_fig["data"][i]["line"]["width"] = settings["cell"]
         patched_fig["data"][5]["visible"] = settings["atoms"]
