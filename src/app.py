@@ -1482,7 +1482,8 @@ def update_plot(
             z=df["z"],
             mode='markers',
             marker=dict(
-                size=10,
+                size=df["val"],
+                sizemin=10,
                 color=df["val"],  # set color to an array/list of desired values
                 colorscale='Hot',  # choose a colorscale; could also be a custom one:
                 # (https://plotly.com/python/reference/scatter3d/#scatter3d-marker-colorscale)
@@ -1506,7 +1507,9 @@ def update_plot(
             colorbar={"thickness": 10, "title": "", "len": 0.9}
         )
         patched_fig.update_traces(
-            patch={"marker": {"size": settings["size"], "line": settings["outline"]}}
+            patch={"marker": {
+                "sizemin": settings["size"],
+                "line": settings["outline"]}}
         )
 
         # adding helper-figure to keep camera-zoom the same, regardless of data(-slicing)-changes
@@ -1529,7 +1532,10 @@ def update_plot(
                 z=atoms["z"],
                 mode="markers",
                 marker=dict(
-                    size=10,
+                    # this technique is for some reason not working here to make size absolute,
+                    # while it does work for the main trace for density. Also makes the outline be white
+                    size=[0.0001 for x in range(0, no_of_atoms)],
+                    sizemin=30,
                     color=atom_colors,
                     line=dict(width=1, color="DarkSlateGrey"),
                 ),
@@ -1547,7 +1553,7 @@ def update_plot(
             visibility of atoms
         """
         patched_fig["data"][0]["marker"]["line"] = settings["outline"]
-        patched_fig["data"][0]["marker"]["size"] = settings["size"]
+        patched_fig["data"][0]["marker"]["sizemin"] = settings["size"]
         patched_fig["data"][0]["marker"]["opacity"] = settings["opacity"]
         for i in [1, 2, 3, 4]:
             patched_fig["data"][i]["line"]["width"] = settings["cell"]
