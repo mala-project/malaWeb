@@ -572,13 +572,17 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
             )  # , html.Td("checkbox")
             for atom in r_atoms
         ]
-
         atoms_fig = go.Scatter3d(
             name="Atoms",
             x=[atom.x for atom in r_atoms],
             y=[atom.y for atom in r_atoms],
             z=[atom.z for atom in r_atoms],
             mode="markers",
+            marker=dict(
+                # make this an ndarray (doesn't work either)
+                size=[0.0001 for x in range(0, r_atoms.get_number_of_atoms())],
+                sizemin=30
+            ),
             hovertemplate="X: %{x}</br></br>Y: %{y}</br>Z: %{z}<extra></extra>",
         )
 
