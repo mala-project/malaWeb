@@ -2,6 +2,7 @@
 import base64
 import json
 import sys
+import time
 from pathlib import Path
 
 import dash
@@ -1461,6 +1462,7 @@ def update_plot(
         Create a Figure that overwrites the default figure (a single blue dot)
         This is only run on the initial call of this callback (id ".")
         All following operations are optional and only triggered if their parameters change (they are trigger of this CB)
+        # TODO (except for settings - they are always applied - not sure why)
         They do not overwrite the figure, but patch their respective parameters of the initialised figure
         -> better performance
         """
@@ -1476,33 +1478,25 @@ def update_plot(
         # Cell
         fig_bound = boundaries_fig
 
-        # patched_fig = go.Figure(go.Scatter3d(
-        #     x=df["x"],
-        #     y=df["y"],
-        #     z=df["z"],
-        #     mode='markers',
-        #     marker=dict(
-        #         size=10,
-        #         color=df["val"],  # set color to an array/list of desired values
-        #         colorscale='Hot',  # choose a colorscale; could also be a custom one:
-        #         # (https://plotly.com/python/reference/scatter3d/#scatter3d-marker-colorscale)
-        #         opacity=1,
-        #         cauto=False,
-        #         cmin=min(df["val"]),  # set static reference points for colorscale, to prevent color changes when clipping data
-        #         cmax=max(df["val"])
-        #     ),
-        #     hoverinfo="x+y+z"
-        # ))
+# Proof of concept für Mesh3d
+        """
+        get unique density values, then filter complete dataframes by their value in regards to top X vals.
+        Currently showing two surfaces:
+        - lowest 100 density values
+        - 100 next density values above that
+        
+        alphahull determines which surface extraction algo to use. >= 1 uses alpha-shape and going above 1 determines
+        granularity of mesh fitting
+        """
+        # TODO: implement split full dataset in X equal parts, then create X Mesh3d-Figures
+        #  (this will take a lot of time to display)
+        unique_vals = (df['val'].copy()).unique()
+        unique_vals.sort()
 
-        top = df.copy()
-        top = top['val'].unique()
-        top.sort()
+        df_1 = df[df["val"] <= unique_vals[100]]
 
-        df_1 = df[df['val'] >= top[90]]
-        df_1 = df[df["val"] <= top[100]]
-
-        df_2 = df[df['val'] >= top[190]]
-        df_2 = df[df["val"] <= top[200]]
+        df_2 = df[df["val"] <= unique_vals[200]]
+        df_2 = df_2[df_2['val'] >= unique_vals[100]]
 
         patched_fig = go.Figure(
             go.Mesh3d(
@@ -1511,18 +1505,21 @@ def update_plot(
                 z=df_1["z"],
                 intensity=df_1["val"],
                 alphahull=20,
-                flatshading=False
+                flatshading=False,
+                opacity=0.4
             )
         )
-        # patched_fig.add_trace(
-        #     go.Mesh3d(
-        #         x=df_2["x"],
-        #         y=df_2["y"],
-        #         z=df_2["z"],
-        #         alphahull=0,
-        #         color='lightpink'
-        #     )
-        # )
+        patched_fig.add_trace(
+            go.Mesh3d(
+                x=df_2["x"],
+                y=df_2["y"],
+                z=df_2["z"],
+                intensity=df_2["val"],
+                alphahull=20,
+                flatshading=False,
+                opacity=0.2
+            )
+        )
 
         patched_fig.update_layout(
             margin=dict(l=0, r=0, b=0, t=0),
@@ -1535,9 +1532,6 @@ def update_plot(
         patched_fig.update_coloraxes(
             colorbar={"thickness": 10, "title": "", "len": 0.9}
         )
-        # patched_fig.update_traces(
-        #     patch={"marker": {"size": settings["size"], "line": settings["outline"]}}
-        # )
 
         # adding helper-figure to keep camera-zoom the same, regardless of data(-slicing)-changes
         # equals the cell boundaries, but has slight offset to the main plot (due to not voxels, but ertices being scatter plotted)
@@ -1549,6 +1543,9 @@ def update_plot(
         patched_fig.update_scenes(removeHoverLines)
 
         atom_colors = []
+        """
+        can be used to color atoms according to f.e. charge or similar. All green for now
+        """
         for i in range(0, int(no_of_atoms)):
             atom_colors.append("green")
         patched_fig.add_trace(
@@ -1559,7 +1556,8 @@ def update_plot(
                 z=atoms["z"],
                 mode="markers",
                 marker=dict(
-                    size=10,
+                    size=[0.01 for x in atoms["x"]],
+                    sizemin=20,
                     color=atom_colors,
                     line=dict(width=1, color="DarkSlateGrey"),
                 ),
@@ -1576,9 +1574,6 @@ def update_plot(
             visibility of cell boundaries (width 1 / 0) and 
             visibility of atoms
         """
-        # patched_fig["data"][0]["marker"]["line"] = settings["outline"]
-        # patched_fig["data"][0]["marker"]["size"] = settings["size"]
-        # patched_fig["data"][0]["marker"]["opacity"] = settings["opacity"]
         for i in [1, 2, 3, 4]:
             patched_fig["data"][i]["line"]["width"] = settings["cell"]
         patched_fig["data"][5]["visible"] = settings["atoms"]
