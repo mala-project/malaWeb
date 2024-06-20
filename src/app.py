@@ -1043,6 +1043,25 @@ def update_dataframes(trig, model_choice, temp_choice, upload):
         "val": np.unique(density),
     }
 
+    # Segment data into 10 equal parts for 10 mesh traces:
+    df = data_sc.copy()
+    unique_vals = (df['val'].copy()).unique()
+    unique_vals.sort()
+
+    # Sort by the 4th column
+    df = df.sort_values(by=['val'])
+
+    # Calculate the number of elements per segment
+    n_per_segment = len(df) // 10
+
+    # Define an empty list to hold the segments
+    segments = []
+    for i in range(0, len(df), n_per_segment):
+        # Segment the dataframe by row index
+        segments.append(df.iloc[i:i + n_per_segment].to_dict())
+
+
+
     """
            Importing Data 
                Parameters imported from:
@@ -1089,6 +1108,7 @@ def update_dataframes(trig, model_choice, temp_choice, upload):
         "MALA_DATA": mala_data,
         "INPUT_DF": atoms_data.to_dict("records"),
         "SCALE": {"x_axis": x_axis, "y_axis": y_axis, "z_axis": z_axis},
+        "SEGMENTS": segments
     }
     print("df_store: ", df_store.keys())
     cache.set(f'df{session_id}', df_store, timeout=0)
@@ -1493,33 +1513,26 @@ def update_plot(
         unique_vals = (df['val'].copy()).unique()
         unique_vals.sort()
 
-        df_1 = df[df["val"] <= unique_vals[100]]
+        m_data = f_data["SEGMENTS"]
 
-        df_2 = df[df["val"] <= unique_vals[200]]
-        df_2 = df_2[df_2['val'] >= unique_vals[100]]
-
-        patched_fig = go.Figure(
-            go.Mesh3d(
-                x=df_1["x"],
-                y=df_1["y"],
-                z=df_1["z"],
-                intensity=df_1["val"],
-                alphahull=20,
-                flatshading=False,
-                opacity=0.4
+        st = time.time()
+        patched_fig = go.Figure()
+        for i, segment in enumerate(m_data):
+            df = pd.DataFrame(segment)
+            patched_fig.add_trace(
+                go.Mesh3d(
+                    x=df["x"],
+                    y=df["y"],
+                    z=df["z"],
+                    intensity=df["val"],
+                    alphahull=20,
+                    flatshading=False,
+                    opacity=0.2
+                    # or (1/len(m_data))*(i+1) for bugs
+                )
             )
-        )
-        patched_fig.add_trace(
-            go.Mesh3d(
-                x=df_2["x"],
-                y=df_2["y"],
-                z=df_2["z"],
-                intensity=df_2["val"],
-                alphahull=20,
-                flatshading=False,
-                opacity=0.2
-            )
-        )
+        et = time.time()
+        print(et-st)
 
         patched_fig.update_layout(
             margin=dict(l=0, r=0, b=0, t=0),
