@@ -99,16 +99,16 @@ app = Dash(
     external_stylesheets=[dbc.icons.BOOTSTRAP, dbc.themes.BOOTSTRAP, dbc.icons.BOOTSTRAP],
     suppress_callback_exceptions=True,
 )
-cache = Cache(app.server, config={
-    'DEBUG': True,
-    'CACHE_TYPE': 'FileSystemCache',
-    # Note that filesystem cache doesn't work on systems with ephemeral
-    # filesystems like Heroku.
-    'CACHE_DIR': 'cache-directory',
-    # should be equal to maximum number of users on the app at a single time
-    # higher numbers will store more data in the filesystem / redis cache
-    'CACHE_THRESHOLD': 20
-})
+# cache = Cache(app.server, config={
+#     'DEBUG': True,
+#     'CACHE_TYPE': 'FileSystemCache',
+#     # Note that filesystem cache doesn't work on systems with ephemeral
+#     # filesystems like Heroku.
+#     'CACHE_DIR': 'cache-directory',
+#     # should be equal to maximum number of users on the app at a single time
+#     # higher numbers will store more data in the filesystem / redis cache
+#     'CACHE_THRESHOLD': 20
+# })
 # TODO: sessionbezogenes caching
 server = app.server
 app.title = "MALAweb"
@@ -186,7 +186,7 @@ def click_reset(click, upload_data):
     """
     if upload_data is not None:
         session_id = upload_data["ID"]
-        cache.delete(f"df{session_id}")
+        #cache.delete(f"df{session_id}")
     return "landing", None, False, False, None, True
 
 
@@ -910,7 +910,7 @@ def update_temp_choice(model_choice):
         return int(temp), True, None, None
 
 
-@cache.cached()
+#@cache.cached()
 @app.callback(
     Output("df_store", "data"),
     Output("unique_df", "data"),
@@ -1094,7 +1094,7 @@ def update_dataframes(trig, model_choice, temp_choice, upload):
         "SCALE": {"x_axis": x_axis, "y_axis": y_axis, "z_axis": z_axis},
     }
     print("df_store: ", df_store.keys())
-    cache.set(f'df{session_id}', df_store, timeout=0)
+    #cache.set(f'df{session_id}', df_store, timeout=0)
     return df_store, unique_df, False
 
 
@@ -1425,6 +1425,7 @@ def update_main_content(state, data):
         State("scatter-plot", "figure"),
         State("BOUNDARIES_STORE", "data"),
         State("UP_STORE", "data"),
+        Input("df_store", "data")
     ],
     prevent_initial_call="initial_duplicate",
 )
@@ -1437,7 +1438,8 @@ def update_plot(
         stored_cam_settings,
         fig,
         boundaries_fig,
-        upload
+        upload,
+        f_data
 ):
     """
     Updates the scatter-plot
@@ -1450,7 +1452,7 @@ def update_plot(
     session_id = upload["ID"]
 
     # DATA
-    f_data = cache.get(f'df{session_id}')
+    #f_data = cache.get(f'df{session_id}')
     # the density-Dataframe that we're updating, taken from df_store (=f_data)
     if f_data is None:
         raise PreventUpdate
@@ -1618,6 +1620,8 @@ def update_plot(
     # Data
     State("cam_store", "data"),
     State("UP_STORE", "data"),
+
+    State("df_store", "data"),
     prevent_initial_call=True,
 )
 def slice_plot(
@@ -1630,14 +1634,15 @@ def slice_plot(
     slider_range_cs_z,
     cs_z_inactive,
     cam,
-    upload
+    upload,
+    f_data
 ):
     """
     Updates the scatter-plot according to the tools by filtering the data
     TODO: Try doing this Clientside for performance improvements
     """
     session_id = upload["ID"]
-    f_data = cache.get(f'df{session_id}')
+    #f_data = cache.get(f'df{session_id}')
     if f_data is None:
         raise PreventUpdate
     df = pd.DataFrame(f_data["MALA_DF"]["scatter"])

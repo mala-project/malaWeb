@@ -73,7 +73,7 @@ plot_tools = dbc.Collapse(
                                                 # step=None,
                                                 marks=None,
                                                 pushable=10,  # the sheared plane needs a range of values to be able to slice down to approx. 1 layer
-                                                updatemode="drag",
+                                                #updatemode="drag",
                                             ), style={"marginTop": "0.25em"},
                                         ),
                                         dbc.Col(
@@ -105,7 +105,7 @@ plot_tools = dbc.Collapse(
                                                 min=0,
                                                 max=1,
                                                 marks=None,
-                                                updatemode="drag",
+                                                #updatemode="drag",
                                             ), style={"marginTop": "0.25em"},
                                         ),
                                         dbc.Col(
@@ -136,7 +136,7 @@ plot_tools = dbc.Collapse(
                                                 min=0,
                                                 max=1,
                                                 marks=None,
-                                                updatemode="drag",
+                                                #updatemode="drag",
                                             ), style={"marginTop": "0.25em"},
                                         ),
                                         dbc.Col(
@@ -167,7 +167,7 @@ plot_tools = dbc.Collapse(
                                                 min=0,
                                                 max=1,
                                                 marks=None,
-                                                updatemode="drag",
+                                                #updatemode="drag",
                                             ), style={"marginTop": "0.25em"},
                                         ),
                                         dbc.Col(
