@@ -64,18 +64,17 @@ def run_mala_prediction(atoms_to_predict, model_and_temp, session_id,
     """
     if model_and_temp["name"] == "Debug|0":
         print("Debug-Inf")
-        debug_vals = np.load("dense.npy")
         params = mala.Parameters()
         ldos_calculator = mala.LDOS(params)
         ldos_calculator.read_additional_calculation_data(
-            [atoms_to_predict, [debug_vals.shape[0], debug_vals.shape[1], debug_vals.shape[2]]]
+            [atoms_to_predict, [20, 20, 20]]
         )
 
         results = {
             "band_energy": 123.0,
             "total_energy": 456.0,
             # Reshaping for plotting.
-            "density": debug_vals,
+            "density": np.random.random([20, 20, 20]),
             "density_of_states": [0.0, 1.0, 2.0, 3.0, 4.0],
             "energy_grid": [0.0, 1.0, 2.0, 3.0, 4.0],
             "fermi_energy": 789.0,

@@ -1039,6 +1039,17 @@ def update_dataframes(trig, model_choice, temp_choice, upload):
     data_sc.z += y_axis[3] * (data0.y / y_axis[2])
     data_sc.z += x_axis[3] * (data0.x / x_axis[1])
 
+    # move half a voxel
+    data_sc.x += 0.25 * x_axis[1]
+    #data_sc.x += z_axis[1] * (data0.z / z_axis[3])
+
+    data_sc.y += 0.5 * y_axis[2]
+    #data_sc.y += z_axis[2] * (data0.z / z_axis[3])
+
+    data_sc.z += 0.5 * z_axis[3]
+    #data_sc.z += x_axis[3] * (data0.x / x_axis[1])
+
+
     unique_df = {
         "x": data_sc.x.unique(),
         "y": data_sc.y.unique(),
@@ -1540,8 +1551,7 @@ def update_plot(
                 marker=dict(
                     # this technique is for some reason not working here to make size absolute,
                     # while it does work for the main trace for density. Also makes the outline be white
-                    size=[0.0001 for x in range(0, no_of_atoms)],
-                    sizemin=30,
+                    size=20,
                     color=atom_colors,
                     line=dict(width=1, color="DarkSlateGrey"),
                 ),
