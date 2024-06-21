@@ -6,7 +6,7 @@ import mala
 import numpy as np
 
 # Set up the path to the model.
-MODELS = json.load(open("../src/models/model_list.json"))
+MODELS = json.load(open("./src/models/model_list.json"))
 MODELS = [{'id': model['value'], 'label': model['label'], 'path': model['path']} for model in MODELS]
 test = [x["path"] for x in MODELS if x['id'] == "Be|298"]
 print(test[0])
@@ -64,7 +64,7 @@ def run_mala_prediction(atoms_to_predict, model_and_temp, session_id,
     """
     if model_and_temp["name"] == "Debug|0":
         print("Debug-Inf")
-        debug_vals = np.load("dense.npy")
+        debug_vals = np.load("./src/dense.npy")
         params = mala.Parameters()
         ldos_calculator = mala.LDOS(params)
         ldos_calculator.read_additional_calculation_data(

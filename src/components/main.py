@@ -1,7 +1,7 @@
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 import plotly.graph_objs as go
-from src.components.tools import plot_tools
+from components.tools import plot_tools
 
 
 # for Plot

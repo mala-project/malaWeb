@@ -1,22 +1,21 @@
 # IMPORTS
 import base64
 import json
-import sys
 from pathlib import Path
 
 import dash
 import dash.exceptions
 import dash_bootstrap_components as dbc
-import pandas
 
 from dash.dependencies import Input, Output, State
-from dash import Dash, dcc, html, Patch
+from dash import dcc, html, Patch, Dash
 from dash.exceptions import PreventUpdate
+from waitress import serve
 
 # utils
-from src.components import menu, settings, footer, main
-from src.utils.exceptions import upload_exception
-from src.utils.mala_inference import run_mala_prediction, save_density_to_file, save_dos_to_file
+from components import menu, settings, footer, main
+from utils.exceptions import upload_exception
+from utils.mala_inference import run_mala_prediction
 
 # visualization
 import pandas as pd
@@ -27,7 +26,6 @@ import plotly.graph_objs as go
 # I/O
 import ase.io
 import dash_uploader as du
-from flask_caching import Cache
 
 # could be used to refactor callbacks into a seperate file callbacks.py
 # from callbacks import get_callbacks
@@ -46,6 +44,11 @@ ATOM_LIMIT = 200
 # TODO: implement patching so that figures are updated, not recreated
 # as in: https://dash.plotly.com/partial-properties
 
+app = Dash(
+    __name__,
+    external_stylesheets=[dbc.icons.BOOTSTRAP, dbc.themes.BOOTSTRAP, dbc.icons.BOOTSTRAP],
+    suppress_callback_exceptions=True,
+)
 
 # Scene-templates for PX-Objects (our 2 plots (1=main, 2=cell-preview))
 templ1 = dict(
@@ -94,11 +97,7 @@ print(
 )
 print("STARTING UP...")
 
-app = Dash(
-    __name__,
-    external_stylesheets=[dbc.icons.BOOTSTRAP, dbc.themes.BOOTSTRAP, dbc.icons.BOOTSTRAP],
-    suppress_callback_exceptions=True,
-)
+
 # cache = Cache(app.server, config={
 #     'DEBUG': True,
 #     'CACHE_TYPE': 'FileSystemCache',
@@ -765,7 +764,7 @@ def import_config(contents):
     contents: base64 encoded string (JSON) that will be decoded, parsed and split up into returns for tools (multiple)
               and settings (one return to plot_settings)
     Changes to these Outputs will apply the imported settings to the plot automatically
-    
+
     Returns:
     values to each component, either dash_no_update, or actual value parsed from input-data-JSON
     """
