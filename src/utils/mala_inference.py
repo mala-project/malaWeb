@@ -1,23 +1,10 @@
 """Script for single MALA inference."""
-import json
-import time
-
 import ase
 import mala
 import numpy as np
 
-# Set up the path to the model.
-MODELS = json.load(open("../src/models/model_list.json"))
-MODELS = [{'id': model['value'], 'label': model['label'], 'path': model['path']} for model in MODELS]
-test = [x["path"] for x in MODELS if x['id'] == "Be|298"]
+from src.utils.utils import get_config
 
-model_paths = {
-    "Be|298": "Be_model",
-    "Al|298": None,
-    "Al|933": None,
-    "Al|[100,933]": None,
-    "Debug|0": None,
-}
 
 
 def run_mala_prediction(atoms_to_predict, model_and_temp,
@@ -55,6 +42,8 @@ def run_mala_prediction(atoms_to_predict, model_and_temp,
             "energy_grid": The energy grid on which the DOS is supposed
                            to be plotted.
     """
+    atom_limit, MODELS = get_config()
+
     if model_and_temp["name"] == "Debug|0":
         print("Debug-Inf")
         params = mala.Parameters()
@@ -77,8 +66,9 @@ def run_mala_prediction(atoms_to_predict, model_and_temp,
         return results
     else:
         parameters, network, data_handler, predictor = mala.Predictor.load_run(
-            # MODELS[model_and_temp["name"]], path="models"
-            [x["path"] for x in MODELS if x['id'] == "Be|298"][0], path="models"
+            # MODELS[model_and_temp["name"]], path="models" params -> values
+            [x['path'] for x in MODELS if x['value'] == model_and_temp['name']][0],
+            path="models"
         )
         predicted_ldos = predictor.predict_for_atoms(atoms_to_predict)
 

@@ -6,13 +6,11 @@ import ase.io
 import dash_uploader as du
 import json
 
-# CONSTANTS
-# > "label" is the label visible in the apps dropdown ; "value"  is the value passed to the inference script. Ranges are to be surrounded by []
-MODELS = json.load(open("../src/models/model_list.json"))
-MODELS = [{'label': model['label'], 'value': model['value']} for model in MODELS]
+from src.utils.utils import get_config
 
-# > Used for giving out high computation time warning
-ATOM_LIMIT = 200
+# CONSTANTS
+ATOM_LIMIT, MODELS = get_config()
+
 
 """
 Button for opening Upload Sidebar
@@ -114,9 +112,9 @@ inference_modal = dbc.Modal(
                 html.Br(),
                 dbc.Alert(
                     id="atom-limit-warning",
-                    children="The amount of Atoms you want to display exceeds our threshold ("
+                    children="The amount of atoms you want to use exceeds the threshold ("
                     + str(ATOM_LIMIT)
-                    + ") for short render times. Be aware that continuing with the uploaded data may negatively impact waiting times.",
+                    + ") for short inference times. Be aware that continuing with the uploaded data may negatively impact waiting times.",
                     color="warning",
                 ),
                 # only to be displayed if ATOM_LIMIT is exceeded (maybe as an alert window too)

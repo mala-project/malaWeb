@@ -30,6 +30,8 @@ import ase.io
 import dash_uploader as du
 from flask_caching import Cache
 
+from src.utils.utils import get_config
+
 # could be used to refactor callbacks into a seperate file callbacks.py
 # from callbacks import get_callbacks
 
@@ -38,8 +40,6 @@ from flask_caching import Cache
 # host for other devices: gunicorn app:server -w 4 -b [host-ip]:8051
 
 
-# CONSTANTS
-ATOM_LIMIT = 200
 # TODO: use dash-extension Enrichments to improve performance (ServersideOutputTransform)
 # TODO implement caching/Memoization of the dataset to improve performance
 # as in: https://dash.plotly.com/performance
@@ -564,8 +564,8 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
         # delete uploaded file right after it's read by ASE - could be problematic, will see
         # TODO: delete session path either right here, or when session ends (how?)
         Path(str(status.latest_file.resolve())).unlink()
-
-        if r_atoms.get_global_number_of_atoms() > ATOM_LIMIT:
+        atom_limit, models = get_config()
+        if r_atoms.get_global_number_of_atoms() > atom_limit:
             LIMIT_EXCEEDED = True
         table_rows = [
             html.Tr(
@@ -933,7 +933,7 @@ def update_dataframes(trig, model_choice, temp_choice, upload):
     (indirectly) Opens a popup, showing
       - the uploaded Atoms with a checkmark;
       - possibly giving a prerender of only the atoms;
-      - giving a warning if more than (ATOM_LIMIT) Atoms are selected
+      - giving a warning if more than (atom_limit from config) Atoms are selected
       - has a "Start MALA" Button
     !!  THIS IS RUNNING MALA INFERENCE  !!
     AND "PARSING" DATA FOR CONTINUED USE

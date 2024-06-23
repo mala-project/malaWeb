@@ -15,3 +15,6 @@
 /malaWeb.egg-info
 /.idea
 *.pyc
+
+# don't ignore:
+!requirements.txt
