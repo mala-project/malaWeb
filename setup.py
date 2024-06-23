@@ -8,7 +8,7 @@ setup(
     version="0.3",
     install_requires=required,
     packages=[],
-    url="https://github.com/mala-project/malaWeb/tree/main",
+    url="https://github.com/mala-project/malaWeb/tree/dev",
     license="",
     author="Maximilian Wenger",
     author_email="wengmax@proton.me",
