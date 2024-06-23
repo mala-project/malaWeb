@@ -5,7 +5,7 @@ with open("src/requirements.txt") as f:
 
 setup(
     name="malaWeb",
-    version="0.1",
+    version="0.3",
     install_requires=required,
     packages=[],
     url="https://github.com/mala-project/malaWeb/tree/main",
