@@ -36,7 +36,7 @@ def get_config() -> Tuple[int, list]:
                 "value"  is the value passed to the inference script. Consists of model identifier|temperature.
                 -> Ranges of temperature are to be surrounded by []
     """
-    config = json.load(open("../src/config.json"))
+    config = json.load(open("../src/config.json", "r"))
     atom_limit = config["atom_limit"]
     models = [{'label': model['label'], 'value': model['value'], 'path': model['path']} for model in config["models"]]
     return atom_limit, models
