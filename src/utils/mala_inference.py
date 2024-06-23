@@ -2,6 +2,7 @@
 import json
 import time
 
+import ase
 import mala
 import numpy as np
 
@@ -9,7 +10,6 @@ import numpy as np
 MODELS = json.load(open("../src/models/model_list.json"))
 MODELS = [{'id': model['value'], 'label': model['label'], 'path': model['path']} for model in MODELS]
 test = [x["path"] for x in MODELS if x['id'] == "Be|298"]
-print(test[0])
 
 model_paths = {
     "Be|298": "Be_model",
@@ -20,7 +20,7 @@ model_paths = {
 }
 
 
-def run_mala_prediction(atoms_to_predict, model_and_temp, session_id,
+def run_mala_prediction(atoms_to_predict, model_and_temp,
                         calc_total_energy=True):
     """
     Perform a MALA prediction for an ase.Atoms object.
@@ -33,13 +33,6 @@ def run_mala_prediction(atoms_to_predict, model_and_temp, session_id,
     model_and_temp : dict
         A dictionary containing the name of the model to use and the
         temperature at which to run inference on.
-
-    # TODO: pass dynamically generated path instead
-    session_id : string
-        unique identifier for the session used for storing uploaded and downloadable files.
-        Needed here for saving .cube at the correct location.
-        Download component is expecting file with name "inference_data.cube"
-        Path would be: "../sessions/<session_id>/inference_data.cube"
 
     Returns
     -------
@@ -94,7 +87,10 @@ def run_mala_prediction(atoms_to_predict, model_and_temp, session_id,
         ldos_calculator.read_from_array(predicted_ldos)
 
         results = {
+            "atoms": atoms_to_predict.todict(),
             "band_energy": ldos_calculator.band_energy,
+            # TODO: write_cube has problems finding the shape of this. Merely using the ndarray before reshape
+            #  doesn't fix
             # Reshaping for plotting.
             "density": np.reshape(
                 ldos_calculator.density, ldos_calculator.grid_dimensions
@@ -109,17 +105,18 @@ def run_mala_prediction(atoms_to_predict, model_and_temp, session_id,
             results["total_energy"] = ldos_calculator.total_energy
         else:
             results["total_energy"] = 0.0
-        np.save("dense", results["density"])
         return results
 
 
-def save_density_to_file(results, file_name):
+def save_density_to_file(results, path):
     """
     Save the density of an inference back to file.
 
     Function returns nothing, but writes a single file containing the density.
 
     Parameters
+    results: return of run_mala_prediction()
+    path: path and file-name to store .cube at
     ----------
     results : dict
         A dictionary that contains:
@@ -143,14 +140,13 @@ def save_density_to_file(results, file_name):
     file_name : string
         Name of the file in which the density will be saved.
     """
-    print(results.keys())
     parameters = mala.Parameters()
     density_calculator = mala.Density(parameters)
     density_calculator.voxel = results["voxel"]
-    #density_calculator.atoms = results["atoms"]
+    density_calculator.atoms = ase.Atoms.fromdict(results["atoms"])
     density_calculator.density = results["density"]
     density_calculator.grid_dimensions = results["grid_dimensions"]
-    density_calculator.write_to_cube(file_name)
+    density_calculator.write_to_cube(path)
 
 
 def save_dos_to_file(results, dos_file_name, energy_grid_file_name):
