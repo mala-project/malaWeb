@@ -1,12 +1,10 @@
 # malaWeb
 
-Web app to visualize on-the-fly MALA predictions.
+Web app to visualize on-the-fly [MALA](https://github.com/mala-project/mala) predictions.
 
 ## Description
 
-malaWeb is a Plotly Dash based web application used for the visualization of 3D volumetric data. By inputting atom positions and cell information in ASE-accepted data formats, MALA can be run to make predictions on the volumetric data inside the given cell. This branch is meant to be run on a local machine with its own MALA installation.\
-malaWeb uses a FileSystemCache to reduce some network traffic, but other Cache-Backend options like redis are possible too.\
-See here for alternatives: https://flask-caching.readthedocs.io/en/latest/#built-in-cache-backends \
+malaWeb is a Plotly Dash based web application used for the visualization of 3D volumetric data. By giving atom positions and cell information in ASE-accepted data formats, an inference can be run via MALA to make predictions on the volumetric data inside the given cell. This application is meant to be hosted for private access / in institutions and only in intranet. Security concerns have not been part of the development process so far and they definetly exist. \
 
 
 Be aware that larger model predictions will take a lot of time. The default atom limit for predictions is 200.
@@ -18,16 +16,22 @@ See https://github.com/mala-project/mala/blob/develop/docs/source/install/instal
 Some model data is currently included in this malaWeb repository, stored in "models"-folder and listed in "model\_list.json".
 After MALA is installed, just run the setup.py file to install malaWebs dependencies.
 
-* In directory with setup.py, run `pip install -e .`
+Options for installing malaWeb are:
+* As recommended for MALA too, use a conda environment:  run `conda env create --name <environment name> --file environment.yaml`.
+* Install via pip: In the install directory, run `pip install -e .`
+* Install and deploy with Docker: ...
 
-Make sure the installed version of the dash uploader component is the newest pre-release version 0.7.0 or newer, as this introduces new syntax. https://github.com/fohrloop/dash-uploader#-dash-uploader-070-pre-release-available
+Make sure the installed version of the dash uploader component is the [pre-release version 0.7.0](https://github.com/fohrloop/dash-uploader#-dash-uploader-070-pre-release-available) or newer, as this introduces new syntax.
 
 Make sure the installed version of packaging is not higher than 21. For a version check, the dash uploader component uses an attribute "LegacyVersion" that has been deprecated in later versions. See this thread: https://github.com/pypa/packaging/issues/321
 
 ## Usage
 
-After installing dependencies, run `gunicorn app:server -w 4 -b [host-ip]:8051`
-Change 8051 to whatever port you want and exchange [host-ip] for the IP adress of the hosting server. Other devices on the same network can access malaWeb via that IP:port
+After installing with conda or pip on host, run `gunicorn app:server -w 4 -b [host-ip]:8050`
+Change 8050 to whatever port you want and exchange [host-ip] for the IP adress of the server.
+Other devices on the same network can now access malaWeb via that IP:port.
+
+If you plan to install and deploy with docker, in line X of the Dockerfile, change "0.0.0.0:8050" to you desired IP-adress and port as with the gunicorn command above.
 
 \
 In the File-Upload section, upload an ASE-readable file\
@@ -60,10 +64,9 @@ The data read by ASE will be displayed in a popup window for running an Inferenc
 * (5) The bottom of the page has a button for opening up information on different energies and a graph of the density of state.
 
 ## Todos
-* Correct shifted cell
 * Explore Client-Side plot updates for slicing
 * Fix Download of MALA's data
 
 Long Term:
-* Create a MALA-API that grants access to a (powerfull / optimized) MALA-Host, to reduce load on App-host and improve inference speed
+* Create a MALA-API that grants access to a (powerful / optimized) MALA-Host, to reduce load on App-host and improve inference speed
 * Import option for MALA data, so that malaWeb can also be used for just visualizing
