@@ -826,7 +826,7 @@ def download_data(click, up_data, f_data):
         # TODO: fix mala_api-savers not working; for now just dump malaWeb-data
         #save_density_to_file(f_data["MALA_DATA"], f"./session/{up_data['ID']}/inference_data.cube")
         json.dump(f_data, open(f"./session/{up_data['ID']}/malaWeb-data.json", 'w'))
-        return dcc.send_file(f"./session/{up_data['ID']}/inference_data.json")
+        return dcc.send_file(f"./session/{up_data['ID']}/malaWeb-data.json")
     except FileNotFoundError:
         print("File not found")
         raise PreventUpdate
