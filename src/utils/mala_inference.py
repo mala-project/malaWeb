@@ -20,7 +20,7 @@ model_paths = {
 }
 
 
-def run_mala_prediction(atoms_to_predict, model_and_temp,
+def run_mala_prediction(atoms_to_predict, model_and_temp, path,
                         calc_total_energy=True):
     """
     Perform a MALA prediction for an ase.Atoms object.
@@ -33,6 +33,8 @@ def run_mala_prediction(atoms_to_predict, model_and_temp,
     model_and_temp : dict
         A dictionary containing the name of the model to use and the
         temperature at which to run inference on.
+
+    path: path as string for saving files
 
     Returns
     -------
@@ -89,8 +91,8 @@ def run_mala_prediction(atoms_to_predict, model_and_temp,
         results = {
             "atoms": atoms_to_predict.todict(),
             "band_energy": ldos_calculator.band_energy,
-            # TODO: write_cube has problems finding the shape of this. Merely using the ndarray before reshape
-            #  doesn't fix
+            # TODO: write_cube has problems finding the shape of this, after translation to dict and serialization.
+            #  Merely using the ndarray before reshape doesn't fix. Fix: save file here already
             # Reshaping for plotting.
             "density": np.reshape(
                 ldos_calculator.density, ldos_calculator.grid_dimensions
@@ -105,6 +107,14 @@ def run_mala_prediction(atoms_to_predict, model_and_temp,
             results["total_energy"] = ldos_calculator.total_energy
         else:
             results["total_energy"] = 0.0
+
+        # Save .cube
+        results_orig_shape = results.copy()
+        print(ldos_calculator.density.shape)
+        results_orig_shape["density"] = ldos_calculator.density
+
+        save_density_to_file(results_orig_shape, path)
+
         return results
 
 

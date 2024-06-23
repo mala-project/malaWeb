@@ -17,7 +17,7 @@ from dash.exceptions import PreventUpdate
 from src.components import menu, settings, footer, main
 from src.utils import utils
 from src.utils.exceptions import upload_exception
-from src.utils.mala_inference import run_mala_prediction, save_density_to_file, save_dos_to_file
+from src.utils.mala_inference import run_mala_prediction
 
 # visualization
 import pandas as pd
@@ -823,10 +823,11 @@ def download_data(click, up_data, f_data):
     Send Download-prompt of MALA-data. The file was created on Inference, and is stored in the session-folder
     """
     try:
-        # TODO: fix mala_api-savers not working; for now just dump malaWeb-data
+        # TODO: fix mala_api-savers not working; for now, files are saved on inference
         #save_density_to_file(f_data["MALA_DATA"], f"./session/{up_data['ID']}/inference_data.cube")
-        json.dump(f_data, open(f"./session/{up_data['ID']}/malaWeb-data.json", 'w'))
-        return dcc.send_file(f"./session/{up_data['ID']}/malaWeb-data.json")
+            # alternatively, dump all malaWeb-data as json
+        #json.dump(f_data, open(f"./session/{up_data['ID']}/malaWeb-data.json", 'w'))
+        return dcc.send_file(f"./session/{up_data['ID']}/inference_data.cube")
     except FileNotFoundError:
         print("File not found")
         raise PreventUpdate
@@ -967,6 +968,7 @@ def update_dataframes(trig, model_choice, temp_choice, upload):
     mala_data = run_mala_prediction(
         atoms_to_predict=read_atoms,
         model_and_temp=model_temp_path,
+        path=f"./session/{upload['ID']}/inference_data.cube"
     )
 
     # contains 'band_energy', 'total_energy', 'density', 'density_of_states', 'energy_grid', atoms
