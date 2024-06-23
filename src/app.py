@@ -15,6 +15,7 @@ from dash.exceptions import PreventUpdate
 
 # utils
 from src.components import menu, settings, footer, main
+from src.utils import utils
 from src.utils.exceptions import upload_exception
 from src.utils.mala_inference import run_mala_prediction, save_density_to_file, save_dos_to_file
 
@@ -519,7 +520,6 @@ def update_page_state(trig1, state):
     else:
         return new_state
 
-
 # DASH-UPLOADER
 @du.callback(
     output=[
@@ -556,6 +556,7 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
     fig.update_layout(templ2["layout"])
     boundaries = []
     # ASE.reading to check for file-format support, to fill atoms_table, and to fill atoms-preview
+
     try:
         r_atoms = ase.io.read(status.latest_file)
         UPDATE_TEXT = "Upload successful"
@@ -721,6 +722,7 @@ def upload_callback(status):  # <------- NEW: du.UploadStatus
     except ValueError:
         r_atoms, UPDATE_TEXT, UP_STORE, table_rows, border_style = upload_exception()
     except ase.io.formats.UnknownFileTypeError:
+        print("ASE read error")
         r_atoms, UPDATE_TEXT, UP_STORE, table_rows, border_style = upload_exception()
         # = FILE NOT SUPPORTED AS ASE INPUT
         # (some formats listed in supported-files for ase are output only. This will only be filtered here)
@@ -813,13 +815,17 @@ def import_config(contents):
     Output("data-downloader", "data"),
     Input("download-data", "n_clicks"),
     State("UP_STORE", "data"),
+    State("df_store", "data"),
     prevent_initial_call=True
 )
-def download_data(click, up_data):
+def download_data(click, up_data, f_data):
     """
     Send Download-prompt of MALA-data. The file was created on Inference, and is stored in the session-folder
     """
     try:
+        # TODO: fix mala_api-savers not working; for now just dump malaWeb-data
+        #save_density_to_file(f_data["MALA_DATA"], f"./session/{up_data['ID']}/inference_data.cube")
+        json.dump(f_data, open(f"./session/{up_data['ID']}/malaWeb-data.json", 'w'))
         return dcc.send_file(f"./session/{up_data['ID']}/inference_data.cube")
     except FileNotFoundError:
         print("File not found")
@@ -955,24 +961,16 @@ def update_dataframes(trig, model_choice, temp_choice, upload):
     # ASE.reading to receive ATOMS-objs, to pass to MALA-inference
     # no ValueError Exception needed, bc this is done directly on session
     read_atoms = ase.Atoms.fromdict(upload["ATOMS"])
-    session_id = upload["ID"]
 
     # (a) GET DATA FROM MALA (/ inference script)
 
     mala_data = run_mala_prediction(
         atoms_to_predict=read_atoms,
         model_and_temp=model_temp_path,
-        session_id=session_id,
     )
 
-    # TODO: clear up with Lenz what the issues here are
-    # save results to file(s)
-    #   mala_data["density"] was reshaped, leading to this not working currently
-    # save_density_to_file(mala_data, "density_prediction.cube")
-    # save_dos_to_file(mala_data, f"session/{session_id}/dos_prediction.npy", f"session/{session_id}/energy_grid_prediction.npy")
-
-    # contains 'band_energy', 'total_energy', 'density', 'density_of_states', 'energy_grid'
-    # mala_data is stored in df_store dict under key 'MALA_DATA'. (See declaration of df_store below for more info)
+    # contains 'band_energy', 'total_energy', 'density', 'density_of_states', 'energy_grid', atoms
+    # mala_data is stored in df_store dict under key 'MALA_DATA'. (See declaration of df_store in return for more info)
     density = mala_data["density"]
 
     coord_arr = np.column_stack(
@@ -982,8 +980,6 @@ def update_dataframes(trig, model_choice, temp_choice, upload):
     data0 = pd.DataFrame(
         coord_arr, columns=["x", "y", "z", "val"]
     )  # untransformed Dataset
-
-    atoms = [[], [], [], [], []]
 
     x_axis = [
         mala_data["grid_dimensions"][0],
@@ -1004,22 +1000,8 @@ def update_dataframes(trig, model_choice, temp_choice, upload):
         mala_data["voxel"][2][2],
     ]
 
-    # READING ATOMPOSITIONS
-    for i in range(0, len(read_atoms)):
-        atoms[0].append(read_atoms[i].symbol)
-        atoms[1].append(read_atoms[i].charge)
-        atoms[2].append(read_atoms.get_positions()[i, 0])
-        atoms[3].append(read_atoms.get_positions()[i, 1])
-        atoms[4].append(read_atoms.get_positions()[i, 2])
-    atoms_data = pd.DataFrame(
-        data={
-            "x": atoms[2],
-            "y": atoms[3],
-            "z": atoms[4],
-            "ordinal": atoms[0],
-            "charge": atoms[1],
-        }
-    )
+    # Transform Atoms-obj to plottable Dataframe
+    atoms_df = utils.ase_to_df(read_atoms)
 
     # SCALING AND SHEARING SCATTER DF
     # (b) SCALING to right voxel-size
@@ -1040,15 +1022,10 @@ def update_dataframes(trig, model_choice, temp_choice, upload):
     data_sc.z += x_axis[3] * (data0.x / x_axis[1])
 
     # move half a voxel
+    # TODO: This is just a bad approximation for repositioning grid to the center of voxels
     data_sc.x += 0.25 * x_axis[1]
-    #data_sc.x += z_axis[1] * (data0.z / z_axis[3])
-
     data_sc.y += 0.5 * y_axis[2]
-    #data_sc.y += z_axis[2] * (data0.z / z_axis[3])
-
     data_sc.z += 0.5 * z_axis[3]
-    #data_sc.z += x_axis[3] * (data0.x / x_axis[1])
-
 
     unique_df = {
         "x": data_sc.x.unique(),
@@ -1101,10 +1078,9 @@ def update_dataframes(trig, model_choice, temp_choice, upload):
             "scatter": data_sc.to_dict("records"),
         },
         "MALA_DATA": mala_data,
-        "INPUT_DF": atoms_data.to_dict("records"),
+        "INPUT_DF": atoms_df.to_dict("records"),
         "SCALE": {"x_axis": x_axis, "y_axis": y_axis, "z_axis": z_axis},
     }
-    print("df_store: ", df_store.keys())
     #cache.set(f'df{session_id}', df_store, timeout=0)
     return df_store, unique_df, False
 
@@ -1499,8 +1475,7 @@ def update_plot(
             z=df["z"],
             mode='markers',
             marker=dict(
-                size=df["val"],
-                sizemin=10,
+                size=10,
                 color=df["val"],  # set color to an array/list of desired values
                 colorscale='Hot',  # choose a colorscale; could also be a custom one:
                 # (https://plotly.com/python/reference/scatter3d/#scatter3d-marker-colorscale)
@@ -1525,7 +1500,7 @@ def update_plot(
         )
         patched_fig.update_traces(
             patch={"marker": {
-                "sizemin": settings["size"],
+                "size": settings["size"],
                 "line": settings["outline"]}}
         )
 
@@ -1551,7 +1526,7 @@ def update_plot(
                 marker=dict(
                     # this technique is for some reason not working here to make size absolute,
                     # while it does work for the main trace for density. Also makes the outline be white
-                    size=20,
+                    size=15,
                     color=atom_colors,
                     line=dict(width=1, color="DarkSlateGrey"),
                 ),
@@ -1569,7 +1544,7 @@ def update_plot(
             visibility of atoms
         """
         patched_fig["data"][0]["marker"]["line"] = settings["outline"]
-        patched_fig["data"][0]["marker"]["sizemin"] = settings["size"]
+        patched_fig["data"][0]["marker"]["size"] = settings["size"]
         patched_fig["data"][0]["marker"]["opacity"] = settings["opacity"]
         for i in [1, 2, 3, 4]:
             patched_fig["data"][i]["line"]["width"] = settings["cell"]
