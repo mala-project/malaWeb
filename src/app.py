@@ -1436,7 +1436,6 @@ def update_plot(
     """
     # TODO: make this function more efficient
     patched_fig = Patch()
-    session_id = upload["ID"]
 
     # DATA
     #f_data = cache.get(f'df{session_id}')
@@ -1477,7 +1476,7 @@ def update_plot(
             marker=dict(
                 size=10,
                 color=df["val"],  # set color to an array/list of desired values
-                colorscale='Hot',  # choose a colorscale; could also be a custom one:
+                colorscale='magma_r',  # choose a colorscale; could also be a custom one:
                 # (https://plotly.com/python/reference/scatter3d/#scatter3d-marker-colorscale)
                 opacity=1,
                 cauto=False,

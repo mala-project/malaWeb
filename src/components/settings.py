@@ -94,8 +94,8 @@ sidebar = html.Div(
         html.H6("Size", id="sz/isosurf-label", style={"fontSize": "0.95em"}),
         html.Div(
             dcc.Slider(
-                6,
-                20,
+                2,
+                16,
                 2,
                 value=10,
                 id="particle-size",
