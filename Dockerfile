@@ -13,7 +13,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the application code
-COPY . .
+COPY install .
 
 # Install any additional system dependencies (if needed)
 # RUN apt-get update && apt-get install -y some-package

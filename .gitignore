@@ -1,3 +1,6 @@
+# don't ignore:
+!requirements.txt
+
 /src/session/
 /src/lammps_bgrid_log.tmp
 /src/lammps_input.tmp
@@ -15,6 +18,4 @@
 /malaWeb.egg-info
 /.idea
 *.pyc
-
-# don't ignore:
-!requirements.txt
+/session/

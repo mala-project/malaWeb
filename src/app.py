@@ -1,23 +1,21 @@
 # IMPORTS
 import base64
 import json
-import sys
 from pathlib import Path
 
 import dash
 import dash.exceptions
 import dash_bootstrap_components as dbc
-import pandas
 
 from dash.dependencies import Input, Output, State
 from dash import Dash, dcc, html, Patch
 from dash.exceptions import PreventUpdate
 
 # utils
-from src.components import menu, settings, footer, main
-from src.utils import utils
-from src.utils.exceptions import upload_exception
-from src.utils.mala_inference import run_mala_prediction, save_density_to_file, save_dos_to_file
+from components import menu, settings, footer, main
+from utils import utils
+from utils import upload_exception
+from utils import run_mala_prediction, save_density_to_file, save_dos_to_file
 
 # visualization
 import pandas as pd
@@ -28,12 +26,8 @@ import plotly.graph_objs as go
 # I/O
 import ase.io
 import dash_uploader as du
-from flask_caching import Cache
 
 from src.utils.utils import get_config
-
-# could be used to refactor callbacks into a seperate file callbacks.py
-# from callbacks import get_callbacks
 
 # HOSTING:
 # local development: while in /src/ run: gunicorn app:server -b :8000
