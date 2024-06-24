@@ -6,7 +6,7 @@ import ase.io
 import dash_uploader as du
 import json
 
-from src.utils.utils import get_config
+from utils import get_config
 
 # CONSTANTS
 ATOM_LIMIT, MODELS = get_config()

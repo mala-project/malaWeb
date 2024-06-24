@@ -16,6 +16,7 @@ from components import menu, settings, footer, main
 from utils import utils
 from utils import upload_exception
 from utils import run_mala_prediction, save_density_to_file, save_dos_to_file
+from utils import get_config
 
 # visualization
 import pandas as pd
@@ -26,8 +27,6 @@ import plotly.graph_objs as go
 # I/O
 import ase.io
 import dash_uploader as du
-
-from src.utils.utils import get_config
 
 # HOSTING:
 # local development: while in /src/ run: gunicorn app:server -b :8000

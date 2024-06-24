@@ -3,7 +3,7 @@ import ase
 import mala
 import numpy as np
 
-from src.utils.utils import get_config
+from utils import get_config
 
 
 
