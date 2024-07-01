@@ -27,8 +27,8 @@ Make sure the installed version of packaging is not higher than 21. For a versio
 
 ## Usage
 
-After installing with conda or pip on host, run `gunicorn app:server -w 4 -b [host-ip]:8050`
-Change 8050 to whatever port you want and exchange [host-ip] for the IP adress of the server.
+After installing with conda or pip on host, run `gunicorn --config gunicorn.conf.py app:server`
+In gunicorn.conf.py's 'binding', change 8000 to whatever port you want and exchange [host-ip] for the IP adress of the server.
 Other devices on the same network can now access malaWeb via that IP:port.
 
 If you plan to install and deploy with docker, in line X of the Dockerfile, change "0.0.0.0:8050" to you desired IP-adress and port as with the gunicorn command above.
