@@ -10,6 +10,7 @@ import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output, State
 from dash import Dash, dcc, html, Patch
 from dash.exceptions import PreventUpdate
+from dash.long_callback import DiskcacheLongCallbackManager
 
 # utils
 from components import menu, settings, footer, main
@@ -28,6 +29,10 @@ import plotly.graph_objs as go
 import ase.io
 import dash_uploader as du
 
+import diskcache
+cache = diskcache.Cache("./cache")
+background_callback_manager = DiskcacheLongCallbackManager(cache)
+
 # HOSTING:
 # local development: while in /src/ run: gunicorn app:server -b :8000
 # host for other devices: gunicorn app:server -w 4 -b [host-ip]:8051
@@ -39,7 +44,6 @@ import dash_uploader as du
 
 # TODO: implement patching so that figures are updated, not recreated
 # as in: https://dash.plotly.com/partial-properties
-
 
 # Scene-templates for PX-Objects (our 2 plots (1=main, 2=cell-preview))
 templ1 = dict(
@@ -919,6 +923,8 @@ def update_temp_choice(model_choice):
     State("model-temp", "value"),
     State("UP_STORE", "data"),
     prevent_initial_call=True,
+    background=True,
+    manager=background_callback_manager
 )
 def update_dataframes(trig, model_choice, temp_choice, upload):
     """

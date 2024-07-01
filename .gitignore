@@ -19,3 +19,4 @@
 /.idea
 *.pyc
 /session/
+/src/cache/
