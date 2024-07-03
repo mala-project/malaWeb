@@ -198,4 +198,5 @@ plot_tools = dbc.Collapse(
     ),
     id="tools",
     is_open=False,
+    style={"margin-top": "1em"}
 )

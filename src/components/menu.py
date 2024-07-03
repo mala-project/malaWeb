@@ -43,11 +43,9 @@ Popup-Modal on accepted file-session
 """
 inference_modal = dbc.Modal(
     [
-        dbc.ModalHeader(dbc.ModalTitle("Your Upload")),
+        dbc.ModalHeader(dbc.ModalTitle(html.H5("The uploaded file contained the following atoms positions: "))),
         dbc.ModalBody(
             [
-                html.H6("The uploaded File contained the following atoms positions: "),
-                html.Br(),
                 dbc.Card(
                     html.H6(
                         children=[
@@ -56,7 +54,7 @@ inference_modal = dbc.Modal(
                                     dbc.Col(width=1),
                                     dbc.Col("List of Atoms", width=10),
                                     dbc.Col("⌄", width=1, id="open-atom-list-arrow"),
-                                ]
+                                ],
                             )
                         ],
                         style={"margin": "5px"},
@@ -168,7 +166,7 @@ sidebar = html.Div(
                     children="""
                     Framework for machine learning materials properties from first-principles data.
                 """,
-                    style={"textAlign": "center"},
+                    style={"textAlign": "center", "line-height": "100%"},
                 ),
             ],
             className="logo",
@@ -300,8 +298,9 @@ oc_sidebar = html.Div(
             style={
                 "width": "12rem",
                 "height": "min-content",
-                "marginTop": "3rem",
+                "top": "50%",
                 "left": "0",
+                "transform": "translateY(-60%)",
                 "borderTopRightRadius": "5px",
                 "borderBottomRightRadius": "5px",
                 "boxShadow": "rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px",

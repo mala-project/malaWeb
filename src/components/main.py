@@ -44,16 +44,16 @@ orient_template = {
 # Properties for Plot layout
 plot_layout = {
     "title": "Plot",
-    "height": "75vh",
+    "height": "70vh",
     "width": "80vw",
 }
 orientation_style = {
     "title": "x-y-z",
     "height": "3em",
-    "width": "3em",
+    "width": "5em",
     "background": "#f8f9fa",
     "position": "fixed",
-    "marginTop": "75vh",
+    "marginTop": "70vh",
     "marginRight": "0.5vw",
 }
 
@@ -130,7 +130,7 @@ plot = [
                             config={
                                 "displayModeBar": False,
                                 "displaylogo": False,
-                                "showAxisDragHandles": True,
+                                "showAxisDragHandles": False,
                             },
                         ),
                         dcc.Graph(
@@ -140,24 +140,27 @@ plot = [
                             style=plot_layout,
                             config={"displaylogo": False},
                         ),
+
+                        dbc.Button(
+                            html.P(
+                                html.I(className="bi bi-tools"),
+                                style={"lineHeight": "1em", "fontSize": "1em"},
+                            ),
+                            id="open-tools",
+                            style={"position": "fixed", "marginTop": "71vh", "marginLeft": "77vw", "width": "min-content", "height": "2.15em"},
+                            # "left": "50%", "transform": "translateX(-50%)"},
+                            color="info",
+                            n_clicks=0,
+                        ),
                     ]
                 ),
                 # Button for plot-tools
                 dbc.Row(
                     [
                         html.Hr(),
-                        dbc.Button(
-                            html.P(
-                                "Tools",
-                                style={"lineHeight": "0.65em", "fontSize": "0.65em"},
-                            ),
-                            id="open-tools",
-                            style={"width": "5em", "height": "1.2em"},
-                            n_clicks=0,
-                        ),
                     ],
                     justify="center",
-                    style={"textAlign": "center"},
+                    style={"textAlign": "center", },
                 ),
                 # Collapsable containing 4 Rangesliders
                 dbc.Row(plot_tools, style={"marginTop": "1em"}),
@@ -166,8 +169,11 @@ plot = [
         style={
             "backgroundColor": "rgba(248, 249, 250, 1)",
             "width": "min-content",
+            "height": "min-content",
             "alignContent": "center",
             "marginTop": "1.5rem",
+            "margin-left": "3.75rem",
+            "position": "relative"
         },
     ),
 ]

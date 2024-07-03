@@ -20,17 +20,19 @@ button = html.Div(
                         id="open-footer",
                         style={
                             "width": "10em",
-                            "height": "1.2em",
+                            "height": "1em",
                             "position": "absolute",
                             "left": "50%",
                             "WebkitTransform": "translateX(-50%)",
                             "transform": "translateX(-50%)",
-                            "bottom": "0.5em",
+                            "margin-bottom": "1.5em"
                         },
                         n_clicks=0,
+                        color="info"
                     ),
                     width=1,
-                )
+                ),
+                    style={"position": "relative"}
             )
         ],
         id="open-footer-canvas",
@@ -38,6 +40,7 @@ button = html.Div(
             "height": "min-content",
             "backgroundColor": "rgba(0, 0, 0, 0)",
             "border": "0",
+            "bottom": "0"
         },
         is_open=False,
         scrollable=True,
@@ -150,12 +153,13 @@ oc_bar = html.Div(
             style={
                 "height": "min-content",
                 "width": "max-content",
-                "borderRadius": "5px",
+                "borderTopRightRadius": "5px",
+                "borderTopLeftRadius": "5px",
                 "backgroundColor": "rgba(248, 249, 250, 1)",
                 "left": "0",
                 "right": "0",
                 "margin": "auto",
-                "bottom": "0.5em",
+                "bottom": "0",
                 "boxShadow": "rgba(0, 0, 0, 0.3) 0px 0px 16px -8px",
                 "padding": -30,
             },
